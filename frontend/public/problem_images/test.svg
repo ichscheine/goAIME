@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  width="480"
+  height="240"
+  viewBox="0 0 240 120"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <!-- Outline (one corner at (0,0)) -->
+  <path
+    d="M210,0 L0,0 L0,90 L30,90 L30,120 L240,120 L240,30 L210,30 Z"
+    fill="none"
+    stroke="black"
+    stroke-width="2"
+  />
+
+  <!-- Diagonal labeled '8' -->
+  <line
+    x1="0"   y1="0"
+    x2="240" y2="120"
+    stroke="black"
+    stroke-width="1"
+    stroke-dasharray="4,4"
+  />
+  <text x="60" y="30" font-size="14" fill="black">8</text>
+
+  <!-- Diagonal labeled '4√2' (using the XML entity &#x221A;) -->
+  <line
+    x1="210" y1="30"
+    x2="30"  y2="90"
+    stroke="black"
+    stroke-width="1"
+    stroke-dasharray="4,4"
+  />
+  <text x="45" y="80" font-size="14" fill="black">4&#x221A;2</text>
+
+  <!-- '1' labels near the cut-out squares -->
+  <text x="212" y="15" font-size="12" fill="black">1</text>
+  <text x="222" y="25" font-size="12" fill="black">1</text>
+</svg>

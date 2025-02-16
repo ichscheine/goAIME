@@ -1,0 +1,42 @@
+<svg width="400" height="400" viewBox="0 0 400 400" style="background:rgb(3, 3, 3)" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Star Coloring -->
+  <!-- Lighter Center Star -->
+  <g fill="#4CAF50">
+    <polygon points="100,100 200,200 100,200"/>
+    <polygon points="100,100 200,200 200,100"/>
+    <polygon points="300,100 200,200 200,100"/>
+    <polygon points="300,100 200,200 300,200"/>
+    <polygon points="100,300 200,200 100,200"/>
+    <polygon points="100,300 200,200 200,300"/>
+    <polygon points="300,300 200,200 200,300"/>
+    <polygon points="300,300 200,200 300,200"/>
+    <polygon points="300,0 200,100 300,100"/>
+    <polygon points="0,100 100,100 100,200"/>
+    <polygon points="100,400 100,300 200,300"/>
+    <polygon points="300,300 300,200 400,300"/>
+  </g>
+
+  <!-- Darker Outer Star Extensions -->
+  <g fill="#2E7D32">
+    <polygon points="100,0 100,100 200,200 200,100"/>
+    <polygon points="300,100 400,100 300,200 200,200"/>
+    <polygon points="100,300 200,200 100,200 0,300"/>
+    <polygon points="300,400 300,300 200,200 200,300"/>
+  </g>
+
+  <!-- Grid Lines -->
+  <g stroke="white" stroke-width="2" fill="none">
+    <!-- Horizontal lines -->
+    <line x1="0" y1="100" x2="400" y2="100"/>
+    <line x1="0" y1="200" x2="400" y2="200"/>
+    <line x1="0" y1="300" x2="400" y2="300"/>
+    <!-- Vertical lines -->
+    <line x1="100" y1="0" x2="100" y2="400"/>
+    <line x1="200" y1="0" x2="200" y2="400"/>
+    <line x1="300" y1="0" x2="300" y2="400"/>
+    <!-- Diagonal lines -->
+    <line x1="100" y1="100" x2="300" y2="300"/>
+    <line x1="300" y1="100" x2="100" y2="300"/>
+  </g>
+</svg>
