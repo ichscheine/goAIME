@@ -1,299 +1,221 @@
-/* ---------------------------- Global Styles ---------------------------- */
+/* Global Styles */
 body {
-  background-color: #f5f5f5;
   font-family: 'Helvetica Neue', Arial, sans-serif;
   margin: 0;
   padding: 0;
+  background-color: #f4f7f9;
   color: #333;
 }
 
+/* Main Container */
 .app-container {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
 }
 
-/* Increase KaTeX font size for better readability */
-.katex {
-  font-size: 1.4em;
-}
-
-/* Markdown content styling */
-.markdown-content {
-  font-size: 1.2rem;
-  line-height: 1.6;
-  margin-bottom: 20px;
-}
-
-/* Optionally, further style the solution-content for a richer look */
-.solution-content {
-  margin-top: 20px;
-  background: #fafafa;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 20px;
-}
-
-/* ---------------------------- Header Styles ---------------------------- */
+/* Header */
 .app-header {
   text-align: center;
-  margin-bottom: 30px;
-}
-.app-header h1 {
-  font-size: 2rem;
-  color: #2c3e50;
-  margin: 0;
-}
-
-/* ---------------------------- Problem Card ---------------------------- */
-.problem-card {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  padding: 30px;
-}
-
-/* 
-   Markdown content styling (for problem statements, solutions, etc.).
-   ReactMarkdown output will appear within elements with this class.
-*/
-.markdown-content {
-  font-size: 1.2rem;
-  line-height: 1.6;
   margin-bottom: 20px;
 }
 
-.markdown-content h1, 
-.markdown-content h2, 
-.markdown-content h3, 
-.markdown-content h4 {
-  margin-top: 1.2em;
-  margin-bottom: 0.6em;
-  font-weight: bold;
-  color: #2c3e50;
+/* Layout: Sidebar + Content */
+.main-layout {
+  display: flex;
+  gap: 20px;
 }
 
-.markdown-content p {
-  margin-bottom: 1em;
-}
-
-.markdown-content ul,
-.markdown-content ol {
-  margin-left: 1.5em;
-  margin-bottom: 1em;
-}
-
-.markdown-content li {
-  margin-bottom: 0.5em;
-}
-
-.markdown-content code {
-  background-color: #f4f4f4;
-  padding: 2px 4px;
-  border-radius: 4px;
-  font-family: "Courier New", monospace;
-}
-
-/* Larger blocks of code (triple backticks) */
-.markdown-content pre code {
-  display: block;
-  padding: 1em;
+/* Filter Sidebar */
+.filter-sidebar {
+  width: 250px;
+  background-color: #fff;
+  padding: 15px;
   border-radius: 6px;
-  background-color: #eee;
-  overflow-x: auto;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
-/* 
-   If you want to differentiate the problem statement specifically,
-   you can still keep a .problem-statement wrapper 
-   but typically you'd let .markdown-content handle the text styling.
-*/
-.problem-statement {
-  margin-bottom: 20px;
-}
-
-/* -------------------------- Images in Markdown ------------------------- */
-.math-image {
-  max-width: 100%;  /* Adjust as needed */
-  height: auto;
-  width: auto;
-  min-height: 5px;
-  object-fit: contain;
-  display: inline-block;
-  margin: 0 3px;
-  vertical-align: middle;
-}
-
-/* Screenshot container and image styling */
-.screenshot-container {
-  margin-top: 20px;
+.filter-sidebar h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.2em;
   text-align: center;
 }
-.screenshot-image {
-  max-width: 100%;
-  height: auto;
-  display: block;
-  margin: 10px 0;
-}
 
-/* -------------------------- Answer Section ---------------------------- */
-.answer-section {
-  margin-top: 30px;
-}
-
-.answer-choices {
-  margin-bottom: 20px;
-}
-.answer-choices h2 {
-  font-size: 1.5rem;
-  margin-bottom: 10px;
-}
-.answer-img {
-  max-width: 100%;
-  height: auto;
+.filter-sidebar label {
   display: block;
   margin-bottom: 10px;
+  font-weight: 500;
 }
 
-/* Container for input + submit button */
-.answer-input {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-/* Text input for user answer */
-.answer-input input {
-  flex: 1;  
-  padding: 12px;
-  font-size: 1rem;
+.filter-sidebar select,
+.filter-sidebar input {
+  width: 100%;
+  padding: 6px 8px;
+  margin-top: 5px;
+  margin-bottom: 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
 }
 
-/* Submit button (blue) */
-.answer-submit-btn {
-  flex: 0 0 auto;
-  padding: 12px;
-  font-size: 1rem;
-  background-color: #3498db;
-  color: #fff;
+.filter-btn {
+  width: 100%;
+  padding: 8px;
+  background-color: #007bff;
   border: none;
   border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  width: 200px;
-}
-.answer-submit-btn:hover {
-  background-color: #2980b9;
-  transform: scale(1.03);
-}
-
-/* --------------------- Info & Error Messages -------------------------- */
-.info-message, 
-.error-message {
-  text-align: center;
-  font-size: 1.1rem;
-  margin-bottom: 20px;
-}
-.error-message {
-  color: red;
-}
-
-/* -------------------- Correct / Incorrect Results --------------------- */
-.result {
-  font-size: 1.2rem;
+  color: #fff;
   font-weight: bold;
-  text-align: center;
+  cursor: pointer;
+}
+
+.filter-btn:hover {
+  background-color: #0056b3;
+}
+
+/* Content Panel */
+.content-panel {
+  flex: 1;
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* Problem Section */
+.question-section {
   margin-bottom: 20px;
 }
-.result.correct {
-  color: green;
-}
-.result.incorrect {
-  color: red;
+
+.markdown-content {
+  line-height: 1.6;
 }
 
-/* Interactive result image styling */
-.result-image-container {
+/* Image Container */
+.image-container {
   text-align: center;
-  margin: 20px 0;
+  margin-top: 1rem;
 }
-.result-image {
-  max-width: 200px;
-  width: 100%;
+
+.image-container img {
+  width: 300px;
   height: auto;
-  transition: transform 0.3s ease;
-}
-.result-image:hover {
-  transform: scale(1.1);
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
-/* ------------------------ Solution Section ---------------------------- */
-.solution-section {
-  margin-top: 30px;
-  border-top: 1px solid #ddd;
-  padding-top: 20px;
+/* Answer Section */
+.answer-section {
+  margin-bottom: 20px;
 }
 
-.solution-header {
+.answer-choices {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.choice-text {
+  padding: 8px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+}
+
+.answer-input {
+  display: flex;
+  gap: 10px;
   margin-bottom: 10px;
 }
 
-/* Toggle solution button (purple) */
-.toggle-solution-btn {
-  background-color: #9b59b6;
+.answer-input input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.submit-btn {
+  padding: 8px 12px;
+  background-color: #28a745;
   color: #fff;
-  padding: 12px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-}
-.toggle-solution-btn:hover {
-  background-color: #8e44ad;
-  transform: scale(1.03);
 }
 
-/* The container that holds the solution/follow-up markdown */
-.solution-content {
-  margin-top: 20px;
-  background: #fafafa;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 20px;
+.submit-btn:hover {
+  background-color: #218838;
 }
 
-/* 
-   Example: styling headings or paragraphs specifically in the solution content
-   (though .markdown-content might be enough).
-*/
-.solution-content h2 {
-  margin-top: 0;
-  color: #2c3e50;
+/* Result Feedback */
+.result {
+  font-size: 1.1em;
+  font-weight: 500;
+  margin: 10px 0;
 }
 
-/* ----------------------- Navigation Section --------------------------- */
-.navigation-section {
-  margin-top: 20px;
+.result.correct {
+  color: #28a745;
+}
+
+.result.incorrect {
+  color: #dc3545;
+}
+
+.result-image-container {
   text-align: center;
 }
 
-/* Next Problem button (green) */
-.next-btn {
-  background-color: #2ecc71;
-  color: #fff;
-  padding: 12px 20px;
+.result-image {
+  width: 100px;
+  height: auto;
+}
+
+/* Navigation Section */
+.navigation-section {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.next-btn,
+.solution-btn,
+.toggle-solution-btn {
+  padding: 10px 16px;
+  background-color: #007bff;
   border: none;
   border-radius: 4px;
-  font-size: 1rem;
+  color: #fff;
+  font-weight: bold;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
 }
-.next-btn:hover {
-  background-color: #27ae60;
-  transform: scale(1.03);
+
+.next-btn:hover,
+.solution-btn:hover,
+.toggle-solution-btn:hover {
+  background-color: #0056b3;
+}
+
+/* Style for answer choice buttons */
+.choice-button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background-color: #e9ecef;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background-color 0.2s ease;
+}
+
+.choice-button:hover {
+  background-color: #d4dadf;
+}
+
+.choice-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #007bff;
 }
