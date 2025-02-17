@@ -33,7 +33,6 @@ function App() {
 
   // Track used problem IDs to avoid repetition
   const [usedProblemIds, setUsedProblemIds] = useState([]);
-  // Also store in a ref so we always have the latest value in callbacks.
   const usedProblemIdsRef = useRef([]);
   useEffect(() => {
     usedProblemIdsRef.current = usedProblemIds;
@@ -52,6 +51,11 @@ function App() {
   }, []);
 
   const [problemStatementWithMeta, setProblemStatementWithMeta] = useState('');
+
+  // Track incorrectly answered problems for review.
+  const [incorrectProblems, setIncorrectProblems] = useState([]);
+  // Map to store fetched adaptive details for each incorrect problem (keyed by problem_id)
+  const [incorrectDetails, setIncorrectDetails] = useState({});
 
   // Session is complete when 25 problems have been attempted.
   const sessionComplete = attempted >= 25;
@@ -73,7 +77,6 @@ function App() {
       contest: selectedContest,
     };
 
-    // Use the ref for up-to-date usedProblemIds
     if (usedProblemIdsRef.current.length > 0) {
       params.exclude = usedProblemIdsRef.current.join(",");
     }
@@ -87,7 +90,6 @@ function App() {
       setProblem(response.data);
       // Add the new problem's ID to both state and the ref.
       setUsedProblemIds(prev => [...prev, response.data.problem_id]);
-      // Also update the ref immediately.
       usedProblemIdsRef.current.push(response.data.problem_id);
       // Record start time.
       setProblemStartTime(Date.now());
@@ -103,7 +105,6 @@ function App() {
 
   // ---------------------- useEffect: Initial Fetch ----------------------
   useEffect(() => {
-    // Fetch a problem on mount (if session isn't complete)
     if (!sessionComplete) {
       fetchProblem();
     }
@@ -125,12 +126,35 @@ function App() {
     }
   }, [problem, convertLatexDelimiters]);
 
+  // ---------------------- Fetch Adaptive Details for Incorrect Problems ----------------------
+  useEffect(() => {
+    if (sessionComplete && incorrectProblems.length > 0) {
+      // Fetch details for each incorrect problem if not already fetched.
+      incorrectProblems.forEach((p) => {
+        if (!incorrectDetails[p.problem_id]) {
+          axios.get("http://127.0.0.1:5001/get_adaptive_details", {
+            params: { problem_id: p.problem_id },
+          })
+          .then((res) => {
+            setIncorrectDetails(prev => ({
+              ...prev,
+              [p.problem_id]: res.data,
+            }));
+          })
+          .catch((err) => {
+            console.error("Error fetching adaptive details for problem", p.problem_id, err);
+          });
+        }
+      });
+    }
+  }, [sessionComplete, incorrectProblems, incorrectDetails]);
+
   // ---------------------- Handle Choice Click ----------------------
   const handleChoiceClick = useCallback(
     (choice) => {
       if (!problem || !problem.answer_key || !problemStartTime) return;
 
-      // Extract first letter (e.g., "A" from "A) Option text")
+      // Extract the letter (e.g., "A" from "A) Option text")
       const match = choice.trim().match(/^([A-Z])\)?/);
       const selectedLetter = match ? match[1] : choice.trim().toUpperCase();
       const correctAnswer = problem.answer_key.trim().toUpperCase();
@@ -150,6 +174,8 @@ function App() {
       } else {
         incorrectAudio.play();
         setFeedbackImage(incorrectImage);
+        // Document the problem as incorrect for later review.
+        setIncorrectProblems(prev => [...prev, problem]);
       }
       setIsCorrect(answerIsCorrect);
 
@@ -165,6 +191,61 @@ function App() {
 
   // ---------------------- Format cumulative time ----------------------
   const cumulativeTimeSeconds = (cumulativeTime / 1000).toFixed(2);
+
+  // ---------------------- Render Review Panel After Session Completion ----------------------
+  const renderReviewPanel = () => {
+    return (
+      <div className="review-panel">
+        <h2>Review Incorrect Problems</h2>
+        {incorrectProblems.length === 0 ? (
+          <p>No incorrect problems! Great job!</p>
+        ) : (
+          incorrectProblems.map((p, index) => {
+            const details = incorrectDetails[p.problem_id];
+            return (
+              <div key={p.problem_id || index} className="review-item">
+                <h3>
+                  {p.year}, {p.contest}, Problem {p.problem_number}
+                </h3>
+                <div className="markdown-content">
+                  <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                    {convertLatexDelimiters(p.problem_statement)}
+                  </ReactMarkdown>
+                </div>
+                {details ? (
+                  <>
+                    <div className="solution-section">
+                      <h4>Detailed Solution</h4>
+                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                        {details.detailed_solution}
+                      </ReactMarkdown>
+                    </div>
+                    <div className="similar-questions-section">
+                      <h4>Similar Problems</h4>
+                      {details.similar_questions ? (
+                        Object.entries(details.similar_questions).map(([diff, q]) => (
+                          <div key={diff}>
+                            <strong>{diff.charAt(0).toUpperCase() + diff.slice(1)}:</strong>
+                            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                              {q}
+                            </ReactMarkdown>
+                          </div>
+                        ))
+                      ) : (
+                        <p>No similar problems available.</p>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <p>Loading adaptive details...</p>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="app-container">
@@ -190,6 +271,8 @@ function App() {
                 setScore(0);
                 setCumulativeTime(0);
                 setProblem(null);
+                setIncorrectProblems([]);
+                setIncorrectDetails({});
               }}
             >
               <option value="2022">2022</option>
@@ -209,6 +292,8 @@ function App() {
                 setScore(0);
                 setCumulativeTime(0);
                 setProblem(null);
+                setIncorrectProblems([]);
+                setIncorrectDetails({});
               }}
             >
               <option value="AMC 10A">AMC 10A</option>
@@ -224,6 +309,8 @@ function App() {
               setScore(0);
               setCumulativeTime(0);
               setProblem(null);
+              setIncorrectProblems([]);
+              setIncorrectDetails({});
               fetchProblem();
             }}
             className="filter-btn"
@@ -239,6 +326,7 @@ function App() {
               <h2>Practice Complete!</h2>
               <p>Your final score is {score} out of {attempted}.</p>
               <p>Total time: {cumulativeTimeSeconds} seconds.</p>
+              {renderReviewPanel()}
             </div>
           ) : (
             problem && !loading && (
