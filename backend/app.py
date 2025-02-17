@@ -2,29 +2,50 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from pymongo import MongoClient
 import random
+from bson.objectid import ObjectId
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
-# Connect to MongoDB
+# Connect to MongoDB using your actual database
 mongo_client = MongoClient("mongodb://localhost:27017")
 db = mongo_client["amc10_manual"]
 problems_collection = db["problems_with_answer_keys"]
-adaptive_collection = db["adaptive_learning"]  # Stores answer key, solution, and similar questions
+adaptive_collection = db["adaptive_learning"]   # Stores answer key, solution, and similar questions
 
 @app.route("/", methods=["GET"])
 def get_problem():
-    # Using hard-coded filters for 2022 AMC 10A; update if needed.
-    docs = list(problems_collection.find({"year": 2022, "contest": "AMC 10A"}))
+    # Retrieve dynamic filters from query parameters
+    year = request.args.get("year")
+    contest = request.args.get("contest")
+    query = {}
+    if year:
+        try:
+            query["year"] = int(year)
+        except ValueError:
+            query["year"] = year
+    if contest:
+        query["contest"] = contest
+
+    # Process the "exclude" parameter to avoid repeating problems.
+    exclude_param = request.args.get("exclude", "")
+    exclude_ids = []
+    if exclude_param:
+        try:
+            exclude_ids = [ObjectId(id_str) for id_str in exclude_param.split(",") if id_str]
+        except Exception as e:
+            print("Error processing exclude list:", e)
+    if exclude_ids:
+        query["_id"] = {"$nin": exclude_ids}
+
+    docs = list(problems_collection.find(query))
     if not docs:
-        return jsonify({"error": "No problems found for 2022 AMC 10A"}), 404
+        return jsonify({"error": "No more problems available matching the filters", "query": query}), 404
 
     problem = random.choice(docs)
 
-    # Retrieve answer_choices from the document.
+    # Process answer_choices; if not a list, attempt conversion.
     answer_choices = problem.get("answer_choices", [])
-    
-    # If answer_choices is not a list, try to convert it (assuming it might be a dict).
     if not isinstance(answer_choices, list):
         try:
             answer_choices = [f"{label}) {text}" for label, text in answer_choices.items()]
@@ -33,15 +54,15 @@ def get_problem():
             answer_choices = []
 
     problem_data = {
+        "problem_id": str(problem.get("_id")),
         "year": problem.get("year"),
         "contest": problem.get("contest"),
         "problem_number": problem.get("problem_number"),
         "problem_statement": problem.get("problem_statement"),
         "answer_choices": answer_choices,
-        "answer_key": problem.get("answer_key")  # Added answer_key for checking the answer in the frontend.
+        "answer_key": problem.get("answer_key")
     }
 
-    # Include image data if available
     if "image" in problem and problem["image"]:
         problem_data["image"] = problem["image"]
 
@@ -67,7 +88,6 @@ def get_solution():
     if not problem:
         return jsonify({"error": "Problem not found"}), 404
 
-    # Combine explanation + solutions into one text block
     explanation = problem.get("explanation", "")
     solutions_list = problem.get("solutions", [])
     solutions_text = "\n".join(solutions_list)
@@ -76,7 +96,6 @@ def get_solution():
     if solutions_text:
         solution_text += "\n\n" + solutions_text
 
-    # Combine followUpQuestions into a single block of text
     followup_questions = problem.get("followUpQuestions", [])
     followup_text = ""
     for fq in followup_questions:
