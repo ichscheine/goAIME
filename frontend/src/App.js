@@ -16,7 +16,7 @@ import 'katex/dist/katex.min.css';
 function App() {
   // ---------------------- State Variables ----------------------
   const [problem, setProblem] = useState(null);
-  const [loading, setLoading] = useState(false); // start as false so our useEffect triggers fetch on mount
+  const [loading, setLoading] = useState(false); // trigger fetch on mount
   const [error, setError] = useState(null);
   const [score, setScore] = useState(0);
   const [attempted, setAttempted] = useState(0);
@@ -54,8 +54,6 @@ function App() {
 
   // Track incorrectly answered problems for review.
   const [incorrectProblems, setIncorrectProblems] = useState([]);
-  // Map to store fetched adaptive details for each incorrect problem (keyed by problem_id)
-  const [incorrectDetails, setIncorrectDetails] = useState({});
 
   // Session is complete when 25 problems have been attempted.
   const sessionComplete = attempted >= 25;
@@ -126,29 +124,6 @@ function App() {
     }
   }, [problem, convertLatexDelimiters]);
 
-  // ---------------------- Fetch Adaptive Details for Incorrect Problems ----------------------
-  useEffect(() => {
-    if (sessionComplete && incorrectProblems.length > 0) {
-      // Fetch details for each incorrect problem if not already fetched.
-      incorrectProblems.forEach((p) => {
-        if (!incorrectDetails[p.problem_id]) {
-          axios.get("http://127.0.0.1:5001/get_adaptive_details", {
-            params: { problem_id: p.problem_id },
-          })
-          .then((res) => {
-            setIncorrectDetails(prev => ({
-              ...prev,
-              [p.problem_id]: res.data,
-            }));
-          })
-          .catch((err) => {
-            console.error("Error fetching adaptive details for problem", p.problem_id, err);
-          });
-        }
-      });
-    }
-  }, [sessionComplete, incorrectProblems, incorrectDetails]);
-
   // ---------------------- Handle Choice Click ----------------------
   const handleChoiceClick = useCallback(
     (choice) => {
@@ -200,48 +175,39 @@ function App() {
         {incorrectProblems.length === 0 ? (
           <p>No incorrect problems! Great job!</p>
         ) : (
-          incorrectProblems.map((p, index) => {
-            const details = incorrectDetails[p.problem_id];
-            return (
-              <div key={p.problem_id || index} className="review-item">
-                <h3>
-                  {p.year}, {p.contest}, Problem {p.problem_number}
-                </h3>
-                <div className="markdown-content">
-                  <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                    {convertLatexDelimiters(p.problem_statement)}
-                  </ReactMarkdown>
-                </div>
-                {details ? (
-                  <>
-                    <div className="solution-section">
-                      <h4>Detailed Solution</h4>
+          incorrectProblems.map((p, index) => (
+            <div key={p.problem_id || index} className="review-item">
+              <h3>
+                {p.year}, {p.contest}, Problem {p.problem_number}
+              </h3>
+              <div className="markdown-content">
+                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                  {convertLatexDelimiters(p.problem_statement)}
+                </ReactMarkdown>
+              </div>
+              <div className="solution-section">
+                <h4>Detailed Solution</h4>
+                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                  {p.detailed_solution || "Solution not available."}
+                </ReactMarkdown>
+              </div>
+              <div className="similar-questions-section">
+                <h4>Similar Problems</h4>
+                {p.similar_questions ? (
+                  Object.entries(p.similar_questions).map(([diff, q]) => (
+                    <div key={diff}>
+                      <strong>{diff.charAt(0).toUpperCase() + diff.slice(1)}:</strong>
                       <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                        {details.detailed_solution}
+                        {q}
                       </ReactMarkdown>
                     </div>
-                    <div className="similar-questions-section">
-                      <h4>Similar Problems</h4>
-                      {details.similar_questions ? (
-                        Object.entries(details.similar_questions).map(([diff, q]) => (
-                          <div key={diff}>
-                            <strong>{diff.charAt(0).toUpperCase() + diff.slice(1)}:</strong>
-                            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                              {q}
-                            </ReactMarkdown>
-                          </div>
-                        ))
-                      ) : (
-                        <p>No similar problems available.</p>
-                      )}
-                    </div>
-                  </>
+                  ))
                 ) : (
-                  <p>Loading adaptive details...</p>
+                  <p>No similar problems available.</p>
                 )}
               </div>
-            );
-          })
+            </div>
+          ))
         )}
       </div>
     );
@@ -272,7 +238,6 @@ function App() {
                 setCumulativeTime(0);
                 setProblem(null);
                 setIncorrectProblems([]);
-                setIncorrectDetails({});
               }}
             >
               <option value="2022">2022</option>
@@ -293,7 +258,6 @@ function App() {
                 setCumulativeTime(0);
                 setProblem(null);
                 setIncorrectProblems([]);
-                setIncorrectDetails({});
               }}
             >
               <option value="AMC 10A">AMC 10A</option>
@@ -310,7 +274,6 @@ function App() {
               setCumulativeTime(0);
               setProblem(null);
               setIncorrectProblems([]);
-              setIncorrectDetails({});
               fetchProblem();
             }}
             className="filter-btn"
