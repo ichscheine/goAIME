@@ -182,7 +182,7 @@ function App() {
               </h3>
               <div className="markdown-content">
                 <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                  {convertLatexDelimiters(p.problem_statement)}
+                  {convertLatexDelimiters(p.problem_statement) + "\n\n" + convertLatexDelimiters(p.detailed_solution || "Solution not available.")}
                 </ReactMarkdown>
               </div>
               <div className="solution-section">
