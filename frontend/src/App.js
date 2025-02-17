@@ -128,18 +128,18 @@ function App() {
   const handleChoiceClick = useCallback(
     (choice) => {
       if (!problem || !problem.answer_key || !problemStartTime) return;
-
+  
       // Extract the letter (e.g., "A" from "A) Option text")
       const match = choice.trim().match(/^([A-Z])\)?/);
       const selectedLetter = match ? match[1] : choice.trim().toUpperCase();
       const correctAnswer = problem.answer_key.trim().toUpperCase();
       const answerIsCorrect = selectedLetter === correctAnswer;
-
+  
       // Calculate time spent.
       const timeSpent = Date.now() - problemStartTime;
       setCumulativeTime(prev => prev + timeSpent);
       console.log(`Time on this problem: ${timeSpent}ms`);
-
+  
       // Update score and attempted count.
       setAttempted(prev => prev + 1);
       if (answerIsCorrect) {
@@ -149,70 +149,76 @@ function App() {
       } else {
         incorrectAudio.play();
         setFeedbackImage(incorrectImage);
-        // Document the problem as incorrect for later review.
-        setIncorrectProblems(prev => [...prev, problem]);
+        // Only add the problem if it hasn't been added already.
+        setIncorrectProblems(prev => {
+          if (!prev.find(p => p.problem_id === problem.problem_id)) {
+            return [...prev, problem];
+          }
+          return prev;
+        });
       }
       setIsCorrect(answerIsCorrect);
-
+  
       // After a delay, if session is not complete, fetch next problem.
       setTimeout(() => {
         if (attempted + 1 < 25) {
           fetchProblem();
         }
-      }, 1500);
+      }, 1000);
     },
     [problem, problemStartTime, correctAudio, incorrectAudio, fetchProblem, attempted]
   );
+  
 
   // ---------------------- Format cumulative time ----------------------
   const cumulativeTimeSeconds = (cumulativeTime / 1000).toFixed(2);
 
-  // ---------------------- Render Review Panel After Session Completion ----------------------
-  const renderReviewPanel = () => {
-    return (
-      <div className="review-panel">
-        <h2>Review Incorrect Problems</h2>
-        {incorrectProblems.length === 0 ? (
-          <p>No incorrect problems! Great job!</p>
-        ) : (
-          incorrectProblems.map((p, index) => (
-            <div key={p.problem_id || index} className="review-item">
-              <h3>
-                {p.year}, {p.contest}, Problem {p.problem_number}
-              </h3>
-              <div className="markdown-content">
-                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                  {convertLatexDelimiters(p.problem_statement) + "\n\n" + convertLatexDelimiters(p.detailed_solution || "Solution not available.")}
-                </ReactMarkdown>
-              </div>
-              <div className="solution-section">
-                <h4>Detailed Solution</h4>
-                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                  {p.detailed_solution || "Solution not available."}
-                </ReactMarkdown>
-              </div>
-              <div className="similar-questions-section">
-                <h4>Similar Problems</h4>
-                {p.similar_questions ? (
-                  Object.entries(p.similar_questions).map(([diff, q]) => (
-                    <div key={diff}>
-                      <strong>{diff.charAt(0).toUpperCase() + diff.slice(1)}:</strong>
-                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                        {q}
-                      </ReactMarkdown>
-                    </div>
-                  ))
-                ) : (
-                  <p>No similar problems available.</p>
-                )}
-              </div>
+// ---------------------- Render Review Panel After Session Completion ----------------------
+const renderReviewPanel = () => {
+  return (
+    <div className="review-panel">
+      <h2>Review Incorrect Problems</h2>
+      {incorrectProblems.length === 0 ? (
+        <p>No incorrect problems! Great job!</p>
+      ) : (
+        incorrectProblems.map((p, index) => (
+          <div key={p.problem_id || index} className="review-item">
+            <h3>
+              {p.year}, {p.contest}, Problem {p.problem_number}
+            </h3>
+            <div className="markdown-content">
+              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                {convertLatexDelimiters(p.problem_statement)}
+              </ReactMarkdown>
             </div>
-          ))
-        )}
-      </div>
-    );
-  };
-
+            <div className="solution-section">
+              <h4>Detailed Solution</h4>
+              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                {convertLatexDelimiters(p.detailed_solution || "Solution not available.")}
+              </ReactMarkdown>
+            </div>
+            <div className="similar-questions-section">
+              <h4>Similar Problems</h4>
+              {p.similar_questions ? (
+                ["easy", "medium", "hard"].map((key) => (
+                  <div key={key}>
+                    <strong>{key.charAt(0).toUpperCase() + key.slice(1)}:</strong>
+                    <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                      {convertLatexDelimiters(p.similar_questions[key])}
+                    </ReactMarkdown>
+                  </div>
+                ))
+              ) : (
+                <p>No similar problems available.</p>
+              )}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+};
+// ---------------------- Render App Component ----------------------
   return (
     <div className="app-container">
       <header className="app-header">
