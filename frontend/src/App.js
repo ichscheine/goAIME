@@ -28,7 +28,7 @@ function App() {
   const [cumulativeTime, setCumulativeTime] = useState(0); // in ms
 
   // Dynamic filters
-  const [selectedYear, setSelectedYear] = useState('2022');
+  const [selectedYear, setSelectedYear] = useState(2022);
   const [selectedContest, setSelectedContest] = useState('AMC 10A');
 
   // Track used problem IDs to avoid repetition
@@ -169,56 +169,56 @@ function App() {
     [problem, problemStartTime, correctAudio, incorrectAudio, fetchProblem, attempted]
   );
   
-
   // ---------------------- Format cumulative time ----------------------
   const cumulativeTimeSeconds = (cumulativeTime / 1000).toFixed(2);
 
-// ---------------------- Render Review Panel After Session Completion ----------------------
-const renderReviewPanel = () => {
-  return (
-    <div className="review-panel">
-      <h2>Review Incorrect Problems</h2>
-      {incorrectProblems.length === 0 ? (
-        <p>No incorrect problems! Great job!</p>
-      ) : (
-        incorrectProblems.map((p, index) => (
-          <div key={p.problem_id || index} className="review-item">
-            <h3>
-              {p.year}, {p.contest}, Problem {p.problem_number}
-            </h3>
-            <div className="markdown-content">
-              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                {convertLatexDelimiters(p.problem_statement)}
-              </ReactMarkdown>
+  // ---------------------- Render Review Panel After Session Completion ----------------------
+  const renderReviewPanel = () => {
+    return (
+      <div className="review-panel">
+        <h2>Review Incorrect Problems</h2>
+        {incorrectProblems.length === 0 ? (
+          <p>No incorrect problems! Great job!</p>
+        ) : (
+          incorrectProblems.map((p, index) => (
+            <div key={p.problem_id || index} className="review-item">
+              <h3>
+                {p.year}, {p.contest}, Problem {p.problem_number}
+              </h3>
+              <div className="markdown-content">
+                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                  {convertLatexDelimiters(p.problem_statement)}
+                </ReactMarkdown>
+              </div>
+              <div className="solution-section">
+                <h4>Detailed Solution</h4>
+                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                  {convertLatexDelimiters(p.detailed_solution || "Solution not available.")}
+                </ReactMarkdown>
+              </div>
+              <div className="similar-questions-section">
+                <h4>Similar Problems</h4>
+                {p.similar_questions ? (
+                  ["easy", "medium", "hard"].map((key) => (
+                    <div key={key}>
+                      <strong>{key.charAt(0).toUpperCase() + key.slice(1)}:</strong>
+                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                        {convertLatexDelimiters(p.similar_questions[key])}
+                      </ReactMarkdown>
+                    </div>
+                  ))
+                ) : (
+                  <p>No similar problems available.</p>
+                )}
+              </div>
             </div>
-            <div className="solution-section">
-              <h4>Detailed Solution</h4>
-              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                {convertLatexDelimiters(p.detailed_solution || "Solution not available.")}
-              </ReactMarkdown>
-            </div>
-            <div className="similar-questions-section">
-              <h4>Similar Problems</h4>
-              {p.similar_questions ? (
-                ["easy", "medium", "hard"].map((key) => (
-                  <div key={key}>
-                    <strong>{key.charAt(0).toUpperCase() + key.slice(1)}:</strong>
-                    <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                      {convertLatexDelimiters(p.similar_questions[key])}
-                    </ReactMarkdown>
-                  </div>
-                ))
-              ) : (
-                <p>No similar problems available.</p>
-              )}
-            </div>
-          </div>
-        ))
-      )}
-    </div>
-  );
-};
-// ---------------------- Render App Component ----------------------
+          ))
+        )}
+      </div>
+    );
+  };
+
+  // ---------------------- Render App Component ----------------------
   return (
     <div className="app-container">
       <header className="app-header">
@@ -307,12 +307,9 @@ const renderReviewPanel = () => {
                       {problemStatementWithMeta}
                     </ReactMarkdown>
                   </div>
-                  {problem.image && problem.image.mimeType && problem.image.base64 && (
+                  {problem.image && typeof problem.image === 'string' && (
                     <div className="image-container">
-                      <img
-                        src={`data:${problem.image.mimeType};base64,${problem.image.base64}`}
-                        alt="Problem Diagram"
-                      />
+                      <img src={problem.image} alt="Problem Diagram" />
                     </div>
                   )}
                 </section>

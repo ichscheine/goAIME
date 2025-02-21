@@ -11,7 +11,7 @@ if not openai_api_key:
     raise ValueError("OPENAI_API_KEY environment variable not set.")
 
 client = OpenAI(api_key=openai_api_key)
-MODEL_NAME = "gpt-4-turbo-preview"
+MODEL_NAME = "gpt-4o-mini"
 MAX_RETRIES = 3
 REQUEST_DELAY = 1  # Seconds between API requests
 
@@ -47,19 +47,22 @@ class RLAgent:
         self.q_table[(state, action)] = new_q
 
 def generate_detailed_solution(problem_text):
-    """Generate complete step-by-step solution with verification"""
+    """
+    Generate a complete detailed solution. The prompt instructs the model to include
+    a final marker "Final Answer:" at the end. We check for that marker to verify completeness.
+    """
     system_msg = {
         "role": "system",
-        "content": "You are an expert AMC 10 tutor. Provide detailed, complete solutions with clear reasoning and final answer."
+        "content": "You are an expert AMC 10 tutor. Provide detailed, complete solutions with clear reasoning and a final answer. End your output with 'Final Answer:' followed by the answer."
     }
-    
-    messages = [
-        system_msg,
-        {"role": "user", "content": f"Solve this problem comprehensively:\n\n{problem_text}"}
-    ]
-    
-    full_solution = ""
+    prompt = (
+        f"Solve this AMC 10 problem comprehensively and end with 'Final Answer:'.\n\n"
+        f"Problem:\n{problem_text}\n\n"
+        "Solution:"
+    )
+    messages = [system_msg, {"role": "user", "content": prompt}]
     attempts = 0
+    full_solution = ""
     
     while attempts < MAX_RETRIES:
         try:
@@ -67,55 +70,41 @@ def generate_detailed_solution(problem_text):
                 model=MODEL_NAME,
                 messages=messages,
                 max_tokens=3000,
-                temperature=0.5
+                temperature=1
             )
             chunk = response.choices[0].message.content.strip()
             full_solution += chunk + "\n"
             
-            if response.choices[0].finish_reason == "stop":
-                # Verify solution completeness
-                verify_msg = [
-                    system_msg,
-                    {"role": "user", "content": f"Does this solution completely answer the problem? If not, explain what's missing:\n\n{full_solution}"}
-                ]
-                verify_response = client.chat.completions.create(
-                    model=MODEL_NAME,
-                    messages=verify_msg,
-                    max_tokens=500,
-                    temperature=0.2
-                )
-                
-                if "incomplete" in verify_response.choices[0].message.content.lower():
-                    messages.append({"role": "assistant", "content": chunk})
-                    messages.append({"role": "user", "content": "Please complete the missing parts."})
-                    attempts += 1
-                else:
-                    break
+            # Check if the final marker is present
+            if "Final Answer:" in full_solution:
+                break
             else:
                 messages.append({"role": "assistant", "content": chunk})
-                messages.append({"role": "user", "content": "Continue the solution from where you left off."})
+                messages.append({"role": "user", "content": "Your previous answer was incomplete. Please continue and ensure you end with 'Final Answer:'."})
                 attempts += 1
-                
-            time.sleep(REQUEST_DELAY)
-            
+                time.sleep(REQUEST_DELAY)
         except OpenAIError as e:
-            print(f"OpenAI API Error: {e}")
+            print(f"OpenAI API Error in generate_detailed_solution: {e}")
             break
-    
     return full_solution.strip()
 
 def generate_similar_question(problem_text, difficulty):
-    """Generate structured similar problem with validation"""
-    prompt = f"""Create a {difficulty} variation of this AMC10 problem. Follow exactly:
-    
-1. Problem statement (with ASCII diagram if needed)
-2. Step-by-step solution
-3. Final answer boxed as \\boxed{{answer}}
+    """
+    Generate a similar AMC10 problem variation with strict formatting.
+    The prompt instructs to include required sections and end with a final answer marker.
+    """
+    prompt = f"""Create a {difficulty} variation of the following AMC 10 problem.
+Include:
+1. **Problem**: A new problem statement (include ASCII diagram if needed).
+2. **Solution**: A step-by-step solution.
+3. **Answer**: Final answer in the format \\boxed{{...}}.
+End your output with the text "Final Answer:" followed by the boxed answer.
 
 Original Problem:
 {problem_text}
 
-Format strictly as:
+Format exactly as:
+
 **Problem**
 [new problem]
 
@@ -123,15 +112,15 @@ Format strictly as:
 [detailed steps]
 
 **Answer**
-\\boxed{{answer}}"""
+\\boxed{{...}}
 
+Final Answer:"""
     messages = [
-        {"role": "system", "content": "Expert AMC10 problem creator using strict formatting"},
+        {"role": "system", "content": "You are an expert AMC 10 tutor who creates detailed practice problems using strict formatting."},
         {"role": "user", "content": prompt}
     ]
-    
-    full_response = ""
     attempts = 0
+    full_response = ""
     
     while attempts < MAX_RETRIES:
         try:
@@ -139,29 +128,27 @@ Format strictly as:
                 model=MODEL_NAME,
                 messages=messages,
                 max_tokens=2000,
-                temperature=0.6
+                temperature=1
             )
             chunk = response.choices[0].message.content.strip()
             full_response += chunk + "\n"
-            
-            # Check for required sections
-            if all(section in full_response for section in ["**Problem**", "**Solution**", "**Answer**"]):
+            # Verify that all required sections exist and the final marker is present.
+            if all(section in full_response for section in ["**Problem**", "**Solution**", "**Answer**", "Final Answer:"]):
                 break
             else:
                 messages.append({"role": "assistant", "content": chunk})
-                messages.append({"role": "user", "content": "Missing required sections. Please include all: **Problem**, **Solution**, **Answer**"})
+                messages.append({"role": "user", "content": "Your response is missing some required sections or the final answer marker. Please provide the complete formatted response."})
                 attempts += 1
-                
-            time.sleep(REQUEST_DELAY)
-            
+                time.sleep(REQUEST_DELAY)
         except OpenAIError as e:
-            print(f"OpenAI API Error: {e}")
+            print(f"OpenAI API Error in generate_similar_question: {e}")
             break
-    
     return full_response.strip()
 
 def generate_similar_questions(problem_text):
-    """Generate questions with quality control"""
+    """
+    Generate similar questions for easy, medium, and hard difficulties.
+    """
     return {
         "easy": generate_similar_question(problem_text, "easy"),
         "medium": generate_similar_question(problem_text, "medium"),
@@ -169,7 +156,9 @@ def generate_similar_questions(problem_text):
     }
 
 def save_adaptive_data(original_problem, detailed_solution, similar_questions):
-    """Save enhanced data to MongoDB"""
+    """
+    Save the original problem data along with the generated adaptive fields.
+    """
     adaptive_doc = original_problem.copy()
     adaptive_doc.update({
         "detailed_solution": detailed_solution,
@@ -186,7 +175,9 @@ def save_adaptive_data(original_problem, detailed_solution, similar_questions):
         return None
 
 def pre_generate_adaptive_data(problem_doc):
-    """Orchestrate data generation with error handling"""
+    """
+    Orchestrate the generation of adaptive data for a given problem document.
+    """
     try:
         problem_text = problem_doc.get("problem_statement", "")
         if not problem_text:
@@ -202,12 +193,15 @@ def pre_generate_adaptive_data(problem_doc):
         return None
 
 def generate_adaptive_for_all():
-    """Batch processor with rate limiting"""
+    """
+    Generate adaptive learning data for every problem in the problems collection.
+    Skip any document that is missing required fields or already exists in the adaptive collection.
+    """
     count = 0
     total = problem_collection.count_documents({})
     
     for prob in problem_collection.find({}).sort([("year", 1), ("contest", 1)]):
-        # Skip existing entries
+        # Skip if already processed
         existing = adaptive_collection.find_one({
             "year": prob.get("year"),
             "contest": prob.get("contest"),
@@ -221,10 +215,9 @@ def generate_adaptive_for_all():
         if not all(prob.get(field) for field in required_fields):
             continue
             
-        # Process and rate limit
         if pre_generate_adaptive_data(prob):
             count += 1
-            time.sleep(REQUEST_DELAY * 2)  # Extra delay between problems
+            time.sleep(REQUEST_DELAY * 2)
             
     print(f"Completed processing. {count}/{total} new adaptive entries created.")
 
