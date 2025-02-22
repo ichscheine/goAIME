@@ -89,12 +89,10 @@ function App() {
     };
 
     if (mode === "contest") {
-      // Exclude used problem IDs
       if (usedProblemIdsRef.current.length > 0) {
         params.exclude = usedProblemIdsRef.current.join(",");
       }
     } else if (mode === "practice") {
-      // In practice mode, fetch by problem_number
       params.problem_number = currentIndex;
     }
 
@@ -105,7 +103,6 @@ function App() {
       });
       console.log("Received problem:", response.data);
       setProblem(response.data);
-
       if (mode === "contest") {
         setUsedProblemIds(prev => [...prev, response.data.problem_id]);
         usedProblemIdsRef.current.push(response.data.problem_id);
@@ -160,15 +157,12 @@ function App() {
 
       setAttempted(prev => prev + 1);
 
-      // Always update score if correct
       if (answerIsCorrect) {
         setScore(prev => prev + 1);
       }
 
       if (mode === "contest") {
-        // If user doesn't want immediate feedback, skip showing correct/incorrect
         if (showContestFeedback) {
-          // Provide immediate feedback
           if (answerIsCorrect) {
             correctAudio.play();
             setFeedbackImage(correctImage);
@@ -183,18 +177,13 @@ function App() {
             });
           }
           setIsCorrect(answerIsCorrect);
-
-          // If not finished, auto-fetch next problem after short delay
           if (attempted + 1 < 25) {
             setTimeout(() => {
               fetchProblem();
             }, 1000);
           }
         } else {
-          // showContestFeedback == false => skip immediate feedback
-          // user sees final results at the end
           if (!answerIsCorrect) {
-            // track that the problem was missed for post-contest review
             setIncorrectProblems(prev => {
               if (!prev.find(p => p.problem_id === problem.problem_id)) {
                 return [...prev, problem];
@@ -202,7 +191,6 @@ function App() {
               return prev;
             });
           }
-          // auto-fetch next problem after short delay
           if (attempted + 1 < 25) {
             setTimeout(() => {
               fetchProblem();
@@ -210,7 +198,6 @@ function App() {
           }
         }
       } else if (mode === "practice") {
-        // Provide immediate feedback
         if (answerIsCorrect) {
           correctAudio.play();
           setFeedbackImage(correctImage);
@@ -225,13 +212,10 @@ function App() {
           });
         }
         setIsCorrect(answerIsCorrect);
-        setAnswered(true); // do not auto-advance
+        setAnswered(true);
       }
     },
-    [
-      problem, problemStartTime, correctAudio, incorrectAudio,
-      fetchProblem, attempted, mode, showContestFeedback
-    ]
+    [problem, problemStartTime, correctAudio, incorrectAudio, fetchProblem, attempted, mode, showContestFeedback]
   );
 
   // ---------------------- Show/Hide Solution in Practice Mode ----------------------
@@ -251,10 +235,9 @@ function App() {
     fetchProblem();
   };
 
-  // ---------------------- Toggle immediate feedback in contest mode ----------------------
+  // ---------------------- Toggle immediate feedback in Contest Mode ----------------------
   const handleContestFeedbackToggle = (checked) => {
     setShowContestFeedback(checked);
-    // If the user is turning feedback OFF, hide current feedback
     if (!checked) {
       setIsCorrect(null);
       setFeedbackImage(null);
@@ -279,13 +262,13 @@ function App() {
               </h3>
               <div className="markdown-content">
                 <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                  {p.problem_statement}
+                  {convertLatexDelimiters(p.problem_statement)}
                 </ReactMarkdown>
               </div>
               <div className="solution-section">
                 <h4>Detailed Solution</h4>
                 <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                  {p.detailed_solution || "Solution not available."}
+                  {convertLatexDelimiters(p.detailed_solution || "Solution not available.")}
                 </ReactMarkdown>
               </div>
               <div className="similar-questions-section">
@@ -296,15 +279,15 @@ function App() {
                       <strong>{sq.difficulty.charAt(0).toUpperCase() + sq.difficulty.slice(1)}:</strong>
                       <p><em>Question:</em></p>
                       <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                        {sq.question}
+                        {convertLatexDelimiters(sq.question)}
                       </ReactMarkdown>
                       <p><em>Detailed Solution:</em></p>
                       <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                        {sq.detailed_solution}
+                        {convertLatexDelimiters(sq.detailed_solution)}
                       </ReactMarkdown>
                       <p><em>Final Answer:</em></p>
                       <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                        {sq.final_answer}
+                        {convertLatexDelimiters(sq.final_answer)}
                       </ReactMarkdown>
                     </div>
                   ))
@@ -372,7 +355,6 @@ function App() {
             </select>
           </label>
 
-          {/* If user chooses contest mode, show a checkbox to toggle immediate feedback */}
           {mode === "contest" && (
             <div style={{ marginTop: '1rem' }}>
               <label>
@@ -388,7 +370,6 @@ function App() {
 
           <button
             onClick={() => {
-              // Restart everything
               setUsedProblemIds([]);
               usedProblemIdsRef.current = [];
               setAttempted(0);
@@ -398,7 +379,6 @@ function App() {
               setIncorrectProblems([]);
               setIsCorrect(null);
               setFeedbackImage(null);
-
               if (mode === "practice") {
                 setCurrentIndex(1);
               }
@@ -411,7 +391,6 @@ function App() {
         </aside>
 
         <main className="content-panel">
-          {/* Mode Selection */}
           {mode === null ? (
             <div className="mode-selection-container">
               <h2 className="mode-selection-title">Select Mode</h2>
@@ -453,33 +432,20 @@ function App() {
                       )}
                     </section>
 
-                    {/* ANSWER SECTION */}
                     <section className="answer-section">
-                      {/* Heading + practice/contest options */}
                       <div className="answer-section-header">
                         <h2>Answer Choices</h2>
                         {mode === "practice" && (
                           <div className="practice-buttons-row">
                             <button
                               className="solution-button"
-                              onClick={() => {
-                                setShowSolution(prev => !prev);
-                                setIsCorrect(null);
-                                setFeedbackImage(null);
-                              }}
+                              onClick={handleShowSolution}
                             >
                               {showSolution ? "Hide Solution" : "Show Solution"}
                             </button>
                             <button
                               className="next-problem-button"
-                              onClick={() => {
-                                setCurrentIndex(prev => prev + 1);
-                                setShowSolution(false);
-                                setAnswered(false);
-                                setIsCorrect(null);
-                                setFeedbackImage(null);
-                                fetchProblem();
-                              }}
+                              onClick={handleNextProblem}
                               disabled={!answered}
                             >
                               Next Problem
@@ -506,7 +472,6 @@ function App() {
                       </div>
                     </section>
 
-                    {/* SHOW SOLUTION (if toggled in practice mode) */}
                     {showSolution && mode === "practice" && (
                       <div className="solution-section">
                         <h4>Detailed Solution</h4>
@@ -538,7 +503,6 @@ function App() {
                       </div>
                     )}
 
-                    {/* FEEDBACK SECTION (only if isCorrect != null) */}
                     {isCorrect !== null && (
                       <div className="feedback-section">
                         <p className={`result ${isCorrect ? 'correct' : 'incorrect'}`}>

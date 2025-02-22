@@ -38,38 +38,69 @@ body {
   display: flex;
 }
 
-/* Filter sidebar */
+/* Filter sidebar enhancements */
 .filter-sidebar {
   width: 220px;
   background-color: #ffffff;
   border-right: 1px solid #dee2e6;
   padding: 1rem;
+  /* optional: give it a subtle box shadow to stand out */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .filter-sidebar h3 {
   margin-top: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
 }
 
 .filter-sidebar label {
   display: block;
-  margin-bottom: 1rem;
-  font-weight: 600;
+  margin-bottom: 0.75rem; /* reduce spacing for a tighter layout */
+  font-weight: 500;
+  color: #555; /* subtle text color */
+}
+
+.filter-sidebar select {
+  display: block;
+  width: 100%;
+  padding: 0.4rem;
+  font-size: 0.9rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  background-color: #fff;
+  margin-top: 0.3rem;
+  transition: border-color 0.2s ease;
+}
+
+.filter-sidebar select:focus {
+  outline: none;
+  border-color: #80bdff;
 }
 
 .filter-btn {
-  background-color: #0069d9;
+  background-color: #007bff;
   color: #fff;
   border: none;
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1rem;
   cursor: pointer;
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
   border-radius: 4px;
   font-size: 0.9rem;
   transition: background-color 0.2s ease;
+  width: 100%; /* full width button */
 }
 
 .filter-btn:hover {
   background-color: #0056b3;
+}
+
+/* Optional: add some margin to the bottom to separate the filter section from the main content on smaller screens */
+@media (max-width: 768px) {
+  .filter-sidebar {
+    margin-bottom: 1rem;
+  }
 }
 
 /* Content panel */
