@@ -10,7 +10,7 @@ CORS(app)  # Enable CORS for all routes
 # Connect to MongoDB using your actual database
 mongo_client = MongoClient("mongodb://localhost:27017")
 db = mongo_client["amc10"]
-adaptive_collection = db["s2_add_images"]
+adaptive_collection = db["s3_adaptive_learning_o3"]
 
 @app.route("/", methods=["GET"])
 def get_problem():

@@ -16,7 +16,7 @@ import 'katex/dist/katex.min.css';
 function App() {
   // ---------------------- State Variables ----------------------
   const [problem, setProblem] = useState(null);
-  const [loading, setLoading] = useState(false); // trigger fetch on mount
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [score, setScore] = useState(0);
   const [attempted, setAttempted] = useState(0);
@@ -61,24 +61,19 @@ function App() {
   // ---------------------- Fetch a Problem from Backend ----------------------
   const fetchProblem = useCallback(async () => {
     if (sessionComplete) return;
-
     setLoading(true);
     setError(null);
-
     if (cancelSourceRef.current) {
       cancelSourceRef.current.cancel();
     }
     cancelSourceRef.current = axios.CancelToken.source();
-
     const params = {
       year: selectedYear,
       contest: selectedContest,
     };
-
     if (usedProblemIdsRef.current.length > 0) {
       params.exclude = usedProblemIdsRef.current.join(",");
     }
-
     try {
       const response = await axios.get("http://127.0.0.1:5001/", {
         params,
@@ -128,19 +123,13 @@ function App() {
   const handleChoiceClick = useCallback(
     (choice) => {
       if (!problem || !problem.answer_key || !problemStartTime) return;
-  
-      // Extract the letter (e.g., "A" from "A) Option text")
       const match = choice.trim().match(/^([A-Z])\)?/);
       const selectedLetter = match ? match[1] : choice.trim().toUpperCase();
       const correctAnswer = problem.answer_key.trim().toUpperCase();
       const answerIsCorrect = selectedLetter === correctAnswer;
-  
-      // Calculate time spent.
       const timeSpent = Date.now() - problemStartTime;
       setCumulativeTime(prev => prev + timeSpent);
       console.log(`Time on this problem: ${timeSpent}ms`);
-  
-      // Update score and attempted count.
       setAttempted(prev => prev + 1);
       if (answerIsCorrect) {
         setScore(prev => prev + 1);
@@ -149,7 +138,6 @@ function App() {
       } else {
         incorrectAudio.play();
         setFeedbackImage(incorrectImage);
-        // Only add the problem if it hasn't been added already.
         setIncorrectProblems(prev => {
           if (!prev.find(p => p.problem_id === problem.problem_id)) {
             return [...prev, problem];
@@ -158,8 +146,6 @@ function App() {
         });
       }
       setIsCorrect(answerIsCorrect);
-  
-      // After a delay, if session is not complete, fetch next problem.
       setTimeout(() => {
         if (attempted + 1 < 25) {
           fetchProblem();
@@ -196,15 +182,27 @@ function App() {
                   {convertLatexDelimiters(p.detailed_solution || "Solution not available.")}
                 </ReactMarkdown>
               </div>
+              // In your renderReviewPanel function, replace the similar-questions block with:
               <div className="similar-questions-section">
                 <h4>Similar Problems</h4>
-                {p.similar_questions ? (
-                  ["easy", "medium", "hard"].map((key) => (
-                    <div key={key}>
-                      <strong>{key.charAt(0).toUpperCase() + key.slice(1)}:</strong>
-                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                        {convertLatexDelimiters(p.similar_questions[key])}
-                      </ReactMarkdown>
+                {p.similar_questions && Array.isArray(p.similar_questions) && p.similar_questions.length > 0 ? (
+                  p.similar_questions.map((sq, idx) => (
+                    <div key={idx} className="similar-problem">
+                      <strong>{sq.difficulty.charAt(0).toUpperCase() + sq.difficulty.slice(1)}:</strong>
+                      <div className="similar-problem-content">
+                        <p><em>Question:</em></p>
+                        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                          {convertLatexDelimiters(sq.question)}
+                        </ReactMarkdown>
+                        <p><em>Detailed Solution:</em></p>
+                        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                          {convertLatexDelimiters(sq.detailed_solution)}
+                        </ReactMarkdown>
+                        <p><em>Final Answer:</em></p>
+                        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                          {convertLatexDelimiters(sq.final_answer)}
+                        </ReactMarkdown>
+                      </div>
                     </div>
                   ))
                 ) : (
@@ -236,7 +234,6 @@ function App() {
               value={selectedYear}
               onChange={(e) => {
                 setSelectedYear(e.target.value);
-                // Reset session when filters change.
                 setUsedProblemIds([]);
                 usedProblemIdsRef.current = [];
                 setAttempted(0);
@@ -256,7 +253,6 @@ function App() {
               value={selectedContest}
               onChange={(e) => {
                 setSelectedContest(e.target.value);
-                // Reset session when filters change.
                 setUsedProblemIds([]);
                 usedProblemIdsRef.current = [];
                 setAttempted(0);
@@ -272,7 +268,6 @@ function App() {
           </label>
           <button
             onClick={() => {
-              // Restart session.
               setUsedProblemIds([]);
               usedProblemIdsRef.current = [];
               setAttempted(0);
