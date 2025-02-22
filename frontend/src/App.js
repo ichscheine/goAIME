@@ -14,24 +14,27 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 
 function App() {
-  // ---------------------- State Variables ----------------------
+  // ---------------------- Mode and State Variables ----------------------
+  const [mode, setMode] = useState(null); // "contest" or "practice"
   const [problem, setProblem] = useState(null);
+  const [currentIndex, setCurrentIndex] = useState(1); // For practice mode (sequential)
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [score, setScore] = useState(0);
   const [attempted, setAttempted] = useState(0);
   const [isCorrect, setIsCorrect] = useState(null);
   const [feedbackImage, setFeedbackImage] = useState(null);
+  const [showSolution, setShowSolution] = useState(false); // For practice mode
 
   // Time tracking
   const [problemStartTime, setProblemStartTime] = useState(null);
-  const [cumulativeTime, setCumulativeTime] = useState(0); // in ms
+  const [cumulativeTime, setCumulativeTime] = useState(0);
 
   // Dynamic filters
   const [selectedYear, setSelectedYear] = useState(2022);
   const [selectedContest, setSelectedContest] = useState('AMC 10A');
 
-  // Track used problem IDs to avoid repetition
+  // Track used problem IDs (for contest mode)
   const [usedProblemIds, setUsedProblemIds] = useState([]);
   const usedProblemIdsRef = useRef([]);
   useEffect(() => {
@@ -43,6 +46,7 @@ function App() {
   const correctAudio = useMemo(() => new Audio(correctSoundFile), []);
   const incorrectAudio = useMemo(() => new Audio(incorrectSoundFile), []);
 
+  // Convert \( \) to $ for math in ReactMarkdown
   const convertLatexDelimiters = useCallback((text) => {
     if (!text) return '';
     return text
@@ -52,10 +56,10 @@ function App() {
 
   const [problemStatementWithMeta, setProblemStatementWithMeta] = useState('');
 
-  // Track incorrectly answered problems for review.
+  // Track incorrectly answered problems for review
   const [incorrectProblems, setIncorrectProblems] = useState([]);
 
-  // Session is complete when 25 problems have been attempted.
+  // Session is complete when 25 problems have been attempted
   const sessionComplete = attempted >= 25;
 
   // ---------------------- Fetch a Problem from Backend ----------------------
@@ -67,13 +71,22 @@ function App() {
       cancelSourceRef.current.cancel();
     }
     cancelSourceRef.current = axios.CancelToken.source();
-    const params = {
+
+    let params = {
       year: selectedYear,
       contest: selectedContest,
     };
-    if (usedProblemIdsRef.current.length > 0) {
-      params.exclude = usedProblemIdsRef.current.join(",");
+
+    // If contest mode, exclude used problems
+    if (mode === "contest") {
+      if (usedProblemIdsRef.current.length > 0) {
+        params.exclude = usedProblemIdsRef.current.join(",");
+      }
+    } else if (mode === "practice") {
+      // Practice mode: fetch by problem_number
+      params.problem_number = currentIndex;
     }
+
     try {
       const response = await axios.get("http://127.0.0.1:5001/", {
         params,
@@ -81,10 +94,12 @@ function App() {
       });
       console.log("Received problem:", response.data);
       setProblem(response.data);
-      // Add the new problem's ID to both state and the ref.
-      setUsedProblemIds(prev => [...prev, response.data.problem_id]);
-      usedProblemIdsRef.current.push(response.data.problem_id);
-      // Record start time.
+
+      // In contest mode, track used IDs to avoid repeats
+      if (mode === "contest") {
+        setUsedProblemIds(prev => [...prev, response.data.problem_id]);
+        usedProblemIdsRef.current.push(response.data.problem_id);
+      }
       setProblemStartTime(Date.now());
     } catch (err) {
       if (!axios.isCancel(err)) {
@@ -94,7 +109,7 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, [selectedYear, selectedContest, sessionComplete]);
+  }, [selectedYear, selectedContest, sessionComplete, mode, currentIndex]);
 
   // ---------------------- useEffect: Initial Fetch ----------------------
   useEffect(() => {
@@ -127,10 +142,13 @@ function App() {
       const selectedLetter = match ? match[1] : choice.trim().toUpperCase();
       const correctAnswer = problem.answer_key.trim().toUpperCase();
       const answerIsCorrect = selectedLetter === correctAnswer;
+
       const timeSpent = Date.now() - problemStartTime;
       setCumulativeTime(prev => prev + timeSpent);
       console.log(`Time on this problem: ${timeSpent}ms`);
+
       setAttempted(prev => prev + 1);
+
       if (answerIsCorrect) {
         setScore(prev => prev + 1);
         correctAudio.play();
@@ -146,15 +164,22 @@ function App() {
         });
       }
       setIsCorrect(answerIsCorrect);
+
       setTimeout(() => {
-        if (attempted + 1 < 25) {
+        if (mode === "practice") {
+          // In practice mode, go to the next problem number
+          setCurrentIndex(prev => prev + 1);
+          setShowSolution(false);
+          fetchProblem();
+        } else if (attempted + 1 < 25) {
+          // In contest mode, just fetch next random problem
           fetchProblem();
         }
       }, 1000);
     },
-    [problem, problemStartTime, correctAudio, incorrectAudio, fetchProblem, attempted]
+    [problem, problemStartTime, correctAudio, incorrectAudio, fetchProblem, attempted, mode]
   );
-  
+
   // ---------------------- Format cumulative time ----------------------
   const cumulativeTimeSeconds = (cumulativeTime / 1000).toFixed(2);
 
@@ -182,27 +207,24 @@ function App() {
                   {convertLatexDelimiters(p.detailed_solution || "Solution not available.")}
                 </ReactMarkdown>
               </div>
-              // In your renderReviewPanel function, replace the similar-questions block with:
               <div className="similar-questions-section">
                 <h4>Similar Problems</h4>
                 {p.similar_questions && Array.isArray(p.similar_questions) && p.similar_questions.length > 0 ? (
                   p.similar_questions.map((sq, idx) => (
                     <div key={idx} className="similar-problem">
                       <strong>{sq.difficulty.charAt(0).toUpperCase() + sq.difficulty.slice(1)}:</strong>
-                      <div className="similar-problem-content">
-                        <p><em>Question:</em></p>
-                        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                          {convertLatexDelimiters(sq.question)}
-                        </ReactMarkdown>
-                        <p><em>Detailed Solution:</em></p>
-                        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                          {convertLatexDelimiters(sq.detailed_solution)}
-                        </ReactMarkdown>
-                        <p><em>Final Answer:</em></p>
-                        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                          {convertLatexDelimiters(sq.final_answer)}
-                        </ReactMarkdown>
-                      </div>
+                      <p><em>Question:</em></p>
+                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                        {convertLatexDelimiters(sq.question)}
+                      </ReactMarkdown>
+                      <p><em>Detailed Solution:</em></p>
+                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                        {convertLatexDelimiters(sq.detailed_solution)}
+                      </ReactMarkdown>
+                      <p><em>Final Answer:</em></p>
+                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                        {convertLatexDelimiters(sq.final_answer)}
+                      </ReactMarkdown>
                     </div>
                   ))
                 ) : (
@@ -216,7 +238,7 @@ function App() {
     );
   };
 
-  // ---------------------- Render App Component ----------------------
+  // ---------------------- Main Render ----------------------
   return (
     <div className="app-container">
       <header className="app-header">
@@ -275,6 +297,9 @@ function App() {
               setCumulativeTime(0);
               setProblem(null);
               setIncorrectProblems([]);
+              if (mode === "practice") {
+                setCurrentIndex(1);
+              }
               fetchProblem();
             }}
             className="filter-btn"
@@ -283,67 +308,119 @@ function App() {
           </button>
         </aside>
         <main className="content-panel">
-          {loading && <p className="info-message">Loading...</p>}
-          {error && <p className="error-message">{error}</p>}
-          {sessionComplete ? (
-            <div className="completion-message">
-              <h2>Practice Complete!</h2>
-              <p>Your final score is {score} out of {attempted}.</p>
-              <p>Total time: {cumulativeTimeSeconds} seconds.</p>
-              {renderReviewPanel()}
+          {/* Mode Selection */}
+          {mode === null ? (
+            <div className="mode-selection-container">
+              <h2 className="mode-selection-title">Select Mode</h2>
+              <div className="mode-buttons">
+                <button className="mode-button" onClick={() => setMode("contest")}>
+                  Contest Mode
+                </button>
+                <button className="mode-button" onClick={() => setMode("practice")}>
+                  Practice Mode
+                </button>
+              </div>
             </div>
           ) : (
-            problem && !loading && (
-              <>
-                <section className="question-section">
-                  <h2>Problem</h2>
-                  <div className="markdown-content">
-                    <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                      {problemStatementWithMeta}
-                    </ReactMarkdown>
-                  </div>
-                  {problem.image && typeof problem.image === 'string' && (
-                    <div className="image-container">
-                      <img src={problem.image} alt="Problem Diagram" />
-                    </div>
-                  )}
-                </section>
-                <section className="answer-section">
-                  <h2>Answer Choices</h2>
-                  <div className="answer-choices">
-                    {problem.answer_choices && Array.isArray(problem.answer_choices)
-                      ? problem.answer_choices.map((choice, index) => (
-                          <button
-                            key={index}
-                            className="choice-button"
-                            onClick={() => handleChoiceClick(choice)}
-                          >
-                            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                              {convertLatexDelimiters(choice)}
-                            </ReactMarkdown>
-                          </button>
-                        ))
-                      : null}
-                  </div>
-                </section>
-                {isCorrect !== null && (
-                  <div className="feedback-section">
-                    <p className={`result ${isCorrect ? 'correct' : 'incorrect'}`}>
-                      {isCorrect ? 'Correct! 🎉' : 'Incorrect. ❌'}
-                    </p>
-                    {feedbackImage && (
-                      <div className="result-image-container">
-                        <img
-                          src={feedbackImage}
-                          alt={isCorrect ? 'Correct' : 'Incorrect'}
-                          className="result-image"
-                        />
+            <>
+              {loading && <p className="info-message">Loading...</p>}
+              {error && <p className="error-message">{error}</p>}
+              {sessionComplete ? (
+                <div className="completion-message">
+                  <h2>Practice Complete!</h2>
+                  <p>Your final score is {score} out of {attempted}.</p>
+                  <p>Total time: {cumulativeTimeSeconds} seconds.</p>
+                  {renderReviewPanel()}
+                </div>
+              ) : (
+                problem && !loading && (
+                  <>
+                    <section className="question-section">
+                      <h2>Problem</h2>
+                      <div className="markdown-content">
+                        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                          {problemStatementWithMeta}
+                        </ReactMarkdown>
+                      </div>
+                      {problem.image && typeof problem.image === 'string' && (
+                        <div className="image-container">
+                          <img src={problem.image} alt="Problem Diagram" />
+                        </div>
+                      )}
+                    </section>
+                    <section className="answer-section">
+                      <h2>Answer Choices</h2>
+                      <div className="answer-choices">
+                        {problem.answer_choices && Array.isArray(problem.answer_choices)
+                          ? problem.answer_choices.map((choice, index) => (
+                              <button
+                                key={index}
+                                className="choice-button"
+                                onClick={() => handleChoiceClick(choice)}
+                              >
+                                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                  {convertLatexDelimiters(choice)}
+                                </ReactMarkdown>
+                              </button>
+                            ))
+                          : null}
+                      </div>
+                    </section>
+                    {mode === "practice" && (
+                      <button className="solution-button" onClick={() => setShowSolution(prev => !prev)}>
+                        {showSolution ? "Hide Solution" : "Show Solution"}
+                      </button>
+                    )}
+                    {showSolution && mode === "practice" && (
+                      <div className="solution-section">
+                        <h4>Detailed Solution</h4>
+                        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                          {convertLatexDelimiters(problem.detailed_solution || "Solution not available.")}
+                        </ReactMarkdown>
+                        <h4>Similar Problems</h4>
+                        {problem.similar_questions && Array.isArray(problem.similar_questions) && problem.similar_questions.length > 0 ? (
+                          problem.similar_questions.map((sq, idx) => (
+                            <div key={idx} className="similar-problem">
+                              <strong>{sq.difficulty.charAt(0).toUpperCase() + sq.difficulty.slice(1)}:</strong>
+                              <p><em>Question:</em></p>
+                              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                {convertLatexDelimiters(sq.question)}
+                              </ReactMarkdown>
+                              <p><em>Detailed Solution:</em></p>
+                              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                {convertLatexDelimiters(sq.detailed_solution)}
+                              </ReactMarkdown>
+                              <p><em>Final Answer:</em></p>
+                              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                {convertLatexDelimiters(sq.final_answer)}
+                              </ReactMarkdown>
+                            </div>
+                          ))
+                        ) : (
+                          <p>No similar problems available.</p>
+                        )}
                       </div>
                     )}
-                  </div>
-                )}
-              </>
-            )
+                    {isCorrect !== null && (
+                      <div className="feedback-section">
+                        <p className={`result ${isCorrect ? 'correct' : 'incorrect'}`}>
+                          {isCorrect ? 'Correct! 🎉' : 'Incorrect. ❌'}
+                        </p>
+                        {feedbackImage && (
+                          <div className="result-image-container">
+                            <img
+                              src={feedbackImage}
+                              alt={isCorrect ? 'Correct' : 'Incorrect'}
+                              className="result-image"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )
+              )}
+            </>
           )}
         </main>
       </div>
