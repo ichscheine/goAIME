@@ -22,9 +22,17 @@ function App() {
   const [error, setError] = useState(null);
   const [score, setScore] = useState(0);
   const [attempted, setAttempted] = useState(0);
+
+  // Feedback
   const [isCorrect, setIsCorrect] = useState(null);
   const [feedbackImage, setFeedbackImage] = useState(null);
-  const [showSolution, setShowSolution] = useState(false); // For practice mode
+
+  // Practice mode states
+  const [showSolution, setShowSolution] = useState(false); 
+  const [answered, setAnswered] = useState(false);
+
+  // Contest mode: show or suppress immediate feedback?
+  const [showContestFeedback, setShowContestFeedback] = useState(true);
 
   // Time tracking
   const [problemStartTime, setProblemStartTime] = useState(null);
@@ -43,10 +51,11 @@ function App() {
 
   const cancelSourceRef = useRef(null);
 
+  // Audio for correct/incorrect
   const correctAudio = useMemo(() => new Audio(correctSoundFile), []);
   const incorrectAudio = useMemo(() => new Audio(incorrectSoundFile), []);
 
-  // Convert \( \) to $ for math in ReactMarkdown
+  // Convert \(...\) to $...$ for math
   const convertLatexDelimiters = useCallback((text) => {
     if (!text) return '';
     return text
@@ -54,6 +63,7 @@ function App() {
       .replace(/\\\[(.+?)\\\]/gs, '$$$$ $1 $$$$');
   }, []);
 
+  // Processed problem statement with meta
   const [problemStatementWithMeta, setProblemStatementWithMeta] = useState('');
 
   // Track incorrectly answered problems for review
@@ -67,6 +77,7 @@ function App() {
     if (sessionComplete) return;
     setLoading(true);
     setError(null);
+
     if (cancelSourceRef.current) {
       cancelSourceRef.current.cancel();
     }
@@ -77,13 +88,13 @@ function App() {
       contest: selectedContest,
     };
 
-    // If contest mode, exclude used problems
     if (mode === "contest") {
+      // Exclude used problem IDs
       if (usedProblemIdsRef.current.length > 0) {
         params.exclude = usedProblemIdsRef.current.join(",");
       }
     } else if (mode === "practice") {
-      // Practice mode: fetch by problem_number
+      // In practice mode, fetch by problem_number
       params.problem_number = currentIndex;
     }
 
@@ -95,7 +106,6 @@ function App() {
       console.log("Received problem:", response.data);
       setProblem(response.data);
 
-      // In contest mode, track used IDs to avoid repeats
       if (mode === "contest") {
         setUsedProblemIds(prev => [...prev, response.data.problem_id]);
         usedProblemIdsRef.current.push(response.data.problem_id);
@@ -113,13 +123,13 @@ function App() {
 
   // ---------------------- useEffect: Initial Fetch ----------------------
   useEffect(() => {
-    if (!sessionComplete) {
+    if (!sessionComplete && mode !== null) {
       fetchProblem();
     }
     return () => {
       if (cancelSourceRef.current) cancelSourceRef.current.cancel();
     };
-  }, [fetchProblem, sessionComplete]);
+  }, [fetchProblem, sessionComplete, mode]);
 
   // ---------------------- Update Problem Statement ----------------------
   useEffect(() => {
@@ -138,6 +148,7 @@ function App() {
   const handleChoiceClick = useCallback(
     (choice) => {
       if (!problem || !problem.answer_key || !problemStartTime) return;
+
       const match = choice.trim().match(/^([A-Z])\)?/);
       const selectedLetter = match ? match[1] : choice.trim().toUpperCase();
       const correctAnswer = problem.answer_key.trim().toUpperCase();
@@ -149,36 +160,106 @@ function App() {
 
       setAttempted(prev => prev + 1);
 
+      // Always update score if correct
       if (answerIsCorrect) {
         setScore(prev => prev + 1);
-        correctAudio.play();
-        setFeedbackImage(correctImage);
-      } else {
-        incorrectAudio.play();
-        setFeedbackImage(incorrectImage);
-        setIncorrectProblems(prev => {
-          if (!prev.find(p => p.problem_id === problem.problem_id)) {
-            return [...prev, problem];
-          }
-          return prev;
-        });
       }
-      setIsCorrect(answerIsCorrect);
 
-      setTimeout(() => {
-        if (mode === "practice") {
-          // In practice mode, go to the next problem number
-          setCurrentIndex(prev => prev + 1);
-          setShowSolution(false);
-          fetchProblem();
-        } else if (attempted + 1 < 25) {
-          // In contest mode, just fetch next random problem
-          fetchProblem();
+      if (mode === "contest") {
+        // If user doesn't want immediate feedback, skip showing correct/incorrect
+        if (showContestFeedback) {
+          // Provide immediate feedback
+          if (answerIsCorrect) {
+            correctAudio.play();
+            setFeedbackImage(correctImage);
+          } else {
+            incorrectAudio.play();
+            setFeedbackImage(incorrectImage);
+            setIncorrectProblems(prev => {
+              if (!prev.find(p => p.problem_id === problem.problem_id)) {
+                return [...prev, problem];
+              }
+              return prev;
+            });
+          }
+          setIsCorrect(answerIsCorrect);
+
+          // If not finished, auto-fetch next problem after short delay
+          if (attempted + 1 < 25) {
+            setTimeout(() => {
+              fetchProblem();
+            }, 1000);
+          }
+        } else {
+          // showContestFeedback == false => skip immediate feedback
+          // user sees final results at the end
+          if (!answerIsCorrect) {
+            // track that the problem was missed for post-contest review
+            setIncorrectProblems(prev => {
+              if (!prev.find(p => p.problem_id === problem.problem_id)) {
+                return [...prev, problem];
+              }
+              return prev;
+            });
+          }
+          // auto-fetch next problem after short delay
+          if (attempted + 1 < 25) {
+            setTimeout(() => {
+              fetchProblem();
+            }, 500);
+          }
         }
-      }, 1000);
+      } else if (mode === "practice") {
+        // Provide immediate feedback
+        if (answerIsCorrect) {
+          correctAudio.play();
+          setFeedbackImage(correctImage);
+        } else {
+          incorrectAudio.play();
+          setFeedbackImage(incorrectImage);
+          setIncorrectProblems(prev => {
+            if (!prev.find(p => p.problem_id === problem.problem_id)) {
+              return [...prev, problem];
+            }
+            return prev;
+          });
+        }
+        setIsCorrect(answerIsCorrect);
+        setAnswered(true); // do not auto-advance
+      }
     },
-    [problem, problemStartTime, correctAudio, incorrectAudio, fetchProblem, attempted, mode]
+    [
+      problem, problemStartTime, correctAudio, incorrectAudio,
+      fetchProblem, attempted, mode, showContestFeedback
+    ]
   );
+
+  // ---------------------- Show/Hide Solution in Practice Mode ----------------------
+  const handleShowSolution = () => {
+    setShowSolution(prev => !prev);
+    setIsCorrect(null);
+    setFeedbackImage(null);
+  };
+
+  // ---------------------- Next Problem in Practice Mode ----------------------
+  const handleNextProblem = () => {
+    setCurrentIndex(prev => prev + 1);
+    setShowSolution(false);
+    setAnswered(false);
+    setIsCorrect(null);
+    setFeedbackImage(null);
+    fetchProblem();
+  };
+
+  // ---------------------- Toggle immediate feedback in contest mode ----------------------
+  const handleContestFeedbackToggle = (checked) => {
+    setShowContestFeedback(checked);
+    // If the user is turning feedback OFF, hide current feedback
+    if (!checked) {
+      setIsCorrect(null);
+      setFeedbackImage(null);
+    }
+  };
 
   // ---------------------- Format cumulative time ----------------------
   const cumulativeTimeSeconds = (cumulativeTime / 1000).toFixed(2);
@@ -198,13 +279,13 @@ function App() {
               </h3>
               <div className="markdown-content">
                 <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                  {convertLatexDelimiters(p.problem_statement)}
+                  {p.problem_statement}
                 </ReactMarkdown>
               </div>
               <div className="solution-section">
                 <h4>Detailed Solution</h4>
                 <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                  {convertLatexDelimiters(p.detailed_solution || "Solution not available.")}
+                  {p.detailed_solution || "Solution not available."}
                 </ReactMarkdown>
               </div>
               <div className="similar-questions-section">
@@ -215,15 +296,15 @@ function App() {
                       <strong>{sq.difficulty.charAt(0).toUpperCase() + sq.difficulty.slice(1)}:</strong>
                       <p><em>Question:</em></p>
                       <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                        {convertLatexDelimiters(sq.question)}
+                        {sq.question}
                       </ReactMarkdown>
                       <p><em>Detailed Solution:</em></p>
                       <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                        {convertLatexDelimiters(sq.detailed_solution)}
+                        {sq.detailed_solution}
                       </ReactMarkdown>
                       <p><em>Final Answer:</em></p>
                       <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                        {convertLatexDelimiters(sq.final_answer)}
+                        {sq.final_answer}
                       </ReactMarkdown>
                     </div>
                   ))
@@ -247,6 +328,7 @@ function App() {
           Score: {score} / {attempted} | Time: {cumulativeTimeSeconds} sec
         </div>
       </header>
+
       <div className="main-layout">
         <aside className="filter-sidebar">
           <h3>Filters</h3>
@@ -269,6 +351,7 @@ function App() {
               <option value="2021">2021</option>
             </select>
           </label>
+
           <label>
             Contest:
             <select
@@ -288,8 +371,24 @@ function App() {
               <option value="AMC 10B">AMC 10B</option>
             </select>
           </label>
+
+          {/* If user chooses contest mode, show a checkbox to toggle immediate feedback */}
+          {mode === "contest" && (
+            <div style={{ marginTop: '1rem' }}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={showContestFeedback}
+                  onChange={(e) => handleContestFeedbackToggle(e.target.checked)}
+                />
+                {' '}Show immediate feedback?
+              </label>
+            </div>
+          )}
+
           <button
             onClick={() => {
+              // Restart everything
               setUsedProblemIds([]);
               usedProblemIdsRef.current = [];
               setAttempted(0);
@@ -297,6 +396,9 @@ function App() {
               setCumulativeTime(0);
               setProblem(null);
               setIncorrectProblems([]);
+              setIsCorrect(null);
+              setFeedbackImage(null);
+
               if (mode === "practice") {
                 setCurrentIndex(1);
               }
@@ -307,6 +409,7 @@ function App() {
             Restart Practice
           </button>
         </aside>
+
         <main className="content-panel">
           {/* Mode Selection */}
           {mode === null ? (
@@ -325,6 +428,7 @@ function App() {
             <>
               {loading && <p className="info-message">Loading...</p>}
               {error && <p className="error-message">{error}</p>}
+
               {sessionComplete ? (
                 <div className="completion-message">
                   <h2>Practice Complete!</h2>
@@ -348,8 +452,42 @@ function App() {
                         </div>
                       )}
                     </section>
+
+                    {/* ANSWER SECTION */}
                     <section className="answer-section">
-                      <h2>Answer Choices</h2>
+                      {/* Heading + practice/contest options */}
+                      <div className="answer-section-header">
+                        <h2>Answer Choices</h2>
+                        {mode === "practice" && (
+                          <div className="practice-buttons-row">
+                            <button
+                              className="solution-button"
+                              onClick={() => {
+                                setShowSolution(prev => !prev);
+                                setIsCorrect(null);
+                                setFeedbackImage(null);
+                              }}
+                            >
+                              {showSolution ? "Hide Solution" : "Show Solution"}
+                            </button>
+                            <button
+                              className="next-problem-button"
+                              onClick={() => {
+                                setCurrentIndex(prev => prev + 1);
+                                setShowSolution(false);
+                                setAnswered(false);
+                                setIsCorrect(null);
+                                setFeedbackImage(null);
+                                fetchProblem();
+                              }}
+                              disabled={!answered}
+                            >
+                              Next Problem
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
                       <div className="answer-choices">
                         {problem.answer_choices && Array.isArray(problem.answer_choices)
                           ? problem.answer_choices.map((choice, index) => (
@@ -357,6 +495,7 @@ function App() {
                                 key={index}
                                 className="choice-button"
                                 onClick={() => handleChoiceClick(choice)}
+                                disabled={mode === "practice" && answered}
                               >
                                 <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                                   {convertLatexDelimiters(choice)}
@@ -366,11 +505,8 @@ function App() {
                           : null}
                       </div>
                     </section>
-                    {mode === "practice" && (
-                      <button className="solution-button" onClick={() => setShowSolution(prev => !prev)}>
-                        {showSolution ? "Hide Solution" : "Show Solution"}
-                      </button>
-                    )}
+
+                    {/* SHOW SOLUTION (if toggled in practice mode) */}
                     {showSolution && mode === "practice" && (
                       <div className="solution-section">
                         <h4>Detailed Solution</h4>
@@ -401,6 +537,8 @@ function App() {
                         )}
                       </div>
                     )}
+
+                    {/* FEEDBACK SECTION (only if isCorrect != null) */}
                     {isCorrect !== null && (
                       <div className="feedback-section">
                         <p className={`result ${isCorrect ? 'correct' : 'incorrect'}`}>

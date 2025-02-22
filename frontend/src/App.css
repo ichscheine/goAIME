@@ -185,15 +185,47 @@ body {
   background-color: #ffc107;
   color: #212529;
   border: none;
-  padding: 0.5rem 1rem;
-  margin-top: 1rem;
+  padding: 0.6rem 1.2rem;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 1rem;
   transition: background-color 0.2s ease;
 }
 
 .solution-button:hover {
   background-color: #e0a800;
+}
+
+/* Next Problem Button Styling */
+.next-problem-button {
+  background-color: #28a745;
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.next-problem-button:hover {
+  background-color: #218838;
+}
+
+/* New container for heading + practice buttons horizontally */
+.answer-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* or 'flex-end', 'center', etc. */
+  margin-bottom: 0.5rem;
+}
+
+/* Row for the two practice mode buttons */
+.practice-buttons-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
 }
 
 /* The solution-section styling */
