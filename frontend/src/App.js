@@ -28,7 +28,7 @@ function App() {
   const [feedbackImage, setFeedbackImage] = useState(null);
 
   // Practice mode states
-  const [showSolution, setShowSolution] = useState(false); 
+  const [showSolution, setShowSolution] = useState(false);
   const [answered, setAnswered] = useState(false);
 
   // Contest mode: show or suppress immediate feedback?
@@ -55,13 +55,7 @@ function App() {
   const correctAudio = useMemo(() => new Audio(correctSoundFile), []);
   const incorrectAudio = useMemo(() => new Audio(incorrectSoundFile), []);
 
-  // Convert \(...\) to $...$ for math
-  const convertLatexDelimiters = useCallback((text) => {
-    if (!text) return '';
-    return text
-      .replace(/\\\((.+?)\\\)/g, '$$$1$')
-      .replace(/\\\[(.+?)\\\]/gs, '$$$$ $1 $$$$');
-  }, []);
+  // We no longer need a convertLatexDelimiters function since we are using standard $...$ or $$...$$
 
   // Processed problem statement with meta
   const [problemStatementWithMeta, setProblemStatementWithMeta] = useState('');
@@ -77,42 +71,42 @@ function App() {
     if (sessionComplete) return;
     setLoading(true);
     setError(null);
-  
+
     // Cancel any previous request
     if (cancelSourceRef.current) {
       cancelSourceRef.current.cancel();
     }
     cancelSourceRef.current = axios.CancelToken.source();
-  
+
     let params = {
       year: selectedYear,
       contest: selectedContest,
     };
-  
+
     // For both contest and practice modes, send an exclusion list so already used problems aren’t repeated.
     if (usedProblemIdsRef.current.length > 0) {
       params.exclude = usedProblemIdsRef.current.join(",");
     }
-  
+
     // If you are intentionally selecting sequential problems in practice mode, you may include:
     // if (mode === "practice") {
     //   params.problem_number = currentIndex;
     // }
-  
+
     try {
       const response = await axios.get("http://127.0.0.1:5001/", {
         params,
         cancelToken: cancelSourceRef.current.token,
       });
       console.log("Received problem:", response.data);
-  
+
       // If by any chance a duplicate is returned, fetch a new problem.
       if (usedProblemIdsRef.current.includes(response.data.problem_id)) {
         console.warn("Duplicate problem received, fetching a new one");
         fetchProblem();
         return;
       }
-  
+
       setProblem(response.data);
       // Record the problem as used, regardless of mode.
       setUsedProblemIds(prev => [...prev, response.data.problem_id]);
@@ -126,7 +120,7 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, [selectedYear, selectedContest, sessionComplete, mode, currentIndex]);  
+  }, [selectedYear, selectedContest, sessionComplete, mode, currentIndex]);
 
   // ---------------------- useEffect: Initial Fetch ----------------------
   useEffect(() => {
@@ -141,15 +135,13 @@ function App() {
   // ---------------------- Update Problem Statement ----------------------
   useEffect(() => {
     if (problem) {
-      const processed = problem.problem_statement
-        ? convertLatexDelimiters(problem.problem_statement)
-        : '';
+      const processed = problem.problem_statement || '';
       const meta = `\n\n**(${problem.year}, ${problem.contest}, Problem ${problem.problem_number})**`;
       setProblemStatementWithMeta(processed + meta);
     } else {
       setProblemStatementWithMeta('');
     }
-  }, [problem, convertLatexDelimiters]);
+  }, [problem]);
 
   // ---------------------- Handle Choice Click ----------------------
   const handleChoiceClick = useCallback(
@@ -272,32 +264,86 @@ function App() {
               </h3>
               <div className="markdown-content">
                 <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                  {convertLatexDelimiters(p.problem_statement)}
+                  {p.problem_statement}
                 </ReactMarkdown>
               </div>
               <div className="solution-section">
                 <h4>Detailed Solution</h4>
-                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                  {convertLatexDelimiters(p.detailed_solution || "Solution not available.")}
-                </ReactMarkdown>
+                {/* If it's an array, render each step. If it's a string, just show it. */}
+                {Array.isArray(p.detailed_solution) ? (
+                  <div>
+                    {p.detailed_solution.map((stepObj, idx) => (
+                      <div key={idx} style={{ marginBottom: '1em' }}>
+                        {Object.entries(stepObj).map(([title, content]) => (
+                          <div key={title}>
+                            <strong>{title.replace('_', ' ')}:</strong>
+                            <ReactMarkdown
+                              remarkPlugins={[remarkMath]}
+                              rehypePlugins={[rehypeKatex]}
+                            >
+                              {content}
+                            </ReactMarkdown>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                    {p.detailed_solution || "Solution not available."}
+                  </ReactMarkdown>
+                )}
               </div>
               <div className="similar-questions-section">
                 <h4>Similar Problems</h4>
                 {p.similar_questions && Array.isArray(p.similar_questions) && p.similar_questions.length > 0 ? (
-                  p.similar_questions.map((sq, idx) => (
-                    <div key={idx} className="similar-problem">
+                  p.similar_questions.map((sq, sqIdx) => (
+                    <div key={sqIdx} className="similar-problem">
                       <strong>{sq.difficulty.charAt(0).toUpperCase() + sq.difficulty.slice(1)}:</strong>
                       <p><em>Question:</em></p>
                       <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                        {convertLatexDelimiters(sq.question)}
+                        {typeof sq.question === 'string'
+                          ? sq.question
+                          : Array.isArray(sq.question)
+                            ? sq.question.join('\n\n')
+                            : "Question not available."
+                        }
                       </ReactMarkdown>
+
                       <p><em>Detailed Solution:</em></p>
-                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                        {convertLatexDelimiters(sq.detailed_solution)}
-                      </ReactMarkdown>
+                      {Array.isArray(sq.detailed_solution) ? (
+                        <div>
+                          {sq.detailed_solution.map((stepObj, idx2) => (
+                            <div key={idx2} style={{ marginBottom: '1em' }}>
+                              {Object.entries(stepObj).map(([title, content]) => (
+                                <div key={title}>
+                                  <strong>{title.replace('_', ' ')}:</strong>
+                                  <ReactMarkdown
+                                    remarkPlugins={[remarkMath]}
+                                    rehypePlugins={[rehypeKatex]}
+                                  >
+                                    {content}
+                                  </ReactMarkdown>
+                                </div>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                          {typeof sq.detailed_solution === 'string'
+                            ? sq.detailed_solution
+                            : 'Solution not available.'
+                          }
+                        </ReactMarkdown>
+                      )}
+
                       <p><em>Final Answer:</em></p>
                       <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                        {convertLatexDelimiters(sq.final_answer)}
+                        {typeof sq.final_answer === 'string'
+                          ? sq.final_answer
+                          : 'No final answer.'
+                        }
                       </ReactMarkdown>
                     </div>
                   ))
@@ -476,7 +522,7 @@ function App() {
                                 disabled={mode === "practice" && answered}
                               >
                                 <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                  {convertLatexDelimiters(choice)}
+                                  {choice}
                                 </ReactMarkdown>
                               </button>
                             ))
@@ -487,9 +533,31 @@ function App() {
                     {showSolution && mode === "practice" && (
                       <div className="solution-section">
                         <h4>Detailed Solution</h4>
-                        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                          {convertLatexDelimiters(problem.detailed_solution || "Solution not available.")}
-                        </ReactMarkdown>
+                        {/* If it's an array, render each step. If it's a string, just show it. */}
+                        {Array.isArray(problem.detailed_solution) ? (
+                          <div>
+                            {problem.detailed_solution.map((stepObj, idx) => (
+                              <div key={idx} style={{ marginBottom: '1em' }}>
+                                {Object.entries(stepObj).map(([title, content]) => (
+                                  <div key={title}>
+                                    <strong>{title.replace('_', ' ')}:</strong>
+                                    <ReactMarkdown
+                                      remarkPlugins={[remarkMath]}
+                                      rehypePlugins={[rehypeKatex]}
+                                    >
+                                      {content}
+                                    </ReactMarkdown>
+                                  </div>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                            {problem.detailed_solution || "Solution not available."}
+                          </ReactMarkdown>
+                        )}
+
                         <h4>Similar Problems</h4>
                         {problem.similar_questions && Array.isArray(problem.similar_questions) && problem.similar_questions.length > 0 ? (
                           problem.similar_questions.map((sq, idx) => (
@@ -497,16 +565,40 @@ function App() {
                               <strong>{sq.difficulty.charAt(0).toUpperCase() + sq.difficulty.slice(1)}:</strong>
                               <p><em>Question:</em></p>
                               <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                {convertLatexDelimiters(sq.question)}
+                                {typeof sq.question === 'string'
+                                  ? sq.question
+                                  : Array.isArray(sq.question)
+                                    ? sq.question.join('\n\n')
+                                    : "Question not available."
+                                }
                               </ReactMarkdown>
                               <p><em>Detailed Solution:</em></p>
-                              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                {convertLatexDelimiters(sq.detailed_solution)}
-                              </ReactMarkdown>
-                              <p><em>Final Answer:</em></p>
-                              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                {convertLatexDelimiters(sq.final_answer)}
-                              </ReactMarkdown>
+                              {Array.isArray(sq.detailed_solution) ? (
+                                <div>
+                                  {sq.detailed_solution.map((stepObj, idx2) => (
+                                    <div key={idx2} style={{ marginBottom: '1em' }}>
+                                      {Object.entries(stepObj).map(([title, content]) => (
+                                        <div key={title}>
+                                          <strong>{title.replace('_', ' ')}:</strong>
+                                          <ReactMarkdown
+                                            remarkPlugins={[remarkMath]}
+                                            rehypePlugins={[rehypeKatex]}
+                                          >
+                                            {content}
+                                          </ReactMarkdown>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                  {typeof sq.detailed_solution === 'string'
+                                    ? sq.detailed_solution
+                                    : 'Solution not available.'
+                                  }
+                                </ReactMarkdown>
+                              )}
                             </div>
                           ))
                         ) : (
