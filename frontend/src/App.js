@@ -337,14 +337,6 @@ function App() {
                           }
                         </ReactMarkdown>
                       )}
-
-                      <p><em>Final Answer:</em></p>
-                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                        {typeof sq.final_answer === 'string'
-                          ? sq.final_answer
-                          : 'No final answer.'
-                        }
-                      </ReactMarkdown>
                     </div>
                   ))
                 ) : (
