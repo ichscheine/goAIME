@@ -77,36 +77,46 @@ function App() {
     if (sessionComplete) return;
     setLoading(true);
     setError(null);
-
+  
+    // Cancel any previous request
     if (cancelSourceRef.current) {
       cancelSourceRef.current.cancel();
     }
     cancelSourceRef.current = axios.CancelToken.source();
-
+  
     let params = {
       year: selectedYear,
       contest: selectedContest,
     };
-
-    if (mode === "contest") {
-      if (usedProblemIdsRef.current.length > 0) {
-        params.exclude = usedProblemIdsRef.current.join(",");
-      }
-    } else if (mode === "practice") {
-      params.problem_number = currentIndex;
+  
+    // For both contest and practice modes, send an exclusion list so already used problems aren’t repeated.
+    if (usedProblemIdsRef.current.length > 0) {
+      params.exclude = usedProblemIdsRef.current.join(",");
     }
-
+  
+    // If you are intentionally selecting sequential problems in practice mode, you may include:
+    // if (mode === "practice") {
+    //   params.problem_number = currentIndex;
+    // }
+  
     try {
       const response = await axios.get("http://127.0.0.1:5001/", {
         params,
         cancelToken: cancelSourceRef.current.token,
       });
       console.log("Received problem:", response.data);
-      setProblem(response.data);
-      if (mode === "contest") {
-        setUsedProblemIds(prev => [...prev, response.data.problem_id]);
-        usedProblemIdsRef.current.push(response.data.problem_id);
+  
+      // If by any chance a duplicate is returned, fetch a new problem.
+      if (usedProblemIdsRef.current.includes(response.data.problem_id)) {
+        console.warn("Duplicate problem received, fetching a new one");
+        fetchProblem();
+        return;
       }
+  
+      setProblem(response.data);
+      // Record the problem as used, regardless of mode.
+      setUsedProblemIds(prev => [...prev, response.data.problem_id]);
+      usedProblemIdsRef.current.push(response.data.problem_id);
       setProblemStartTime(Date.now());
     } catch (err) {
       if (!axios.isCancel(err)) {
@@ -116,7 +126,7 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, [selectedYear, selectedContest, sessionComplete, mode, currentIndex]);
+  }, [selectedYear, selectedContest, sessionComplete, mode, currentIndex]);  
 
   // ---------------------- useEffect: Initial Fetch ----------------------
   useEffect(() => {
@@ -381,6 +391,8 @@ function App() {
               setFeedbackImage(null);
               if (mode === "practice") {
                 setCurrentIndex(1);
+                setAnswered(false);
+                setShowSolution(false);
               }
               fetchProblem();
             }}
