@@ -32,7 +32,7 @@ function App() {
   const [answered, setAnswered] = useState(false);
 
   // Contest mode: show or suppress immediate feedback?
-  const [showContestFeedback, setShowContestFeedback] = useState(true);
+  const [showContestFeedback, setShowContestFeedback] = useState(false);
 
   // Time tracking
   const [problemStartTime, setProblemStartTime] = useState(null);
@@ -54,8 +54,6 @@ function App() {
   // Audio for correct/incorrect
   const correctAudio = useMemo(() => new Audio(correctSoundFile), []);
   const incorrectAudio = useMemo(() => new Audio(incorrectSoundFile), []);
-
-  // We no longer need a convertLatexDelimiters function since we are using standard $...$ or $$...$$
 
   // Processed problem statement with meta
   const [problemStatementWithMeta, setProblemStatementWithMeta] = useState('');
@@ -87,11 +85,6 @@ function App() {
     if (usedProblemIdsRef.current.length > 0) {
       params.exclude = usedProblemIdsRef.current.join(",");
     }
-
-    // If you are intentionally selecting sequential problems in practice mode, you may include:
-    // if (mode === "practice") {
-    //   params.problem_number = currentIndex;
-    // }
 
     try {
       const response = await axios.get("http://127.0.0.1:5001/", {
@@ -251,13 +244,18 @@ function App() {
 
   // ---------------------- Render Review Panel After Session Completion ----------------------
   const renderReviewPanel = () => {
+    // Sort incorrect problems by their problem_number
+    const sortedIncorrectProblems = [...incorrectProblems].sort(
+      (a, b) => a.problem_number - b.problem_number
+    );
+
     return (
       <div className="review-panel">
         <h2>Review Incorrect Problems</h2>
-        {incorrectProblems.length === 0 ? (
+        {sortedIncorrectProblems.length === 0 ? (
           <p>No incorrect problems! Great job!</p>
         ) : (
-          incorrectProblems.map((p, index) => (
+          sortedIncorrectProblems.map((p, index) => (
             <div key={p.problem_id || index} className="review-item">
               <h3>
                 {p.year}, {p.contest}, Problem {p.problem_number}
