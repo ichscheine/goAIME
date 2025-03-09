@@ -154,6 +154,14 @@ function App() {
 
       if (answerIsCorrect) {
         setScore(prev => prev + 1);
+      } else {
+        // Record the incorrect problem only if it hasn't been recorded yet
+        setIncorrectProblems(prev => {
+          if (!prev.find(p => p.problem_id === problem.problem_id)) {
+            return [...prev, problem];
+          }
+          return prev;
+        });
       }
 
       if (mode === "contest") {
@@ -164,12 +172,6 @@ function App() {
           } else {
             incorrectAudio.play();
             setFeedbackImage(incorrectImage);
-            setIncorrectProblems(prev => {
-              if (!prev.find(p => p.problem_id === problem.problem_id)) {
-                return [...prev, problem];
-              }
-              return prev;
-            });
           }
           setIsCorrect(answerIsCorrect);
           if (attempted + 1 < 25) {
@@ -178,14 +180,8 @@ function App() {
             }, 1000);
           }
         } else {
-          if (!answerIsCorrect) {
-            setIncorrectProblems(prev => {
-              if (!prev.find(p => p.problem_id === problem.problem_id)) {
-                return [...prev, problem];
-              }
-              return prev;
-            });
-          }
+          // Immediate feedback is disabled: do not play sound or show images.
+          setIsCorrect(null);
           if (attempted + 1 < 25) {
             setTimeout(() => {
               fetchProblem();
@@ -199,12 +195,6 @@ function App() {
         } else {
           incorrectAudio.play();
           setFeedbackImage(incorrectImage);
-          setIncorrectProblems(prev => {
-            if (!prev.find(p => p.problem_id === problem.problem_id)) {
-              return [...prev, problem];
-            }
-            return prev;
-          });
         }
         setIsCorrect(answerIsCorrect);
         setAnswered(true);
