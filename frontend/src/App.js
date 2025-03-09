@@ -49,6 +49,7 @@ function App() {
     usedProblemIdsRef.current = usedProblemIds;
   }, [usedProblemIds]);
 
+  // Cancel tokens
   const cancelSourceRef = useRef(null);
 
   // Audio for correct/incorrect
@@ -61,6 +62,12 @@ function App() {
   // Track incorrectly answered problems for review
   const [incorrectProblems, setIncorrectProblems] = useState([]);
 
+  // Track all attempted problems with details: problem number, correct flag, and time spent.
+  const [attemptRecords, setAttemptRecords] = useState([]);
+
+  // New state: prevent multiple clicks on the same problem.
+  const [answersDisabled, setAnswersDisabled] = useState(false);
+
   // Session is complete when 25 problems have been attempted
   const sessionComplete = attempted >= 25;
 
@@ -70,7 +77,6 @@ function App() {
     setLoading(true);
     setError(null);
 
-    // Cancel any previous request
     if (cancelSourceRef.current) {
       cancelSourceRef.current.cancel();
     }
@@ -81,7 +87,6 @@ function App() {
       contest: selectedContest,
     };
 
-    // For both contest and practice modes, send an exclusion list so already used problems aren’t repeated.
     if (usedProblemIdsRef.current.length > 0) {
       params.exclude = usedProblemIdsRef.current.join(",");
     }
@@ -93,15 +98,13 @@ function App() {
       });
       console.log("Received problem:", response.data);
 
-      // If by any chance a duplicate is returned, fetch a new problem.
       if (usedProblemIdsRef.current.includes(response.data.problem_id)) {
         console.warn("Duplicate problem received, fetching a new one");
-        fetchProblem();
+        await fetchProblem();
         return;
       }
 
       setProblem(response.data);
-      // Record the problem as used, regardless of mode.
       setUsedProblemIds(prev => [...prev, response.data.problem_id]);
       usedProblemIdsRef.current.push(response.data.problem_id);
       setProblemStartTime(Date.now());
@@ -136,10 +139,19 @@ function App() {
     }
   }, [problem]);
 
+  // ---------------------- Format cumulative time ----------------------
+  const cumulativeTimeSeconds = (cumulativeTime / 1000).toFixed(2);
+
   // ---------------------- Handle Choice Click ----------------------
   const handleChoiceClick = useCallback(
     (choice) => {
-      if (!problem || !problem.answer_key || !problemStartTime) return;
+      if (answersDisabled) return;
+      setAnswersDisabled(true);
+
+      if (!problem || !problem.answer_key || !problemStartTime) {
+        setAnswersDisabled(false);
+        return;
+      }
 
       const match = choice.trim().match(/^([A-Z])\)?/);
       const selectedLetter = match ? match[1] : choice.trim().toUpperCase();
@@ -150,12 +162,21 @@ function App() {
       setCumulativeTime(prev => prev + timeSpent);
       console.log(`Time on this problem: ${timeSpent}ms`);
 
+      // Record this attempt
+      setAttemptRecords(prev => [
+        ...prev,
+        {
+          problem_number: problem.problem_number,
+          correct: answerIsCorrect,
+          timeSpent
+        }
+      ]);
+
       setAttempted(prev => prev + 1);
 
       if (answerIsCorrect) {
         setScore(prev => prev + 1);
       } else {
-        // Record the incorrect problem only if it hasn't been recorded yet
         setIncorrectProblems(prev => {
           if (!prev.find(p => p.problem_id === problem.problem_id)) {
             return [...prev, problem];
@@ -175,16 +196,17 @@ function App() {
           }
           setIsCorrect(answerIsCorrect);
           if (attempted + 1 < 25) {
-            setTimeout(() => {
-              fetchProblem();
+            setTimeout(async () => {
+              await fetchProblem();
+              setAnswersDisabled(false);
             }, 1000);
           }
         } else {
-          // Immediate feedback is disabled: do not play sound or show images.
           setIsCorrect(null);
           if (attempted + 1 < 25) {
-            setTimeout(() => {
-              fetchProblem();
+            setTimeout(async () => {
+              await fetchProblem();
+              setAnswersDisabled(false);
             }, 500);
           }
         }
@@ -200,7 +222,17 @@ function App() {
         setAnswered(true);
       }
     },
-    [problem, problemStartTime, correctAudio, incorrectAudio, fetchProblem, attempted, mode, showContestFeedback]
+    [
+      problem,
+      problemStartTime,
+      correctAudio,
+      incorrectAudio,
+      fetchProblem,
+      attempted,
+      mode,
+      showContestFeedback,
+      answersDisabled
+    ]
   );
 
   // ---------------------- Show/Hide Solution in Practice Mode ----------------------
@@ -211,14 +243,17 @@ function App() {
   };
 
   // ---------------------- Next Problem in Practice Mode ----------------------
-  const handleNextProblem = () => {
+  const handleNextProblem = useCallback(async () => {
+    setAnswersDisabled(true);
     setCurrentIndex(prev => prev + 1);
     setShowSolution(false);
     setAnswered(false);
     setIsCorrect(null);
     setFeedbackImage(null);
-    fetchProblem();
-  };
+
+    await fetchProblem();
+    setAnswersDisabled(false);
+  }, [fetchProblem]);
 
   // ---------------------- Toggle immediate feedback in Contest Mode ----------------------
   const handleContestFeedbackToggle = (checked) => {
@@ -229,12 +264,69 @@ function App() {
     }
   };
 
-  // ---------------------- Format cumulative time ----------------------
-  const cumulativeTimeSeconds = (cumulativeTime / 1000).toFixed(2);
+  // ---------------------- Render Summary Grid ----------------------
+  // We sort the attemptRecords by problem number before rendering.
+  const renderSummaryGrid = () => {
+    const sortedRecords = [...attemptRecords].sort((a, b) => a.problem_number - b.problem_number);
+    const gridRowStyle = {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(25, 1fr)',
+      gap: '4px',
+      marginBottom: '8px'
+    };
+    return (
+      <div className="attempt-summary-grid" style={{ marginBottom: '16px' }}>
+        <div style={gridRowStyle}>
+          {sortedRecords.map((record, idx) => (
+            <div
+              key={idx}
+              className="grid-cell"
+              style={{
+                textAlign: 'center',
+                border: '1px solid #ccc',
+                padding: '4px'
+              }}
+            >
+              {record.problem_number}
+            </div>
+          ))}
+        </div>
+        <div style={gridRowStyle}>
+          {sortedRecords.map((record, idx) => (
+            <div
+              key={idx}
+              className="grid-cell"
+              style={{
+                textAlign: 'center',
+                border: '1px solid #ccc',
+                padding: '4px'
+              }}
+            >
+              {record.correct ? '✔' : '✖'}
+            </div>
+          ))}
+        </div>
+        <div style={gridRowStyle}>
+          {sortedRecords.map((record, idx) => (
+            <div
+              key={idx}
+              className="grid-cell"
+              style={{
+                textAlign: 'center',
+                border: '1px solid #ccc',
+                padding: '4px'
+              }}
+            >
+              {(record.timeSpent / 1000).toFixed(2)} s
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   // ---------------------- Render Review Panel After Session Completion ----------------------
   const renderReviewPanel = () => {
-    // Sort incorrect problems by their problem_number
     const sortedIncorrectProblems = [...incorrectProblems].sort(
       (a, b) => a.problem_number - b.problem_number
     );
@@ -257,7 +349,6 @@ function App() {
               </div>
               <div className="solution-section">
                 <h4>Detailed Solution</h4>
-                {/* If it's an array, render each step. If it's a string, just show it. */}
                 {Array.isArray(p.detailed_solution) ? (
                   <div>
                     {p.detailed_solution.map((stepObj, idx) => (
@@ -297,7 +388,6 @@ function App() {
                             : "Question not available."
                         }
                       </ReactMarkdown>
-
                       <p><em>Detailed Solution:</em></p>
                       {Array.isArray(sq.detailed_solution) ? (
                         <div>
@@ -355,7 +445,7 @@ function App() {
             Year:
             <select
               value={selectedYear}
-              onChange={(e) => {
+              onChange={e => {
                 setSelectedYear(e.target.value);
                 setUsedProblemIds([]);
                 usedProblemIdsRef.current = [];
@@ -364,6 +454,7 @@ function App() {
                 setCumulativeTime(0);
                 setProblem(null);
                 setIncorrectProblems([]);
+                setAttemptRecords([]);
               }}
             >
               <option value="2022">2022</option>
@@ -375,7 +466,7 @@ function App() {
             Contest:
             <select
               value={selectedContest}
-              onChange={(e) => {
+              onChange={e => {
                 setSelectedContest(e.target.value);
                 setUsedProblemIds([]);
                 usedProblemIdsRef.current = [];
@@ -384,6 +475,7 @@ function App() {
                 setCumulativeTime(0);
                 setProblem(null);
                 setIncorrectProblems([]);
+                setAttemptRecords([]);
               }}
             >
               <option value="AMC 10A">AMC 10A</option>
@@ -397,7 +489,7 @@ function App() {
                 <input
                   type="checkbox"
                   checked={showContestFeedback}
-                  onChange={(e) => handleContestFeedbackToggle(e.target.checked)}
+                  onChange={e => handleContestFeedbackToggle(e.target.checked)}
                 />
                 {' '}Show immediate feedback?
               </label>
@@ -413,8 +505,10 @@ function App() {
               setCumulativeTime(0);
               setProblem(null);
               setIncorrectProblems([]);
+              setAttemptRecords([]);
               setIsCorrect(null);
               setFeedbackImage(null);
+              setAnswersDisabled(false);
               if (mode === "practice") {
                 setCurrentIndex(1);
                 setAnswered(false);
@@ -451,6 +545,7 @@ function App() {
                   <h2>Practice Complete!</h2>
                   <p>Your final score is {score} out of {attempted}.</p>
                   <p>Total time: {cumulativeTimeSeconds} seconds.</p>
+                  {renderSummaryGrid()}
                   {renderReviewPanel()}
                 </div>
               ) : (
@@ -459,7 +554,10 @@ function App() {
                     <section className="question-section">
                       <h2>Problem</h2>
                       <div className="markdown-content">
-                        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                        <ReactMarkdown
+                          remarkPlugins={[remarkMath]}
+                          rehypePlugins={[rehypeKatex]}
+                        >
                           {problemStatementWithMeta}
                         </ReactMarkdown>
                       </div>
@@ -493,27 +591,28 @@ function App() {
                       </div>
 
                       <div className="answer-choices">
-                        {problem.answer_choices && Array.isArray(problem.answer_choices)
-                          ? problem.answer_choices.map((choice, index) => (
-                              <button
-                                key={index}
-                                className="choice-button"
-                                onClick={() => handleChoiceClick(choice)}
-                                disabled={mode === "practice" && answered}
+                        {Array.isArray(problem.answer_choices) &&
+                          problem.answer_choices.map((choice, index) => (
+                            <button
+                              key={index}
+                              className="choice-button"
+                              onClick={() => handleChoiceClick(choice)}
+                              disabled={(mode === "practice" && answered) || answersDisabled}
+                            >
+                              <ReactMarkdown
+                                remarkPlugins={[remarkMath]}
+                                rehypePlugins={[rehypeKatex]}
                               >
-                                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                  {choice}
-                                </ReactMarkdown>
-                              </button>
-                            ))
-                          : null}
+                                {choice}
+                              </ReactMarkdown>
+                            </button>
+                          ))}
                       </div>
                     </section>
 
                     {showSolution && mode === "practice" && (
                       <div className="solution-section">
                         <h4>Detailed Solution</h4>
-                        {/* If it's an array, render each step. If it's a string, just show it. */}
                         {Array.isArray(problem.detailed_solution) ? (
                           <div>
                             {problem.detailed_solution.map((stepObj, idx) => (
@@ -533,26 +632,41 @@ function App() {
                             ))}
                           </div>
                         ) : (
-                          <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                          <ReactMarkdown
+                            remarkPlugins={[remarkMath]}
+                            rehypePlugins={[rehypeKatex]}
+                          >
                             {problem.detailed_solution || "Solution not available."}
                           </ReactMarkdown>
                         )}
 
                         <h4>Similar Problems</h4>
-                        {problem.similar_questions && Array.isArray(problem.similar_questions) && problem.similar_questions.length > 0 ? (
+                        {problem.similar_questions &&
+                        Array.isArray(problem.similar_questions) &&
+                        problem.similar_questions.length > 0 ? (
                           problem.similar_questions.map((sq, idx) => (
                             <div key={idx} className="similar-problem">
-                              <strong>{sq.difficulty.charAt(0).toUpperCase() + sq.difficulty.slice(1)}:</strong>
-                              <p><em>Question:</em></p>
-                              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                              <strong>
+                                {sq.difficulty.charAt(0).toUpperCase() +
+                                  sq.difficulty.slice(1)}
+                                :
+                              </strong>
+                              <p>
+                                <em>Question:</em>
+                              </p>
+                              <ReactMarkdown
+                                remarkPlugins={[remarkMath]}
+                                rehypePlugins={[rehypeKatex]}
+                              >
                                 {typeof sq.question === 'string'
                                   ? sq.question
                                   : Array.isArray(sq.question)
-                                    ? sq.question.join('\n\n')
-                                    : "Question not available."
-                                }
+                                  ? sq.question.join('\n\n')
+                                  : "Question not available."}
                               </ReactMarkdown>
-                              <p><em>Detailed Solution:</em></p>
+                              <p>
+                                <em>Detailed Solution:</em>
+                              </p>
                               {Array.isArray(sq.detailed_solution) ? (
                                 <div>
                                   {sq.detailed_solution.map((stepObj, idx2) => (
@@ -572,11 +686,13 @@ function App() {
                                   ))}
                                 </div>
                               ) : (
-                                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                <ReactMarkdown
+                                  remarkPlugins={[remarkMath]}
+                                  rehypePlugins={[rehypeKatex]}
+                                >
                                   {typeof sq.detailed_solution === 'string'
                                     ? sq.detailed_solution
-                                    : 'Solution not available.'
-                                  }
+                                    : 'Solution not available.'}
                                 </ReactMarkdown>
                               )}
                             </div>
