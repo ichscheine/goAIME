@@ -12,6 +12,88 @@ mongo_client = MongoClient("mongodb://localhost:27017")
 db = mongo_client["amc10"]
 adaptive_collection = db["2022_amc10a"]
 
+def normalize_field(val):
+    """
+    Recursively convert a value to a string.
+    For lists, join the normalized items with newlines.
+    For dictionaries, join key-value pairs with a colon.
+    """
+    if isinstance(val, str):
+        return val
+    elif isinstance(val, list):
+        return "\n\n".join(normalize_field(item) for item in val)
+    elif isinstance(val, dict):
+        # For a dictionary that represents answer choices (or similar),
+        # format each key-value pair as "Key) value"
+        return "\n\n".join(f"{k}) {normalize_field(v)}" for k, v in val.items())
+    else:
+        return str(val)
+
+def normalize_problem(problem):
+    """
+    Normalize key fields in the problem so that they contain strings (or arrays of strings)
+    suitable for the frontend.
+    """
+    # Normalize problem statement
+    if "problem_statement" in problem and not isinstance(problem["problem_statement"], str):
+        problem["problem_statement"] = normalize_field(problem["problem_statement"])
+    
+    # Normalize answer_choices: if it's a dict, convert it to a list of formatted strings;
+    # if it's a list, ensure each element is a string.
+    if "answer_choices" in problem:
+        ac = problem["answer_choices"]
+        if isinstance(ac, list):
+            problem["answer_choices"] = [normalize_field(item) for item in ac]
+        elif isinstance(ac, dict):
+            problem["answer_choices"] = [f"{label}) {normalize_field(text)}" for label, text in ac.items()]
+        else:
+            problem["answer_choices"] = [normalize_field(ac)]
+    
+    # Normalize detailed_solution: if it's a list of objects, ensure each value is normalized.
+    if "detailed_solution" in problem:
+        ds = problem["detailed_solution"]
+        if isinstance(ds, list):
+            normalized_ds = []
+            for item in ds:
+                if isinstance(item, dict):
+                    new_item = {}
+                    for k, v in item.items():
+                        new_item[k] = normalize_field(v)
+                    normalized_ds.append(new_item)
+                else:
+                    normalized_ds.append(normalize_field(item))
+            problem["detailed_solution"] = normalized_ds
+        else:
+            problem["detailed_solution"] = normalize_field(ds)
+    
+    # Normalize similar_questions if present.
+    if "similar_questions" in problem:
+        sq = problem["similar_questions"]
+        if isinstance(sq, list):
+            normalized_sq = []
+            for item in sq:
+                if isinstance(item, dict):
+                    new_item = {}
+                    for k, v in item.items():
+                        # For detailed_solution inside similar_questions, handle list/dict accordingly.
+                        if k == "detailed_solution":
+                            if isinstance(v, list):
+                                new_item[k] = [normalize_field(subitem) if not isinstance(subitem, dict)
+                                               else {subk: normalize_field(subval) for subk, subval in subitem.items()}
+                                               for subitem in v]
+                            else:
+                                new_item[k] = normalize_field(v)
+                        else:
+                            new_item[k] = normalize_field(v)
+                    normalized_sq.append(new_item)
+                else:
+                    normalized_sq.append(normalize_field(item))
+            problem["similar_questions"] = normalized_sq
+        else:
+            problem["similar_questions"] = normalize_field(sq)
+    
+    return problem
+
 @app.route("/", methods=["GET"])
 def get_problem():
     """
@@ -61,16 +143,10 @@ def get_problem():
             }), 404
 
     problem = random.choice(docs)
-
-    # Process answer_choices; if not already a list, convert from dictionary to a list of strings.
-    answer_choices = problem.get("answer_choices", [])
-    if not isinstance(answer_choices, list):
-        try:
-            answer_choices = [f"{label}) {text}" for label, text in problem.get("answer_choices", {}).items()]
-        except Exception as e:
-            print(f"Error converting answer_choices: {e}")
-            answer_choices = []
-
+    
+    # Normalize the problem document before sending
+    problem = normalize_problem(problem)
+    
     # Build problem_data including all necessary fields
     problem_data = {
         "problem_id": str(problem.get("_id")),
@@ -79,10 +155,10 @@ def get_problem():
         "problem_number": problem.get("problem_number"),
         "problem_statement": problem.get("problem_statement"),
         "image": problem.get("image", None),
-        "answer_choices": answer_choices,
+        "answer_choices": problem.get("answer_choices"),
         "answer_key": problem.get("answer_key"),
         "detailed_solution": problem.get("detailed_solution", ""),
-        "similar_questions": problem.get("similar_questions", {})
+        "similar_questions": problem.get("similar_questions", [])
     }
 
     return jsonify(problem_data), 200
