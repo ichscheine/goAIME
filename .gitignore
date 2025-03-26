@@ -26,5 +26,5 @@ venv/
 logs/
 
 # 8) Testing only
-test_db.py
+test.py
 problem_images/

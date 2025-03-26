@@ -1,3 +1,4 @@
+import os
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from pymongo import MongoClient
@@ -8,8 +9,8 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 # Connect to MongoDB using your actual database
-mongo_client = MongoClient("mongodb://localhost:27017")
-db = mongo_client["amc10"]
+mongo_client = MongoClient(os.getenv("MONGO_URI"))
+db = mongo_client["AMC10"]
 adaptive_collection = db["2022_amc10a"]
 
 def normalize_field(val):
