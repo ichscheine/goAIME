@@ -8,6 +8,7 @@ node_modules/
 
 # 3) macOS Finder
 .DS_Store
+backend/.DS_Store
 
 # 4) Python Bytecode
 __pycache__/

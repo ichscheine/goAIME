@@ -44,6 +44,9 @@ function App() {
   // New state for Practice Mode background filter
   const [selectedBackground, setSelectedBackground] = useState('Minecraft');
 
+  // New state: let user enable shuffling on the frontend.
+  const [shuffle, setShuffle] = useState(false);
+
   // Track used problem numbers (now using problem_number for uniqueness)
   const [usedProblemNumbers, setUsedProblemNumbers] = useState([]);
   const usedProblemNumbersRef = useRef([]);
@@ -108,6 +111,8 @@ function App() {
     let params = {
       year: selectedYear,
       contest: selectedContest,
+      // Pass the shuffle parameter along based on the checkbox setting
+      shuffle: shuffle,
     };
 
     // If in practice mode, include background filter.
@@ -151,7 +156,8 @@ function App() {
     selectedContest,
     selectedBackground,
     sessionComplete,
-    mode
+    mode,
+    shuffle
   ]);
 
   // ---------------------- useEffect: Fetch on Mode Selection ----------------------
@@ -301,7 +307,7 @@ function App() {
     }
   };
 
-  // ---------------------- Render Summary Grid & Review Panel (unchanged) ----------------------
+  // ---------------------- Render Summary Grid ----------------------
   const renderSummaryGrid = () => {
     const sortedRecords = [...attemptRecords].sort((a, b) => a.problem_number - b.problem_number);
     const gridRowStyle = {
@@ -361,6 +367,7 @@ function App() {
     );
   };
 
+  // ---------------------- Render Review Panel ----------------------
   const renderReviewPanel = () => {
     const sortedIncorrectProblems = [...incorrectProblems].sort(
       (a, b) => a.problem_number - b.problem_number
@@ -420,8 +427,7 @@ function App() {
                           ? sq.question
                           : Array.isArray(sq.question)
                           ? sq.question.join('\n\n')
-                          : "Question not available."
-                        }
+                          : "Question not available."}
                       </ReactMarkdown>
                       <p><em>Detailed Solution:</em></p>
                       {Array.isArray(sq.detailed_solution) ? (
@@ -446,8 +452,7 @@ function App() {
                         <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                           {typeof sq.detailed_solution === 'string'
                             ? sq.detailed_solution
-                            : 'Solution not available.'
-                          }
+                            : 'Solution not available.'}
                         </ReactMarkdown>
                       )}
                     </div>
@@ -474,7 +479,7 @@ function App() {
       </header>
 
       <div className="main-layout">
-        {/* ------------------ Filter Sidebar with Merged Mode and New Background Filter ------------------ */}
+        {/* ------------------ Filter Sidebar with Merged Mode, Background, and Shuffle Option ------------------ */}
         <aside className="filter-sidebar">
           <h3>Filters</h3>
           
@@ -519,6 +524,16 @@ function App() {
               <option value="contest">Contest</option>
               <option value="practice">Practice</option>
             </select>
+          </label>
+
+          {/* New Shuffle checkbox */}
+          <label style={{ marginTop: '1rem' }}>
+            <input
+              type="checkbox"
+              checked={shuffle}
+              onChange={e => setShuffle(e.target.checked)}
+            />
+            {' '}Shuffle Problems
           </label>
 
           {/* Show Contest immediate feedback option */}
@@ -646,6 +661,7 @@ function App() {
                       </div>
                     </section>
 
+                    {/* Practice Mode: Show Detailed Solution and Similar Questions */}
                     {showSolution && mode === "practice" && (
                       <div className="solution-section">
                         <h4>Detailed Solution</h4>
@@ -676,59 +692,52 @@ function App() {
                           </ReactMarkdown>
                         )}
 
-                        <h4>Similar Problems</h4>
-                        {problem.similar_questions &&
-                        Array.isArray(problem.similar_questions) &&
-                        problem.similar_questions.length > 0 ? (
-                          problem.similar_questions.map((sq, idx) => (
-                            <div key={idx} className="similar-problem">
-                              <strong>
-                                {sq.difficulty.charAt(0).toUpperCase() +
-                                  sq.difficulty.slice(1)}
-                                :
-                              </strong>
-                              <p><em>Question:</em></p>
-                              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                {typeof sq.question === 'string'
-                                  ? sq.question
-                                  : Array.isArray(sq.question)
-                                  ? sq.question.join('\n\n')
-                                  : "Question not available."}
-                              </ReactMarkdown>
-                              <p><em>Detailed Solution:</em></p>
-                              {Array.isArray(sq.detailed_solution) ? (
-                                <div>
-                                  {sq.detailed_solution.map((stepObj, idx2) => (
-                                    <div key={idx2} style={{ marginBottom: '1em' }}>
-                                      {Object.entries(stepObj).map(([title, content]) => (
-                                        <div key={title}>
-                                          <strong>{title.replace('_', ' ')}:</strong>
-                                          <ReactMarkdown
-                                            remarkPlugins={[remarkMath]}
-                                            rehypePlugins={[rehypeKatex]}
-                                          >
-                                            {content}
-                                          </ReactMarkdown>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <ReactMarkdown
-                                  remarkPlugins={[remarkMath]}
-                                  rehypePlugins={[rehypeKatex]}
-                                >
-                                  {typeof sq.detailed_solution === 'string'
-                                    ? sq.detailed_solution
-                                    : 'Solution not available.'}
+                        <div className="similar-questions-section">
+                          <h4>Similar Problems</h4>
+                          {problem.similar_questions && Array.isArray(problem.similar_questions) && problem.similar_questions.length > 0 ? (
+                            problem.similar_questions.map((sq, idx) => (
+                              <div key={idx} className="similar-problem">
+                                <strong>{sq.difficulty.charAt(0).toUpperCase() + sq.difficulty.slice(1)}:</strong>
+                                <p><em>Question:</em></p>
+                                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                  {typeof sq.question === 'string'
+                                    ? sq.question
+                                    : Array.isArray(sq.question)
+                                    ? sq.question.join('\n\n')
+                                    : "Question not available."}
                                 </ReactMarkdown>
-                              )}
-                            </div>
-                          ))
-                        ) : (
-                          <p>No similar problems available.</p>
-                        )}
+                                <p><em>Detailed Solution:</em></p>
+                                {Array.isArray(sq.detailed_solution) ? (
+                                  <div>
+                                    {sq.detailed_solution.map((stepObj, idx2) => (
+                                      <div key={idx2} style={{ marginBottom: '1em' }}>
+                                        {Object.entries(stepObj).map(([title, content]) => (
+                                          <div key={title}>
+                                            <strong>{title.replace('_', ' ')}:</strong>
+                                            <ReactMarkdown
+                                              remarkPlugins={[remarkMath]}
+                                              rehypePlugins={[rehypeKatex]}
+                                            >
+                                              {content}
+                                            </ReactMarkdown>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                    {typeof sq.detailed_solution === 'string'
+                                      ? sq.detailed_solution
+                                      : 'Solution not available.'}
+                                  </ReactMarkdown>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <p>No similar problems available.</p>
+                          )}
+                        </div>
                       </div>
                     )}
 

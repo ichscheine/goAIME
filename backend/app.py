@@ -45,15 +45,16 @@ initialize_problem_order(False)
 
 @app.route('/', methods=['GET'])
 def get_problem():
-    global problem_order, current_order_mode
-
-    # Get the "shuffle" query parameter (default is 'false').
-    shuffle_param = request.args.get('shuffle', 'false').lower()
-    shuffle_mode = shuffle_param in ['true', '1']
+    year = request.args.get("year")
+    contest = request.args.get("contest")
+    background = request.args.get("background")  # might be used for practice mode
+    exclude = request.args.get("exclude")
+    # Read the shuffle flag; default to False.
+    shuffle_flag = request.args.get("shuffle", "false").lower() == "true"
 
     # If the ordering mode has changed or the order list is empty, reinitialize.
-    if current_order_mode != shuffle_mode or not problem_order:
-        initialize_problem_order(shuffle_mode)
+    if current_order_mode != shuffle_flag or not problem_order:
+        initialize_problem_order(shuffle_flag)
 
     # Pop the next problem number from the list.
     current_problem_number = problem_order.pop(0)
