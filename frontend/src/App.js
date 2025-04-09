@@ -15,7 +15,7 @@ import 'katex/dist/katex.min.css';
 
 function App() {
   // ---------------------- Mode and State Variables ----------------------
-  const [mode, setMode] = useState(null); // "contest" or "practice"
+  const [mode, setMode] = useState('');
   const [problem, setProblem] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(1); // For practice mode (sequential)
   const [loading, setLoading] = useState(false);
@@ -38,18 +38,20 @@ function App() {
   const [problemStartTime, setProblemStartTime] = useState(null);
   const [cumulativeTime, setCumulativeTime] = useState(0);
 
-  // Dynamic filters
-  const [selectedYear, setSelectedYear] = useState(2022);
+  // Dynamic filters – note the new ordering: Contest, Year, then Mode.
   const [selectedContest, setSelectedContest] = useState('AMC 10A');
+  const [selectedYear, setSelectedYear] = useState(2022);
+  // New state for Practice Mode background filter
+  const [selectedBackground, setSelectedBackground] = useState('Minecraft');
 
-  // Track used problem IDs (for contest mode)
-  const [usedProblemIds, setUsedProblemIds] = useState([]);
-  const usedProblemIdsRef = useRef([]);
+  // Track used problem numbers (now using problem_number for uniqueness)
+  const [usedProblemNumbers, setUsedProblemNumbers] = useState([]);
+  const usedProblemNumbersRef = useRef([]);
   useEffect(() => {
-    usedProblemIdsRef.current = usedProblemIds;
-  }, [usedProblemIds]);
+    usedProblemNumbersRef.current = usedProblemNumbers;
+  }, [usedProblemNumbers]);
 
-  // Cancel tokens
+  // Cancel tokens for axios
   const cancelSourceRef = useRef(null);
 
   // Audio for correct/incorrect
@@ -71,6 +73,26 @@ function App() {
   // Session is complete when 25 problems have been attempted
   const sessionComplete = attempted >= 25;
 
+  // ---------------------- Session Reset Function ----------------------
+  const resetSession = () => {
+    setUsedProblemNumbers([]);
+    usedProblemNumbersRef.current = [];
+    setAttempted(0);
+    setScore(0);
+    setCumulativeTime(0);
+    setProblem(null);
+    setIncorrectProblems([]);
+    setAttemptRecords([]);
+    setIsCorrect(null);
+    setFeedbackImage(null);
+    setAnswersDisabled(false);
+    if (mode === "practice") {
+      setCurrentIndex(1);
+      setAnswered(false);
+      setShowSolution(false);
+    }
+  };
+
   // ---------------------- Fetch a Problem from Backend ----------------------
   const fetchProblem = useCallback(async () => {
     if (sessionComplete) return;
@@ -82,13 +104,20 @@ function App() {
     }
     cancelSourceRef.current = axios.CancelToken.source();
 
+    // Build query parameters including filters.
     let params = {
       year: selectedYear,
       contest: selectedContest,
     };
 
-    if (usedProblemIdsRef.current.length > 0) {
-      params.exclude = usedProblemIdsRef.current.join(",");
+    // If in practice mode, include background filter.
+    if (mode === "practice") {
+      params.background = selectedBackground;
+    }
+
+    // Exclude already used problem numbers
+    if (usedProblemNumbersRef.current.length > 0) {
+      params.exclude = usedProblemNumbersRef.current.join(",");
     }
 
     try {
@@ -98,15 +127,16 @@ function App() {
       });
       console.log("Received problem:", response.data);
 
-      if (usedProblemIdsRef.current.includes(response.data.problem_id)) {
+      // Use problem_number as the unique identifier for duplicate-checks.
+      if (usedProblemNumbersRef.current.includes(response.data.problem_number)) {
         console.warn("Duplicate problem received, fetching a new one");
         await fetchProblem();
         return;
       }
 
       setProblem(response.data);
-      setUsedProblemIds(prev => [...prev, response.data.problem_id]);
-      usedProblemIdsRef.current.push(response.data.problem_id);
+      setUsedProblemNumbers(prev => [...prev, response.data.problem_number]);
+      usedProblemNumbersRef.current.push(response.data.problem_number);
       setProblemStartTime(Date.now());
     } catch (err) {
       if (!axios.isCancel(err)) {
@@ -116,11 +146,18 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, [selectedYear, selectedContest, sessionComplete, mode, currentIndex]);
+  }, [
+    selectedYear,
+    selectedContest,
+    selectedBackground,
+    sessionComplete,
+    mode
+  ]);
 
-  // ---------------------- useEffect: Initial Fetch ----------------------
+  // ---------------------- useEffect: Fetch on Mode Selection ----------------------
   useEffect(() => {
-    if (!sessionComplete && mode !== null) {
+    // When a mode is selected and session is not complete, fetch the first problem.
+    if (mode && !sessionComplete) {
       fetchProblem();
     }
     return () => {
@@ -162,7 +199,7 @@ function App() {
       setCumulativeTime(prev => prev + timeSpent);
       console.log(`Time on this problem: ${timeSpent}ms`);
 
-      // Record this attempt
+      // Record this attempt using problem_number as identifier
       setAttemptRecords(prev => [
         ...prev,
         {
@@ -178,7 +215,7 @@ function App() {
         setScore(prev => prev + 1);
       } else {
         setIncorrectProblems(prev => {
-          if (!prev.find(p => p.problem_id === problem.problem_id)) {
+          if (!prev.find(p => p.problem_number === problem.problem_number)) {
             return [...prev, problem];
           }
           return prev;
@@ -264,8 +301,7 @@ function App() {
     }
   };
 
-  // ---------------------- Render Summary Grid ----------------------
-  // We sort the attemptRecords by problem number before rendering.
+  // ---------------------- Render Summary Grid & Review Panel (unchanged) ----------------------
   const renderSummaryGrid = () => {
     const sortedRecords = [...attemptRecords].sort((a, b) => a.problem_number - b.problem_number);
     const gridRowStyle = {
@@ -325,7 +361,6 @@ function App() {
     );
   };
 
-  // ---------------------- Render Review Panel After Session Completion ----------------------
   const renderReviewPanel = () => {
     const sortedIncorrectProblems = [...incorrectProblems].sort(
       (a, b) => a.problem_number - b.problem_number
@@ -338,7 +373,7 @@ function App() {
           <p>No incorrect problems! Great job!</p>
         ) : (
           sortedIncorrectProblems.map((p, index) => (
-            <div key={p.problem_id || index} className="review-item">
+            <div key={p.problem_number || index} className="review-item">
               <h3>
                 {p.year}, {p.contest}, Problem {p.problem_number}
               </h3>
@@ -384,8 +419,8 @@ function App() {
                         {typeof sq.question === 'string'
                           ? sq.question
                           : Array.isArray(sq.question)
-                            ? sq.question.join('\n\n')
-                            : "Question not available."
+                          ? sq.question.join('\n\n')
+                          : "Question not available."
                         }
                       </ReactMarkdown>
                       <p><em>Detailed Solution:</em></p>
@@ -439,22 +474,31 @@ function App() {
       </header>
 
       <div className="main-layout">
+        {/* ------------------ Filter Sidebar with Merged Mode and New Background Filter ------------------ */}
         <aside className="filter-sidebar">
           <h3>Filters</h3>
+          
+          <label>
+            Contest:
+            <select
+              value={selectedContest}
+              onChange={e => {
+                setSelectedContest(e.target.value);
+                resetSession();
+              }}
+            >
+              <option value="AMC 10A">AMC 10A</option>
+              <option value="AMC 10B">AMC 10B</option>
+            </select>
+          </label>
+          
           <label>
             Year:
             <select
               value={selectedYear}
               onChange={e => {
                 setSelectedYear(e.target.value);
-                setUsedProblemIds([]);
-                usedProblemIdsRef.current = [];
-                setAttempted(0);
-                setScore(0);
-                setCumulativeTime(0);
-                setProblem(null);
-                setIncorrectProblems([]);
-                setAttemptRecords([]);
+                resetSession();
               }}
             >
               <option value="2022">2022</option>
@@ -463,77 +507,69 @@ function App() {
           </label>
 
           <label>
-            Contest:
+            Mode:
             <select
-              value={selectedContest}
+              value={mode}
               onChange={e => {
-                setSelectedContest(e.target.value);
-                setUsedProblemIds([]);
-                usedProblemIdsRef.current = [];
-                setAttempted(0);
-                setScore(0);
-                setCumulativeTime(0);
-                setProblem(null);
-                setIncorrectProblems([]);
-                setAttemptRecords([]);
+                setMode(e.target.value);
+                resetSession();
               }}
             >
-              <option value="AMC 10A">AMC 10A</option>
-              <option value="AMC 10B">AMC 10B</option>
+              <option value="">Select Mode</option>
+              <option value="contest">Contest</option>
+              <option value="practice">Practice</option>
             </select>
           </label>
 
+          {/* Show Contest immediate feedback option */}
           {mode === "contest" && (
-            <div style={{ marginTop: '1rem' }}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={showContestFeedback}
-                  onChange={e => handleContestFeedbackToggle(e.target.checked)}
-                />
-                {' '}Show immediate feedback?
-              </label>
-            </div>
+            <label style={{ marginTop: '1rem' }}>
+              <input
+                type="checkbox"
+                checked={showContestFeedback}
+                onChange={e => handleContestFeedbackToggle(e.target.checked)}
+              />
+              {' '}Show immediate feedback?
+            </label>
+          )}
+
+          {/* Show Background filter when in Practice Mode */}
+          {mode === "practice" && (
+            <label>
+              Background:
+              <select
+                value={selectedBackground}
+                onChange={e => {
+                  setSelectedBackground(e.target.value);
+                  resetSession();
+                }}
+              >
+                <option value="Minecraft">Minecraft</option>
+                <option value="Roblox">Roblox</option>
+                <option value="Mario">Mario</option>
+                <option value="Elsa">Elsa</option>
+              </select>
+            </label>
           )}
 
           <button
             onClick={() => {
-              setUsedProblemIds([]);
-              usedProblemIdsRef.current = [];
-              setAttempted(0);
-              setScore(0);
-              setCumulativeTime(0);
-              setProblem(null);
-              setIncorrectProblems([]);
-              setAttemptRecords([]);
-              setIsCorrect(null);
-              setFeedbackImage(null);
-              setAnswersDisabled(false);
-              if (mode === "practice") {
-                setCurrentIndex(1);
-                setAnswered(false);
-                setShowSolution(false);
-              }
-              fetchProblem();
+              resetSession();
+              if(mode) fetchProblem();
             }}
             className="filter-btn"
           >
-            Restart Practice
+            Restart
           </button>
         </aside>
 
+        {/* ------------------ Main Content Panel ------------------ */}
         <main className="content-panel">
-          {mode === null ? (
-            <div className="mode-selection-container">
-              <h2 className="mode-selection-title">Select Mode</h2>
-              <div className="mode-buttons">
-                <button className="mode-button" onClick={() => setMode("contest")}>
-                  Contest Mode
-                </button>
-                <button className="mode-button" onClick={() => setMode("practice")}>
-                  Practice Mode
-                </button>
-              </div>
+          {/* If mode not selected, show an instruction message */}
+          {!mode ? (
+            <div className="instruction-message">
+              <h2>Welcome to AMC Practice</h2>
+              <p>Please select a mode from the Filters panel to start.</p>
             </div>
           ) : (
             <>
@@ -651,22 +687,15 @@ function App() {
                                   sq.difficulty.slice(1)}
                                 :
                               </strong>
-                              <p>
-                                <em>Question:</em>
-                              </p>
-                              <ReactMarkdown
-                                remarkPlugins={[remarkMath]}
-                                rehypePlugins={[rehypeKatex]}
-                              >
+                              <p><em>Question:</em></p>
+                              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                                 {typeof sq.question === 'string'
                                   ? sq.question
                                   : Array.isArray(sq.question)
                                   ? sq.question.join('\n\n')
                                   : "Question not available."}
                               </ReactMarkdown>
-                              <p>
-                                <em>Detailed Solution:</em>
-                              </p>
+                              <p><em>Detailed Solution:</em></p>
                               {Array.isArray(sq.detailed_solution) ? (
                                 <div>
                                   {sq.detailed_solution.map((stepObj, idx2) => (

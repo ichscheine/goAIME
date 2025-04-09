@@ -1,168 +1,77 @@
 import os
+import random
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from pymongo import MongoClient
-import random
-from bson.objectid import ObjectId
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if available.
+load_dotenv()
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 
-# Connect to MongoDB using your actual database
-mongo_client = MongoClient(os.getenv("MONGO_URI"))
+# Get MongoDB connection string from environment variables.
+mongo_uri = os.getenv("MONGO_URI")
+if not mongo_uri:
+    raise ValueError("MONGO_URI environment variable is required.")
+
+# Connect to MongoDB.
+mongo_client = MongoClient(mongo_uri)
 db = mongo_client["AMC10"]
-adaptive_collection = db["2022_amc10a"]
+collection = db["2022_amc10a_0409"]
 
-def normalize_field(val):
-    """
-    Recursively convert a value to a string.
-    For lists, join the normalized items with newlines.
-    For dictionaries, join key-value pairs with a colon.
-    """
-    if isinstance(val, str):
-        return val
-    elif isinstance(val, list):
-        return "\n\n".join(normalize_field(item) for item in val)
-    elif isinstance(val, dict):
-        # For a dictionary that represents answer choices (or similar),
-        # format each key-value pair as "Key) value"
-        return "\n\n".join(f"{k}) {normalize_field(v)}" for k, v in val.items())
-    else:
-        return str(val)
+# Global variables to store the current order list and ordering mode.
+problem_order = []        # List of problem numbers (as strings)
+current_order_mode = None  # False for sequential, True for shuffled
 
-def normalize_problem(problem):
-    """
-    Normalize key fields in the problem so that they contain strings (or arrays of strings)
-    suitable for the frontend.
-    """
-    # Normalize problem statement
-    if "problem_statement" in problem and not isinstance(problem["problem_statement"], str):
-        problem["problem_statement"] = normalize_field(problem["problem_statement"])
-    
-    # Normalize answer_choices: if it's a dict, convert it to a list of formatted strings;
-    # if it's a list, ensure each element is a string.
-    if "answer_choices" in problem:
-        ac = problem["answer_choices"]
-        if isinstance(ac, list):
-            problem["answer_choices"] = [normalize_field(item) for item in ac]
-        elif isinstance(ac, dict):
-            problem["answer_choices"] = [f"{label}) {normalize_field(text)}" for label, text in ac.items()]
-        else:
-            problem["answer_choices"] = [normalize_field(ac)]
-    
-    # Normalize detailed_solution: if it's a list of objects, ensure each value is normalized.
-    if "detailed_solution" in problem:
-        ds = problem["detailed_solution"]
-        if isinstance(ds, list):
-            normalized_ds = []
-            for item in ds:
-                if isinstance(item, dict):
-                    new_item = {}
-                    for k, v in item.items():
-                        new_item[k] = normalize_field(v)
-                    normalized_ds.append(new_item)
-                else:
-                    normalized_ds.append(normalize_field(item))
-            problem["detailed_solution"] = normalized_ds
-        else:
-            problem["detailed_solution"] = normalize_field(ds)
-    
-    # Normalize similar_questions if present.
-    if "similar_questions" in problem:
-        sq = problem["similar_questions"]
-        if isinstance(sq, list):
-            normalized_sq = []
-            for item in sq:
-                if isinstance(item, dict):
-                    new_item = {}
-                    for k, v in item.items():
-                        # For detailed_solution inside similar_questions, handle list/dict accordingly.
-                        if k == "detailed_solution":
-                            if isinstance(v, list):
-                                new_item[k] = [normalize_field(subitem) if not isinstance(subitem, dict)
-                                               else {subk: normalize_field(subval) for subk, subval in subitem.items()}
-                                               for subitem in v]
-                            else:
-                                new_item[k] = normalize_field(v)
-                        else:
-                            new_item[k] = normalize_field(v)
-                    normalized_sq.append(new_item)
-                else:
-                    normalized_sq.append(normalize_field(item))
-            problem["similar_questions"] = normalized_sq
-        else:
-            problem["similar_questions"] = normalize_field(sq)
-    
-    return problem
+problem_order = list(map(str, range(1, 26))) # Initialize with problem numbers 1 to 25 as strings.
+print(f"Initial problem order: {problem_order}")
 
-@app.route("/", methods=["GET"])
+def initialize_problem_order(shuffle_mode: bool):
+    """
+    Initializes the global problem_order list based on the desired ordering mode.
+    If shuffle_mode is True, the list is randomized. Otherwise, it's sequential.
+    """
+    global problem_order, current_order_mode
+    # Create a sequential list of problem numbers as strings.
+    # If shuffle mode is requested, randomize the list.
+    if shuffle_mode:
+        random.shuffle(problem_order)
+    current_order_mode = shuffle_mode
+
+# Explicitly initialize with sequential order by default.
+initialize_problem_order(False)
+
+@app.route('/', methods=['GET'])
 def get_problem():
-    """
-    Retrieve a problem from the collection along with its details.
-    Supports dynamic filters (year, contest) and an "exclude" list.
-    Always returns JSON data.
-    """
-    # Retrieve dynamic filters from query parameters
-    year = request.args.get("year")
-    contest = request.args.get("contest")
-    query = {}
-    if year:
-        try:
-            query["year"] = int(year)
-        except ValueError:
-            query["year"] = year
-    if contest:
-        query["contest"] = contest
+    global problem_order, current_order_mode
 
-    # Process the "exclude" parameter to avoid repeating problems.
-    exclude_param = request.args.get("exclude", "")
-    exclude_ids = []
-    if exclude_param:
-        try:
-            exclude_ids = [ObjectId(id_str) for id_str in exclude_param.split(",") if id_str]
-        except Exception as e:
-            print("Error processing exclude list:", e)
-    if exclude_ids:
-        query["_id"] = {"$nin": exclude_ids}
+    # Get the "shuffle" query parameter (default is 'false').
+    shuffle_param = request.args.get('shuffle', 'false').lower()
+    shuffle_mode = shuffle_param in ['true', '1']
 
-    # Get the total count of documents matching the filters (ignoring exclusion)
-    base_query = {k: v for k, v in query.items() if k != "_id"}
-    total_count = adaptive_collection.count_documents(base_query)
+    # If the ordering mode has changed or the order list is empty, reinitialize.
+    if current_order_mode != shuffle_mode or not problem_order:
+        initialize_problem_order(shuffle_mode)
 
-    # Retrieve documents from the database based on query (with exclusion)
-    docs = list(adaptive_collection.find(query))
-    if not docs:
-        if exclude_ids and len(exclude_ids) >= total_count:
-            return jsonify({
-                "error": "All problems have been used. Please restart the session.",
-                "total": total_count
-            }), 404
-        else:
-            return jsonify({
-                "error": "No more problems available matching the filters",
-                "query": query
-            }), 404
+    # Pop the next problem number from the list.
+    current_problem_number = problem_order.pop(0)
+    print(f"Current problem number: {current_problem_number}")
 
-    problem = random.choice(docs)
+    # Retrieve the problem from MongoDB using the problem_number (stored as a string).
+    problem = collection.find_one({"problem_number": current_problem_number})
     
-    # Normalize the problem document before sending
-    problem = normalize_problem(problem)
-    
-    # Build problem_data including all necessary fields
-    problem_data = {
-        "problem_id": str(problem.get("_id")),
-        "year": problem.get("year"),
-        "contest": problem.get("contest"),
-        "problem_number": problem.get("problem_number"),
-        "problem_statement": problem.get("problem_statement"),
-        "image": problem.get("image", None),
-        "answer_choices": problem.get("answer_choices"),
-        "answer_key": problem.get("answer_key"),
-        "detailed_solution": problem.get("detailed_solution", ""),
-        "similar_questions": problem.get("similar_questions", [])
-    }
-
-    return jsonify(problem_data), 200
+    if problem:
+        # Convert ObjectId for JSON serialization.
+        if '_id' in problem:
+            problem['_id'] = str(problem['_id'])
+        return jsonify(problem)
+    else:
+        return jsonify({
+            "error": "Problem not found",
+            "problem_number": current_problem_number
+        }), 404
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    app.run(debug=False, port=5001)
