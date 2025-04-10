@@ -16,6 +16,7 @@ import 'katex/dist/katex.min.css';
 function App() {
   // ---------------------- Mode and State Variables ----------------------
   const [sessionStarted, setSessionStarted] = useState(false);
+  const AMC10_TIME_LIMIT_MINUTES = 75;
   const [mode, setMode] = useState('');
   const [problem, setProblem] = useState(null);
   // This represents the sequential number within the current session.
@@ -34,7 +35,7 @@ function App() {
   const [answered, setAnswered] = useState(false);
 
   // Contest mode: show or suppress immediate feedback?
-  const [showContestFeedback, setShowContestFeedback] = useState(false);
+  const [showProblemFeedback, setShowProblemFeedback] = useState(false);
 
   // Time tracking
   const [problemStartTime, setProblemStartTime] = useState(null);
@@ -43,7 +44,7 @@ function App() {
   // Dynamic filters – Contest, Year, then Mode.
   const [selectedContest, setSelectedContest] = useState('AMC 10A');
   const [selectedYear, setSelectedYear] = useState(2022);
-  const [selectedBackground, setSelectedBackground] = useState('Minecraft');
+  const [selectedSkin, setSelectedSkin] = useState('Minecraft');
 
   // New state: let user enable shuffling on the frontend.
   const [shuffle, setShuffle] = useState(false);
@@ -115,7 +116,7 @@ function App() {
     };
 
     if (mode === "practice") {
-      params.background = selectedBackground;
+      params.Skin = selectedSkin;
     }
 
     if (usedProblemNumbersRef.current.length > 0) {
@@ -151,7 +152,7 @@ function App() {
   }, [
     selectedYear,
     selectedContest,
-    selectedBackground,
+    selectedSkin,
     sessionComplete,
     mode,
     shuffle
@@ -176,21 +177,21 @@ function App() {
     (choice) => {
       if (answersDisabled) return;
       setAnswersDisabled(true);
-
+  
       if (!problem || !problem.answer_key || !problemStartTime) {
         setAnswersDisabled(false);
         return;
       }
-
+  
       const match = choice.trim().match(/^([A-Z])\)?/);
       const selectedLetter = match ? match[1] : choice.trim().toUpperCase();
       const correctAnswer = problem.answer_key.trim().toUpperCase();
       const answerIsCorrect = selectedLetter === correctAnswer;
-
+  
       const timeSpent = Date.now() - problemStartTime;
       setCumulativeTime(prev => prev + timeSpent);
       console.log(`Time on this problem: ${timeSpent}ms`);
-
+  
       setAttemptRecords(prev => [
         ...prev,
         {
@@ -199,9 +200,9 @@ function App() {
           timeSpent
         }
       ]);
-
+  
       setAttempted(prev => prev + 1);
-
+  
       if (answerIsCorrect) {
         setScore(prev => prev + 1);
       } else {
@@ -212,9 +213,20 @@ function App() {
           return prev;
         });
       }
-
+  
       if (mode === "contest") {
-        if (showContestFeedback) {
+        // Never show feedback in contest mode
+        setIsCorrect(null);
+        setFeedbackImage(null);
+        if (attempted + 1 < 25) {
+          setTimeout(async () => {
+            await fetchProblem();
+            setAnswersDisabled(false);
+          }, 500);
+        }
+      } else if (mode === "practice") {
+        if (showProblemFeedback) {
+          // Only show feedback if the checkbox is checked
           if (answerIsCorrect) {
             correctAudio.play();
             setFeedbackImage(correctImage);
@@ -223,30 +235,11 @@ function App() {
             setFeedbackImage(incorrectImage);
           }
           setIsCorrect(answerIsCorrect);
-          if (attempted + 1 < 25) {
-            setTimeout(async () => {
-              await fetchProblem();
-              setAnswersDisabled(false);
-            }, 1000);
-          }
         } else {
+          // If checkbox is unchecked, don't show feedback
           setIsCorrect(null);
-          if (attempted + 1 < 25) {
-            setTimeout(async () => {
-              await fetchProblem();
-              setAnswersDisabled(false);
-            }, 500);
-          }
+          setFeedbackImage(null);
         }
-      } else if (mode === "practice") {
-        if (answerIsCorrect) {
-          correctAudio.play();
-          setFeedbackImage(correctImage);
-        } else {
-          incorrectAudio.play();
-          setFeedbackImage(incorrectImage);
-        }
-        setIsCorrect(answerIsCorrect);
         setAnswered(true);
       }
     },
@@ -258,7 +251,7 @@ function App() {
       fetchProblem,
       attempted,
       mode,
-      showContestFeedback,
+      showProblemFeedback,
       answersDisabled
     ]
   );
@@ -284,9 +277,9 @@ function App() {
     setAnswersDisabled(false);
   }, [fetchProblem]);
 
-  // ---------------------- Toggle immediate feedback in Contest Mode ----------------------
-  const handleContestFeedbackToggle = (checked) => {
-    setShowContestFeedback(checked);
+  // ---------------------- Toggle Immediate Feedback in Practice Mode ----------------------
+  const handleProblemFeedbackToggle = (checked) => {
+    setShowProblemFeedback(checked);
     if (!checked) {
       setIsCorrect(null);
       setFeedbackImage(null);
@@ -462,7 +455,7 @@ function App() {
     setLoading(true);
     setError(null);
     setSessionStarted(true);
-    
+
     try {
       // Request the backend with the restart flag
       const response = await axios.get("http://127.0.0.1:5001/", {
@@ -471,7 +464,7 @@ function App() {
           year: selectedYear,
           contest: selectedContest,
           shuffle: shuffle,
-          ...(mode === "practice" && { background: selectedBackground })
+          ...(mode === "practice" && { Skin: selectedSkin })
         }
       });
       // Set the new problem (which should be Problem 1)
@@ -488,12 +481,16 @@ function App() {
   // ---------------------- Main Render ----------------------
   return (
     <div className="app-container">
-      <header className="app-header">
-        <h1>AMC Practice</h1>
-        <div className="score-board">
-          Score: {score} / {attempted} | Time: {(cumulativeTime / 1000).toFixed(2)} sec
-        </div>
-      </header>
+    <header className="app-header">
+      <h1>AMC Practice</h1>
+      <div className="score-board">
+        {mode === "practice" ? (
+          <>Score: {score} / {attempted} | Time Left: {(AMC10_TIME_LIMIT_MINUTES - (cumulativeTime / 60000)).toFixed(2)} min</>
+        ) : (
+          <>Attempted: {attempted} | Time Left: {(AMC10_TIME_LIMIT_MINUTES - (cumulativeTime / 60000)).toFixed(2)} min</>
+        )}
+      </div>
+    </header>
 
       <div className="main-layout">
         {/* ------------------ Filter Sidebar ------------------ */}
@@ -545,27 +542,27 @@ function App() {
               checked={shuffle}
               onChange={e => setShuffle(e.target.checked)}
             />
-            {' '}Shuffle Problems
+            {' '}Shuffle Problems?
           </label>
           {/* Contest mode immediate feedback */}
-          {mode === "contest" && (
+          {mode === "practice" && (
             <label style={{ marginTop: '1rem' }}>
               <input
                 type="checkbox"
-                checked={showContestFeedback}
-                onChange={e => handleContestFeedbackToggle(e.target.checked)}
+                checked={showProblemFeedback}
+                onChange={e => handleProblemFeedbackToggle(e.target.checked)}
               />
-              {' '}Show immediate feedback?
+              {' '}Show Immediate Feedback?
             </label>
           )}
-          {/* Background filter for Practice mode */}
+          {/* Skin filter for Practice mode */}
           {mode === "practice" && (
             <label>
-              Background:
+              Skin:
               <select
-                value={selectedBackground}
+                value={selectedSkin}
                 onChange={e => {
-                  setSelectedBackground(e.target.value);
+                  setSelectedSkin(e.target.value);
                   restartSession();
                 }}
               >
