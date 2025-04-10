@@ -75,6 +75,7 @@ function App() {
   
   // ---------------------- Mode and State Variables ----------------------
   const [sessionStarted, setSessionStarted] = useState(false);
+  const [sessionComplete, setSessionComplete] = useState(false);
   const AMC10_TIME_LIMIT_MINUTES = 75;
   const [mode, setMode] = useState('');
   const [problem, setProblem] = useState(null);
@@ -85,7 +86,35 @@ function App() {
   const [score, setScore] = useState(0);
   const [attempted, setAttempted] = useState(0);
   const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [sessionStartTime, setSessionStartTime] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(AMC10_TIME_LIMIT_MINUTES * 60); // in seconds
+  const [problemStartTime, setProblemStartTime] = useState(null);
+  const [cumulativeTime, setCumulativeTime] = useState(0);  // Move this up
 
+  // Add this timer effect
+  useEffect(() => {
+    if (!sessionStarted) return;
+  
+    // Set session start time when session starts
+    if (!sessionStartTime) {
+      setSessionStartTime(Date.now());
+    }
+  
+    const timer = setInterval(() => {
+      const elapsedTime = Math.floor((Date.now() - sessionStartTime) / 1000);
+      const timeLeftInSeconds = AMC10_TIME_LIMIT_MINUTES * 60 - elapsedTime;
+      
+      setTimeLeft(Math.max(0, timeLeftInSeconds));
+      
+      if (timeLeftInSeconds <= 0) {
+        clearInterval(timer);
+        setSessionComplete(true);
+      }
+    }, 1000);
+  
+    return () => clearInterval(timer);
+  }, [sessionStarted, sessionStartTime]);
+  
   // Update the image preloading useEffect
   useEffect(() => {
     const correctImg = new Image();
@@ -119,10 +148,6 @@ function App() {
   // Contest mode: show or suppress immediate feedback?
   const [showProblemFeedback, setShowProblemFeedback] = useState(false);
 
-  // Time tracking
-  const [problemStartTime, setProblemStartTime] = useState(null);
-  const [cumulativeTime, setCumulativeTime] = useState(0);
-
   // Dynamic filters – Contest, Year, then Mode.
   const [selectedContest, setSelectedContest] = useState('AMC 10A');
   const [selectedYear, setSelectedYear] = useState(2022);
@@ -153,9 +178,6 @@ function App() {
   // Prevent multiple clicks on the same problem.
   const [answersDisabled, setAnswersDisabled] = useState(false);
 
-  // Session complete when 25 problems have been attempted.
-  const sessionComplete = attempted >= 25;
-
   // ---------------------- Session Reset Function ----------------------
   const resetSession = () => {
     setUsedProblemNumbers([]);
@@ -169,17 +191,20 @@ function App() {
     setIsCorrect(null);
     setFeedbackImage(null);
     setAnswersDisabled(false);
-    // Reset currentIndex so session starts at Problem 1.
     setCurrentIndex(1);
     setAnswered(false);
     setShowSolution(false);
-  };
+    setSessionComplete(false);
+    setSessionStarted(true);
+    setSessionStartTime(Date.now());
+    setTimeLeft(AMC10_TIME_LIMIT_MINUTES * 60);
+    };
 
   // ---------------------- Fetch a Problem from Backend ----------------------
   const fetchProblem = useCallback(async () => {
-    if (sessionComplete) return;
-    setLoading(true);
-    setError(null);
+    if (sessionComplete) {
+      return;
+    }
 
     if (cancelSourceRef.current) {
       cancelSourceRef.current.cancel();
@@ -261,6 +286,17 @@ function App() {
     }
   };
 
+  // Update the useEffect that checks for session completion
+  useEffect(() => {
+    // Check for both time limit and problem limit
+    const timeExpired = timeLeft <= 0;
+    const problemsComplete = attempted >= 25;
+    
+    if (sessionStarted && (timeExpired || problemsComplete)) {
+      setSessionComplete(true);
+    }
+  }, [timeLeft, attempted, sessionStarted]);
+
   // ---------------------- Handle Choice Click ----------------------
   const handleChoiceClick = useCallback(
     async (choice) => { // Make the function async
@@ -306,7 +342,7 @@ function App() {
       if (mode === "contest") {
         setIsCorrect(null);
         setFeedbackImage(null);
-        if (attempted + 1 < 25) {
+        if (!sessionComplete && attempted + 1 < 25) {
           setTimeout(async () => {
             await fetchProblem();
             setAnswersDisabled(false);
@@ -340,7 +376,8 @@ function App() {
       mode,
       showProblemFeedback,
       answersDisabled,
-      audioLoaded
+      audioLoaded,
+      sessionComplete
     ]
   );
 
@@ -576,9 +613,9 @@ function App() {
       <h1>AMC Practice</h1>
       <div className="score-board">
         {mode === "practice" ? (
-          <>Score: {score} / {attempted} | Time Left: {(AMC10_TIME_LIMIT_MINUTES - (cumulativeTime / 60000)).toFixed(2)} min</>
+          <>Score: {score} / {attempted} | Time Left: {Math.floor(timeLeft / 60)} min {timeLeft % 60} sec</>
         ) : (
-          <>Attempted: {attempted} | Time Left: {(AMC10_TIME_LIMIT_MINUTES - (cumulativeTime / 60000)).toFixed(2)} min</>
+          <>Attempted: {attempted} | Time Left: {Math.floor(timeLeft / 60)} min {timeLeft % 60} sec</>
         )}
       </div>
     </header>
