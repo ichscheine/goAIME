@@ -21,44 +21,46 @@ mongo_client = MongoClient(mongo_uri)
 db = mongo_client["AMC10"]
 collection = db["2022_amc10a_0409"]
 
-# Global variables to store the current order list and ordering mode.
-problem_order = []        # List of problem numbers (as strings)
+# Global state
+problem_order = []  # list of string IDs, e.g. ["1", "2", ..., "25"]
 current_order_mode = None  # False for sequential, True for shuffled
 
-problem_order = list(map(str, range(1, 26))) # Initialize with problem numbers 1 to 25 as strings.
-print(f"Initial problem order: {problem_order}")
+ALL_PROBLEMS = [str(i) for i in range(1, 26)]  # "1" through "25"
 
 def initialize_problem_order(shuffle_mode: bool):
-    """
-    Initializes the global problem_order list based on the desired ordering mode.
-    If shuffle_mode is True, the list is randomized. Otherwise, it's sequential.
-    """
     global problem_order, current_order_mode
-    # Create a sequential list of problem numbers as strings.
-    # If shuffle mode is requested, randomize the list.
+    # Always build the full list from "1" to "25."
+    problem_order = ALL_PROBLEMS.copy()
     if shuffle_mode:
         random.shuffle(problem_order)
     current_order_mode = shuffle_mode
-
-# Explicitly initialize with sequential order by default.
-initialize_problem_order(False)
+    print("Initialized new problem_order:", problem_order)
 
 @app.route('/', methods=['GET'])
 def get_problem():
-    year = request.args.get("year")
-    contest = request.args.get("contest")
-    background = request.args.get("background")  # might be used for practice mode
-    exclude = request.args.get("exclude")
-    # Read the shuffle flag; default to False.
-    shuffle_flag = request.args.get("shuffle", "false").lower() == "true"
+    global problem_order, current_order_mode
 
-    # If the ordering mode has changed or the order list is empty, reinitialize.
-    if current_order_mode != shuffle_flag or not problem_order:
-        initialize_problem_order(shuffle_flag)
+    # 1) Check shuffle param
+    shuffle_param = request.args.get('shuffle', 'false').lower()
+    shuffle_mode = (shuffle_param in ['true', '1'])
 
-    # Pop the next problem number from the list.
+    # 2) Check restart param
+    restart_param = request.args.get('restart', 'false').lower()
+    restart_flag = (restart_param in ['true', '1'])
+
+    # 3) If restart=true, forcibly reinitialize problem_order from scratch:
+    if restart_flag:
+        initialize_problem_order(shuffle_mode)
+    # 4) Otherwise, reinitialize if empty or if the mode changed
+    elif not problem_order or (current_order_mode != shuffle_mode):
+        initialize_problem_order(shuffle_mode)
+
+    if not problem_order:
+        return jsonify({"error": "No problems available. Reinitialize needed."}), 500
+
+    # Pop the next problem from the order
     current_problem_number = problem_order.pop(0)
-    print(f"Current problem number: {current_problem_number}")
+    print("Serving problem", current_problem_number, "; remaining:", problem_order)
 
     # Retrieve the problem from MongoDB using the problem_number (stored as a string).
     problem = collection.find_one({"problem_number": current_problem_number})

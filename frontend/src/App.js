@@ -15,9 +15,11 @@ import 'katex/dist/katex.min.css';
 
 function App() {
   // ---------------------- Mode and State Variables ----------------------
+  const [sessionStarted, setSessionStarted] = useState(false);
   const [mode, setMode] = useState('');
   const [problem, setProblem] = useState(null);
-  const [currentIndex, setCurrentIndex] = useState(1); // For practice mode (sequential)
+  // This represents the sequential number within the current session.
+  const [currentIndex, setCurrentIndex] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [score, setScore] = useState(0);
@@ -38,16 +40,15 @@ function App() {
   const [problemStartTime, setProblemStartTime] = useState(null);
   const [cumulativeTime, setCumulativeTime] = useState(0);
 
-  // Dynamic filters – note the new ordering: Contest, Year, then Mode.
+  // Dynamic filters – Contest, Year, then Mode.
   const [selectedContest, setSelectedContest] = useState('AMC 10A');
   const [selectedYear, setSelectedYear] = useState(2022);
-  // New state for Practice Mode background filter
   const [selectedBackground, setSelectedBackground] = useState('Minecraft');
 
   // New state: let user enable shuffling on the frontend.
   const [shuffle, setShuffle] = useState(false);
 
-  // Track used problem numbers (now using problem_number for uniqueness)
+  // Track used problem numbers (using problem_number for uniqueness)
   const [usedProblemNumbers, setUsedProblemNumbers] = useState([]);
   const usedProblemNumbersRef = useRef([]);
   useEffect(() => {
@@ -67,13 +68,13 @@ function App() {
   // Track incorrectly answered problems for review
   const [incorrectProblems, setIncorrectProblems] = useState([]);
 
-  // Track all attempted problems with details: problem number, correct flag, and time spent.
+  // Track all attempted problems with details.
   const [attemptRecords, setAttemptRecords] = useState([]);
 
-  // New state: prevent multiple clicks on the same problem.
+  // Prevent multiple clicks on the same problem.
   const [answersDisabled, setAnswersDisabled] = useState(false);
 
-  // Session is complete when 25 problems have been attempted
+  // Session complete when 25 problems have been attempted.
   const sessionComplete = attempted >= 25;
 
   // ---------------------- Session Reset Function ----------------------
@@ -89,11 +90,10 @@ function App() {
     setIsCorrect(null);
     setFeedbackImage(null);
     setAnswersDisabled(false);
-    if (mode === "practice") {
-      setCurrentIndex(1);
-      setAnswered(false);
-      setShowSolution(false);
-    }
+    // Reset currentIndex so session starts at Problem 1.
+    setCurrentIndex(1);
+    setAnswered(false);
+    setShowSolution(false);
   };
 
   // ---------------------- Fetch a Problem from Backend ----------------------
@@ -107,20 +107,17 @@ function App() {
     }
     cancelSourceRef.current = axios.CancelToken.source();
 
-    // Build query parameters including filters.
+    // Build query parameters.
     let params = {
       year: selectedYear,
       contest: selectedContest,
-      // Pass the shuffle parameter along based on the checkbox setting
       shuffle: shuffle,
     };
 
-    // If in practice mode, include background filter.
     if (mode === "practice") {
       params.background = selectedBackground;
     }
 
-    // Exclude already used problem numbers
     if (usedProblemNumbersRef.current.length > 0) {
       params.exclude = usedProblemNumbersRef.current.join(",");
     }
@@ -132,7 +129,7 @@ function App() {
       });
       console.log("Received problem:", response.data);
 
-      // Use problem_number as the unique identifier for duplicate-checks.
+      // Avoid duplicate problems.
       if (usedProblemNumbersRef.current.includes(response.data.problem_number)) {
         console.warn("Duplicate problem received, fetching a new one");
         await fetchProblem();
@@ -159,17 +156,6 @@ function App() {
     mode,
     shuffle
   ]);
-
-  // ---------------------- useEffect: Fetch on Mode Selection ----------------------
-  useEffect(() => {
-    // When a mode is selected and session is not complete, fetch the first problem.
-    if (mode && !sessionComplete) {
-      fetchProblem();
-    }
-    return () => {
-      if (cancelSourceRef.current) cancelSourceRef.current.cancel();
-    };
-  }, [fetchProblem, sessionComplete, mode]);
 
   // ---------------------- Update Problem Statement ----------------------
   useEffect(() => {
@@ -205,7 +191,6 @@ function App() {
       setCumulativeTime(prev => prev + timeSpent);
       console.log(`Time on this problem: ${timeSpent}ms`);
 
-      // Record this attempt using problem_number as identifier
       setAttemptRecords(prev => [
         ...prev,
         {
@@ -288,6 +273,7 @@ function App() {
   // ---------------------- Next Problem in Practice Mode ----------------------
   const handleNextProblem = useCallback(async () => {
     setAnswersDisabled(true);
+    // Increment the sequential index for the next problem.
     setCurrentIndex(prev => prev + 1);
     setShowSolution(false);
     setAnswered(false);
@@ -468,56 +454,83 @@ function App() {
     );
   };
 
+  // ---------------------- Restart Session Function ----------------------
+  const restartSession = async () => {
+
+    // Clear local state immediately
+    resetSession();
+    setLoading(true);
+    setError(null);
+    setSessionStarted(true);
+    
+    try {
+      // Request the backend with the restart flag
+      const response = await axios.get("http://127.0.0.1:5001/", {
+        params: {
+          restart: true,
+          year: selectedYear,
+          contest: selectedContest,
+          shuffle: shuffle,
+          ...(mode === "practice" && { background: selectedBackground })
+        }
+      });
+      // Set the new problem (which should be Problem 1)
+      setProblem(response.data);
+      setProblemStartTime(Date.now());
+    } catch (err) {
+      console.error("Error starting session:", err);
+      setError(err.response?.data?.error || "Failed to start session");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ---------------------- Main Render ----------------------
   return (
     <div className="app-container">
       <header className="app-header">
         <h1>AMC Practice</h1>
         <div className="score-board">
-          Score: {score} / {attempted} | Time: {cumulativeTimeSeconds} sec
+          Score: {score} / {attempted} | Time: {(cumulativeTime / 1000).toFixed(2)} sec
         </div>
       </header>
 
       <div className="main-layout">
-        {/* ------------------ Filter Sidebar with Merged Mode, Background, and Shuffle Option ------------------ */}
+        {/* ------------------ Filter Sidebar ------------------ */}
         <aside className="filter-sidebar">
           <h3>Filters</h3>
-          
           <label>
             Contest:
             <select
               value={selectedContest}
               onChange={e => {
                 setSelectedContest(e.target.value);
-                resetSession();
+                restartSession();
               }}
             >
               <option value="AMC 10A">AMC 10A</option>
               <option value="AMC 10B">AMC 10B</option>
             </select>
           </label>
-          
           <label>
             Year:
             <select
               value={selectedYear}
               onChange={e => {
                 setSelectedYear(e.target.value);
-                resetSession();
+                restartSession();
               }}
             >
               <option value="2022">2022</option>
               <option value="2021">2021</option>
             </select>
           </label>
-
           <label>
             Mode:
             <select
               value={mode}
               onChange={e => {
                 setMode(e.target.value);
-                resetSession();
               }}
             >
               <option value="">Select Mode</option>
@@ -525,8 +538,7 @@ function App() {
               <option value="practice">Practice</option>
             </select>
           </label>
-
-          {/* New Shuffle checkbox */}
+          {/* Shuffle checkbox */}
           <label style={{ marginTop: '1rem' }}>
             <input
               type="checkbox"
@@ -535,8 +547,7 @@ function App() {
             />
             {' '}Shuffle Problems
           </label>
-
-          {/* Show Contest immediate feedback option */}
+          {/* Contest mode immediate feedback */}
           {mode === "contest" && (
             <label style={{ marginTop: '1rem' }}>
               <input
@@ -547,8 +558,7 @@ function App() {
               {' '}Show immediate feedback?
             </label>
           )}
-
-          {/* Show Background filter when in Practice Mode */}
+          {/* Background filter for Practice mode */}
           {mode === "practice" && (
             <label>
               Background:
@@ -556,7 +566,7 @@ function App() {
                 value={selectedBackground}
                 onChange={e => {
                   setSelectedBackground(e.target.value);
-                  resetSession();
+                  restartSession();
                 }}
               >
                 <option value="Minecraft">Minecraft</option>
@@ -566,31 +576,25 @@ function App() {
               </select>
             </label>
           )}
-
           <button
-            onClick={() => {
-              resetSession();
-              if(mode) fetchProblem();
-            }}
+            onClick={restartSession}
             className="filter-btn"
           >
-            Restart
+            Start
           </button>
         </aside>
 
         {/* ------------------ Main Content Panel ------------------ */}
         <main className="content-panel">
-          {/* If mode not selected, show an instruction message */}
-          {!mode ? (
+          {!sessionStarted ? (
             <div className="instruction-message">
-              <h2>Welcome to AMC Practice</h2>
-              <p>Please select a mode from the Filters panel to start.</p>
+              <h2>I am awesome and I know it</h2>
+              <p>Let's go.</p>
             </div>
           ) : (
             <>
               {loading && <p className="info-message">Loading...</p>}
               {error && <p className="error-message">{error}</p>}
-
               {sessionComplete ? (
                 <div className="completion-message">
                   <h2>Practice Complete!</h2>
@@ -603,7 +607,8 @@ function App() {
                 problem && !loading && (
                   <>
                     <section className="question-section">
-                      <h2>Problem</h2>
+                      {/* Display the current problem index */}
+                      {mode === "practice" && <h2>Problem {currentIndex}</h2>}
                       <div className="markdown-content">
                         <ReactMarkdown
                           remarkPlugins={[remarkMath]}
@@ -640,7 +645,6 @@ function App() {
                           </div>
                         )}
                       </div>
-
                       <div className="answer-choices">
                         {Array.isArray(problem.answer_choices) &&
                           problem.answer_choices.map((choice, index) => (
@@ -661,7 +665,6 @@ function App() {
                       </div>
                     </section>
 
-                    {/* Practice Mode: Show Detailed Solution and Similar Questions */}
                     {showSolution && mode === "practice" && (
                       <div className="solution-section">
                         <h4>Detailed Solution</h4>
@@ -691,7 +694,6 @@ function App() {
                             {problem.detailed_solution || "Solution not available."}
                           </ReactMarkdown>
                         )}
-
                         <div className="similar-questions-section">
                           <h4>Similar Problems</h4>
                           {problem.similar_questions && Array.isArray(problem.similar_questions) && problem.similar_questions.length > 0 ? (
