@@ -2,18 +2,77 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import axios from 'axios';
 import './App.css';
 
-import correctSoundFile from './sounds/correct.mp3';
-import incorrectSoundFile from './sounds/incorrect.mp3';
-
-import correctImage from './images/correct.gif';
-import incorrectImage from './images/incorrect.gif';
-
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 
+export const DEFAULT_ASSETS = {
+  sounds: {
+    correct: 'https://goaime-assets.s3.us-east-1.amazonaws.com/sounds/correct.mp3',
+    incorrect: 'https://goaime-assets.s3.us-east-1.amazonaws.com/sounds/incorrect.mp3'
+  },
+  images: {
+    feedback: {
+      correct: 'https://goaime-assets.s3.us-east-1.amazonaws.com/images/correct.gif',
+      incorrect: 'https://goaime-assets.s3.us-east-1.amazonaws.com/images/incorrect.gif'
+    }
+  }
+};
+
 function App() {
+  // Audio loading state
+  const [audioLoaded, setAudioLoaded] = useState(false);
+
+  // Audio initialization with error handling
+  const correctAudio = useMemo(() => {
+    const audio = new Audio(DEFAULT_ASSETS.sounds.correct);
+    audio.addEventListener('loadeddata', () => setAudioLoaded(true));
+    audio.addEventListener('error', (e) => {
+      console.error('Error loading correct audio:', e);
+      setAudioLoaded(false);
+    });
+    return audio;
+  }, []);
+
+  const incorrectAudio = useMemo(() => {
+    const audio = new Audio(DEFAULT_ASSETS.sounds.incorrect);
+    audio.addEventListener('loadeddata', () => setAudioLoaded(true));
+    audio.addEventListener('error', (e) => {
+      console.error('Error loading incorrect audio:', e);
+      setAudioLoaded(false);
+    });
+    return audio;
+  }, []);
+
+  // Add the cleanup effect here
+  useEffect(() => {
+    const correctLoadedCallback = () => setAudioLoaded(true);
+    const correctErrorCallback = (e) => {
+      console.error('Error loading correct audio:', e);
+      setAudioLoaded(false);
+    };
+    const incorrectLoadedCallback = () => setAudioLoaded(true);
+    const incorrectErrorCallback = (e) => {
+      console.error('Error loading incorrect audio:', e);
+      setAudioLoaded(false);
+    };
+
+    // Add listeners
+    correctAudio.addEventListener('loadeddata', correctLoadedCallback);
+    correctAudio.addEventListener('error', correctErrorCallback);
+    incorrectAudio.addEventListener('loadeddata', incorrectLoadedCallback);
+    incorrectAudio.addEventListener('error', incorrectErrorCallback);
+
+    // Cleanup function
+    return () => {
+      correctAudio.removeEventListener('loadeddata', correctLoadedCallback);
+      correctAudio.removeEventListener('error', correctErrorCallback);
+      incorrectAudio.removeEventListener('loadeddata', incorrectLoadedCallback);
+      incorrectAudio.removeEventListener('error', incorrectErrorCallback);
+    };
+  }, [correctAudio, incorrectAudio]);
+  
   // ---------------------- Mode and State Variables ----------------------
   const [sessionStarted, setSessionStarted] = useState(false);
   const AMC10_TIME_LIMIT_MINUTES = 75;
@@ -25,6 +84,29 @@ function App() {
   const [error, setError] = useState(null);
   const [score, setScore] = useState(0);
   const [attempted, setAttempted] = useState(0);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+
+  // Update the image preloading useEffect
+  useEffect(() => {
+    const correctImg = new Image();
+    const incorrectImg = new Image();
+    
+    let loadedCount = 0;
+    const checkAllLoaded = () => {
+      loadedCount++;
+      if (loadedCount === 2) {
+        setImagesLoaded(true);
+      }
+    };
+
+    correctImg.onload = checkAllLoaded;
+    incorrectImg.onload = checkAllLoaded;
+    correctImg.onerror = (e) => console.error('Error loading correct image:', e);
+    incorrectImg.onerror = (e) => console.error('Error loading incorrect image:', e);
+    
+    correctImg.src = DEFAULT_ASSETS.images.feedback.correct;
+    incorrectImg.src = DEFAULT_ASSETS.images.feedback.incorrect;
+  }, []);
 
   // Feedback
   const [isCorrect, setIsCorrect] = useState(null);
@@ -58,10 +140,6 @@ function App() {
 
   // Cancel tokens for axios
   const cancelSourceRef = useRef(null);
-
-  // Audio for correct/incorrect
-  const correctAudio = useMemo(() => new Audio(correctSoundFile), []);
-  const incorrectAudio = useMemo(() => new Audio(incorrectSoundFile), []);
 
   // Processed problem statement with meta
   const [problemStatementWithMeta, setProblemStatementWithMeta] = useState('');
@@ -172,12 +250,23 @@ function App() {
   // ---------------------- Format cumulative time ----------------------
   const cumulativeTimeSeconds = (cumulativeTime / 1000).toFixed(2);
 
+  // Add the playAudio utility function
+  const playAudio = async (audio) => {
+    if (!audio) return;
+    try {
+      audio.currentTime = 0; // Reset to start
+      await audio.play();
+    } catch (err) {
+      console.error('Error playing audio:', err);
+    }
+  };
+
   // ---------------------- Handle Choice Click ----------------------
   const handleChoiceClick = useCallback(
-    (choice) => {
+    async (choice) => { // Make the function async
       if (answersDisabled) return;
       setAnswersDisabled(true);
-  
+
       if (!problem || !problem.answer_key || !problemStartTime) {
         setAnswersDisabled(false);
         return;
@@ -215,7 +304,6 @@ function App() {
       }
   
       if (mode === "contest") {
-        // Never show feedback in contest mode
         setIsCorrect(null);
         setFeedbackImage(null);
         if (attempted + 1 < 25) {
@@ -226,19 +314,18 @@ function App() {
         }
       } else if (mode === "practice") {
         if (showProblemFeedback) {
-          // Only show feedback if the checkbox is checked
           if (answerIsCorrect) {
-            correctAudio.play();
-            setFeedbackImage(correctImage);
+            if (audioLoaded) {
+              await playAudio(correctAudio);
+            }
+            setFeedbackImage(DEFAULT_ASSETS.images.feedback.correct);
           } else {
-            incorrectAudio.play();
-            setFeedbackImage(incorrectImage);
+            if (audioLoaded) {
+              await playAudio(incorrectAudio);
+            }
+            setFeedbackImage(DEFAULT_ASSETS.images.feedback.incorrect);
           }
           setIsCorrect(answerIsCorrect);
-        } else {
-          // If checkbox is unchecked, don't show feedback
-          setIsCorrect(null);
-          setFeedbackImage(null);
         }
         setAnswered(true);
       }
@@ -252,7 +339,8 @@ function App() {
       attempted,
       mode,
       showProblemFeedback,
-      answersDisabled
+      answersDisabled,
+      audioLoaded
     ]
   );
 
@@ -449,6 +537,10 @@ function App() {
 
   // ---------------------- Restart Session Function ----------------------
   const restartSession = async () => {
+    if (!mode) {
+      setError("Please select a mode before starting");
+      return;
+    }
 
     // Clear local state immediately
     resetSession();
@@ -457,7 +549,6 @@ function App() {
     setSessionStarted(true);
 
     try {
-      // Request the backend with the restart flag
       const response = await axios.get("http://127.0.0.1:5001/", {
         params: {
           restart: true,
@@ -467,12 +558,12 @@ function App() {
           ...(mode === "practice" && { Skin: selectedSkin })
         }
       });
-      // Set the new problem (which should be Problem 1)
       setProblem(response.data);
       setProblemStartTime(Date.now());
     } catch (err) {
       console.error("Error starting session:", err);
       setError(err.response?.data?.error || "Failed to start session");
+      setSessionStarted(false);  // Reset on error
     } finally {
       setLoading(false);
     }
@@ -575,7 +666,8 @@ function App() {
           )}
           <button
             onClick={restartSession}
-            className="filter-btn"
+            className="start-button"
+            disabled={!mode}
           >
             Start
           </button>
@@ -739,18 +831,19 @@ function App() {
                         </div>
                       </div>
                     )}
-
-                    {isCorrect !== null && (
+                    {isCorrect !== null && showProblemFeedback && (
                       <div className="feedback-section">
                         <p className={`result ${isCorrect ? 'correct' : 'incorrect'}`}>
                           {isCorrect ? 'Correct! 🎉' : 'Incorrect. ❌'}
                         </p>
-                        {feedbackImage && (
+                        {feedbackImage && imagesLoaded && (
                           <div className="result-image-container">
                             <img
                               src={feedbackImage}
                               alt={isCorrect ? 'Correct' : 'Incorrect'}
                               className="result-image"
+                              style={{ maxWidth: '200px' }}
+                              onError={(e) => console.error('Error displaying feedback image:', e)}
                             />
                           </div>
                         )}
