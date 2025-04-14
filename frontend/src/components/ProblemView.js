@@ -40,10 +40,7 @@ const ProblemView = () => {
     setProblem,
     setProblemStatementWithMeta,
     setProblemStartTime,
-    setSessionComplete,
-    selectedYear,
-    selectedContest,
-    shuffle
+    setSessionComplete
   } = useProblem();
 
   // Router hooks
@@ -55,6 +52,7 @@ const ProblemView = () => {
   const [isCorrect, setIsCorrect] = useState(null);
   const [feedbackImage, setFeedbackImage] = useState(null);
   const [showProblemFeedback, setShowProblemFeedback] = useState(true);
+  const [selectedChoice, setSelectedChoice] = useState(null);
 
   // Debug useEffect
   useEffect(() => {
@@ -175,6 +173,7 @@ const ProblemView = () => {
 
   // Handle choice click
   const handleChoiceClick = useCallback(async (choice) => {
+    setSelectedChoice(choice); // Add this line to track the selected option
     console.log("Choice clicked:", choice);
     
     // Skip if answers are disabled or already answered
@@ -264,7 +263,8 @@ const ProblemView = () => {
     audioLoaded, mode, playCorrect, playIncorrect,
     setAnswered, setAnswersDisabled, setAttemptRecords,
     setCumulativeTime, setIncorrectProblems, setScore, 
-    setAttempted, setIsCorrect, handleNextProblem
+    setAttempted, setIsCorrect, handleNextProblem, attempted,
+    setSessionComplete, currentIndex
   ]);
   
   // Toggle solution display
@@ -334,6 +334,7 @@ const ProblemView = () => {
             onShowSolution={handleShowSolution}
             onNextProblem={handleNextProblem}
             showSolution={showSolution}
+            selectedChoice={selectedChoice} 
           />
 
           {showSolution && mode === "practice" && (

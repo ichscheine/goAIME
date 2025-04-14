@@ -5,6 +5,7 @@ const ProblemContext = createContext();
 
 export const ProblemProvider = ({ children }) => {
   // Problem and session state
+  const [sessionStartTime, setSessionStartTime] = useState(null);
   const [problem, setProblem] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -24,7 +25,10 @@ export const ProblemProvider = ({ children }) => {
   const [answered, setAnswered] = useState(false);
   const [sessionId, setSessionId] = useState(null); // MOVED INSIDE COMPONENT
   const [selectedOption, setSelectedOption] = useState(null); // MOVED INSIDE COMPONENT
-  
+  const [isPaused, setIsPaused] = useState(false);
+  const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
+  const [totalProblems, setTotalProblems] = useState(25); // Update this based on your actual count
+
   // Request tracking
   const isFetchingRef = useRef(false);
   const lastFetchTimeRef = useRef(0);
@@ -155,6 +159,10 @@ export const ProblemProvider = ({ children }) => {
   }, []);
   
   const startSession = useCallback(async () => {
+    const currentTime = Date.now();
+    console.log("Setting session start time:", new Date(currentTime).toISOString());
+    setSessionStartTime(currentTime);
+  
     console.log("startSession called with mode:", mode);
     if (!mode) {
       setError("Please select a mode before starting");
@@ -187,6 +195,13 @@ export const ProblemProvider = ({ children }) => {
         setSessionStarted(false);
         setLoading(false);
         return false;
+      }
+
+      if (sessionResult?.data?.total_problems) {
+        setTotalProblems(sessionResult.data.total_problems);
+      } else {
+        // Default if backend doesn't provide this information
+        setTotalProblems(25);
       }
       
       // Store the session ID
@@ -289,54 +304,132 @@ export const ProblemProvider = ({ children }) => {
     }
   }, [sessionId, setProblem, setProblemStartTime, setAnswered, setSelectedOption, setProblemStatementWithMeta, setSessionComplete]);
   
-  return (
-    <ProblemContext.Provider value={{
-      problem,
-      problemStatementWithMeta,
-      loading,
-      error,
-      sessionStarted,
-      sessionComplete,
-      score,
-      attempted,
-      currentIndex,
-      problemStartTime,
-      cumulativeTime,
-      attemptRecords,
-      incorrectProblems,
-      answersDisabled,
-      answered,
-      selectedContest,
-      setSelectedContest,
-      selectedYear,
-      setSelectedYear,
-      selectedSkin,
-      setSelectedSkin,
-      mode,
-      setMode,
-      shuffle,
-      setShuffle,
-      fetchProblem,
-      resetContestProblems,
-      startSession,
-      sessionId,
-      setSessionId,
-      selectedOption,
-      setSelectedOption,
-      nextProblem,
-      setAnswersDisabled,
-      setAnswered,
-      setScore,
-      setAttempted,
-      setCumulativeTime,
-      setCurrentIndex,
-      setIncorrectProblems,
-      setAttemptRecords,
-      setSessionComplete
-    }}>
-      {children}
-    </ProblemContext.Provider>
-  );
+  const handleOptionSelect = useCallback((option) => {
+    setSelectedOption(option);
+    // Any additional answer selection logic
+  }, []);
+
+  const handlePauseSession = useCallback(() => {
+    setIsPaused(true);
+    // Store the time when paused to calculate elapsed time correctly
+    const pauseTime = Date.now();
+    setPauseTimeRef.current = pauseTime;
+  }, []);
+  
+  const handleResumeSession = useCallback(() => {
+    setIsPaused(false);
+    
+    // Adjust the session start time to account for the pause duration
+    if (setPauseTimeRef.current) {
+      const pauseDuration = Date.now() - setPauseTimeRef.current;
+      setSessionStartTime(prevTime => prevTime + pauseDuration);
+      setPauseTimeRef.current = null;
+    }
+  }, []);
+  
+  const handleRestartSession = useCallback(() => {
+    // Logic to restart the current session
+    if (window.confirm("Are you sure you want to restart this session? All progress will be reset.")) {
+      setCurrentProblemIndex(0);
+      setIsPaused(false);
+      resetSession();
+      
+      // Start fresh with the first problem
+      const startFresh = async () => {
+        try {
+          const result = await api.initializeSession({
+            shuffle: shuffle,
+            year: selectedYear,
+            contest: selectedContest,
+            ...(mode === "practice" && { skin: selectedSkin })
+          });
+          
+          if (result?.data?.session_id) {
+            setSessionId(result.data.session_id);
+            nextProblem();
+          }
+        } catch (err) {
+          console.error("Error restarting session:", err);
+          setError("Failed to restart session");
+        }
+      };
+      
+      startFresh();
+    }
+  }, [resetSession, shuffle, selectedYear, selectedContest, mode, selectedSkin, nextProblem]);
+  
+  const handleQuitSession = useCallback(() => {
+    if (window.confirm("Are you sure you want to quit this session?")) {
+      setSessionStarted(false);
+      setIsPaused(false);
+      resetSession();
+    }
+  }, [resetSession]);
+  
+  // Add this ref for tracking pause time
+  const setPauseTimeRef = useRef(null);
+
+// Update the context provider value to include the new functions
+
+return (
+  <ProblemContext.Provider value={{
+    problem,
+    problemStatementWithMeta,
+    loading,
+    error,
+    sessionStarted,
+    sessionComplete,
+    score,
+    attempted,
+    currentIndex,
+    problemStartTime,
+    cumulativeTime,
+    attemptRecords,
+    incorrectProblems,
+    answersDisabled,
+    answered,
+    selectedContest,
+    setSelectedContest,
+    selectedYear,
+    setSelectedYear,
+    selectedSkin,
+    setSelectedSkin,
+    mode,
+    setMode,
+    shuffle,
+    setShuffle,
+    fetchProblem,
+    resetContestProblems,
+    startSession,
+    sessionId,
+    setSessionId,
+    sessionStartTime,
+    setSessionStartTime,
+    selectedOption,
+    setSelectedOption,
+    nextProblem,
+    setAnswersDisabled,
+    setAnswered,
+    setScore,
+    setAttempted,
+    setCumulativeTime,
+    setCurrentIndex,
+    setIncorrectProblems,
+    setAttemptRecords,
+    setSessionComplete,
+    isPaused,
+    setIsPaused,
+    currentProblemIndex,
+    totalProblems,
+    handleOptionSelect,
+    handlePauseSession,
+    handleResumeSession,
+    handleRestartSession,
+    handleQuitSession
+  }}>
+    {children}
+  </ProblemContext.Provider>
+);
 };
 
 export const useProblem = () => useContext(ProblemContext);

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import { ProblemProvider, useProblem } from './contexts/ProblemContext';
-import { formatTimeMinSec, formatDate } from './utils/formatter';
 
 import Registration from './components/Registration';
 import Sidebar from './components/Sidebar';
 import ProblemView from './components/ProblemView';
 import SessionSummary from './components/SessionSummary';
+import Timer from './components/Timer';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 function App() {
@@ -53,8 +53,13 @@ const AppContent = ({ user }) => {
     attempted,
     cumulativeTime,
     mode,
-    timeLeft,
-    problem
+    problem,
+    isPaused,
+    totalProblems,
+    handlePauseSession,
+    handleResumeSession,
+    handleRestartSession,
+    handleQuitSession
   } = useProblem();
   
   const cumulativeTimeSeconds = (cumulativeTime / 1000).toFixed(2);
@@ -62,7 +67,57 @@ const AppContent = ({ user }) => {
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1>AMC Practice</h1>
+        <div className="logo">AMC Practice</div>
+        <Timer />
+        {sessionStarted && problem && (
+          <div className="progress-indicator">
+            <span>Problem <span className="current">{attempted}</span> of <span className="total">{totalProblems}</span></span>
+            <div className="progress-bar">
+              <div 
+                className="progress-fill" 
+                style={{width: `${(attempted / totalProblems) * 100}%`}}
+              ></div>
+            </div>
+          </div>
+        )}
+        
+        {/* Session Controls */}
+        {sessionStarted && (
+          <div className="session-controls">
+            {!isPaused ? (
+              <button 
+                className="session-btn pause" 
+                onClick={handlePauseSession}
+                title="Pause Session"
+              >
+                ⏸️
+              </button>
+            ) : (
+              <button 
+                className="session-btn resume" 
+                onClick={handleResumeSession}
+                title="Resume Session"
+              >
+                ▶️
+              </button>
+            )}
+            <button 
+              className="session-btn restart" 
+              onClick={handleRestartSession}
+              title="Restart Session"
+            >
+              🔄
+            </button>
+          </div>
+        )}
+        <div className="score-board">
+          {mode === "practice" ? (
+            <>Score: <strong>{score}</strong> / <strong>{attempted}</strong></>
+          ) : (
+            <>Attempted: <strong>{attempted}</strong></>
+          )}
+        </div>
+
         <div className="user-info">
           Welcome, {user?.username}!
           <button 
@@ -75,25 +130,6 @@ const AppContent = ({ user }) => {
             Logout
           </button>
         </div>
-        <div className="score-board">
-          {mode === "practice" ? (
-            <>Score: {score} / {attempted} | Time Left: {formatTimeMinSec(timeLeft)}</>
-          ) : (
-            <>Attempted: {attempted} | Time Left: {formatTimeMinSec(timeLeft)}</>
-          )}
-        </div>
-        {/* Only show these if they have values */}
-        {cumulativeTime > 0 && (
-          <div className="time-info">
-            Time elapsed: {formatTimeMinSec(cumulativeTime/1000)}
-          </div>
-        )}
-
-        {problem?.created_at && (
-          <div className="date-info">
-            Created on: {formatDate(problem.created_at)}
-          </div>
-        )}
       </header>
 
       <div className="main-layout">
@@ -123,6 +159,24 @@ const AppContent = ({ user }) => {
           )}
         </main>
       </div>
+
+      {/* Pause Modal - Add this at the end of your component, before the closing div */}
+      {isPaused && (
+        <div className="pause-modal">
+          <div className="pause-modal-content">
+            <h3>Session Paused</h3>
+            <p>Your timer has been paused. Take a break or continue when you're ready.</p>
+            <div className="pause-modal-buttons">
+              <button className="pause-modal-btn resume-btn" onClick={handleResumeSession}>
+                Resume
+              </button>
+              <button className="pause-modal-btn quit-btn" onClick={handleQuitSession}>
+                Quit Session
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

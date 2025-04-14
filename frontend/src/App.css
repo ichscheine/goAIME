@@ -13,6 +13,47 @@ body {
   min-height: 100vh;
 }
 
+.sidebar {
+  width: 280px; /* Reduce from whatever it was before */
+  flex-shrink: 0;
+  border-right: 1px solid #e0e0e0;
+  background-color: #f8f9fa;
+  transition: width 0.3s ease;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.main-content {
+  flex-grow: 1;
+  padding: 20px;
+  overflow-x: hidden;
+  min-width: 0; /* Important for flexbox to prevent content overflow */
+}
+
+/* Add responsive behavior */
+@media (max-width: 992px) {
+  .sidebar {
+    width: 240px;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .main-content {
+    padding: 15px;
+  }
+}
+
 /* Header styling */
 .app-header {
   background-color: #343a40;
@@ -517,4 +558,561 @@ body {
   max-width: 100%;
   height: auto;
   margin: 10px 0;
+}
+
+/* Header base styling with stronger colors */
+.app-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  background-color: #343a40; /* Darker background */
+  color: white;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 15px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Logo styling with better visibility */
+.logo {
+  font-weight: bold;
+  font-size: 20px;
+  color: white; /* White text for contrast */
+  flex-shrink: 0;
+  background-color: #007bff;
+  padding: 6px 15px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+/* Timer container with better visibility */
+.timer-container {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  font-family: monospace;
+  padding: 6px 15px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 5px;
+  color: white;
+  font-size: 15px;
+  font-weight: 500;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.time-elapsed, .time-left {
+  display: flex;
+  align-items: center;
+}
+
+/* Score and Attempted styling with better contrast */
+.score-board {
+  display: flex;
+  align-items: center;
+  padding: 6px 15px;
+  background-color: rgba(255,255,255,0.15);
+  border-radius: 6px;
+  font-weight: 500;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* Styling for score/attempted numbers with better visibility */
+.score-board strong {
+  font-size: 16px;
+  color: #62dbfb; /* Light blue for contrast */
+  margin: 0 3px;
+}
+
+/* User info section with better visibility */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 15px;
+  background-color: rgba(255,255,255,0.15);
+  border-radius: 6px;
+  font-size: 14px;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* Logout button styling with more contrast */
+.logout-btn {
+  background-color: rgba(255,255,255,0.9);
+  border: none;
+  border-radius: 4px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #333;
+}
+
+.logout-btn:hover {
+  background-color: white;
+  transform: translateY(-1px);
+}
+
+/* Progress indicator styling */
+.progress-indicator {
+  display: flex;
+  align-items: center;
+  padding: 6px 15px;
+  background-color: rgba(255,255,255,0.15);
+  border-radius: 6px;
+  color: white;
+  font-size: 14px;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.progress-indicator .current {
+  font-weight: bold;
+  color: #62dbfb;
+  font-size: 16px;
+  margin: 0 3px;
+}
+
+.progress-indicator .total {
+  margin: 0 3px;
+}
+
+.progress-bar {
+  height: 6px;
+  background-color: rgba(255,255,255,0.2);
+  border-radius: 3px;
+  width: 100px;
+  margin: 0 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #62dbfb;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* Session control styling */
+.session-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 15px;
+  background-color: rgba(255,255,255,0.15);
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.session-btn {
+  background-color: rgba(255,255,255,0.9);
+  border: none;
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #333;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.session-btn:hover {
+  background-color: white;
+  transform: translateY(-1px);
+}
+
+.session-btn.pause { color: #e74c3c; }
+.session-btn.resume { color: #27ae60; }
+.session-btn.restart { color: #f39c12; }
+
+/* Modal for paused session */
+.pause-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(52, 58, 64, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.pause-modal-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.pause-modal h3 {
+  margin-top: 0;
+  color: #343a40;
+}
+
+.pause-modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.pause-modal-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.resume-btn {
+  background-color: #27ae60;
+  color: white;
+}
+
+.quit-btn {
+  background-color: #e74c3c;
+  color: white;
+}
+
+/* Create the CSS for the answer options */
+
+.answer-option {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  margin: 8px 0;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #f9f9f9;
+}
+
+.answer-option:hover {
+  background-color: #eef7ff;
+  border-color: #99c2ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.answer-option.selected {
+  background-color: #e6f7ff;
+  border-color: #1890ff;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+}
+
+.answer-option.disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.answer-option.selected.disabled {
+  opacity: 1;
+}
+
+.option-label {
+  font-weight: bold;
+  margin-right: 10px;
+  min-width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: #ddd;
+}
+
+.answer-option.selected .option-label {
+  background-color: #1890ff;
+  color: white;
+}
+
+.option-text {
+  flex: 1;
+}
+
+/* Add animation for click feedback */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.answer-option:active {
+  animation: pulse 0.3s;
+}
+
+.answer-choices-container {
+  margin: 20px 0;
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+@media (min-width: 768px) {
+  .options-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.answer-option {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #f9f9f9;
+}
+
+.answer-option:hover:not(.disabled) {
+  background-color: #eef7ff;
+  border-color: #99c2ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.answer-option.selected {
+  background-color: #e6f7ff;
+  border-color: #1890ff;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+}
+
+.answer-option.disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.answer-option.selected.disabled {
+  opacity: 1;
+}
+
+.option-label {
+  font-weight: bold;
+  margin-right: 12px;
+  min-width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: #ddd;
+}
+
+.answer-option.selected .option-label {
+  background-color: #1890ff;
+  color: white;
+}
+
+.option-text {
+  flex: 1;
+}
+
+.button-row {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+/* Add animation for click feedback */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.answer-option:active:not(.disabled) {
+  animation: pulse 0.3s;
+}
+
+/* Enhanced math rendering */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5em 0;
+}
+
+/* Fix for overbar and other special symbols */
+.katex {
+  font-size: 1.1em;
+  line-height: 1.2;
+}
+
+/* Make sure overbar displays correctly */
+.katex .overline {
+  border-top: 1px solid currentColor;
+  padding-top: 0.1em;
+}
+
+/* Ensure math formulas don't break layout on small screens */
+.markdown-content .katex-display {
+  max-width: 100%;
+  margin: 0.5em 0;
+}
+
+/* Mobile responsive improvements */
+@media (max-width: 768px) {
+  /* Adjust font sizes for mobile */
+  body {
+    font-size: 14px;
+  }
+  
+  h1 {
+    font-size: 1.8rem;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+  }
+  
+  /* Better spacing for answer options */
+  .answer-option {
+    padding: 10px;
+    margin: 6px 0;
+  }
+  
+  /* Optimize problem view layout */
+  .question-section {
+    padding: 10px;
+  }
+  
+  /* Make buttons easier to tap */
+  button {
+    padding: 10px 15px;
+    margin: 5px;
+    min-height: 44px; /* For better touch targets */
+  }
+  
+  /* Improve navigation on small screens */
+  .navbar-container {
+    padding: 8px;
+  }
+  
+  /* Create a collapsible sidebar for mobile */
+  .mobile-sidebar-toggle {
+    display: block; /* Show toggle button on mobile */
+  }
+  
+  .sidebar.collapsed {
+    height: 60px;
+    overflow: hidden;
+  }
+}
+
+/* Add touch-friendly targets for mobile */
+@media (max-width: 576px) {
+  .answer-option {
+    padding: 12px 10px;
+  }
+  
+  .timer-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .time-elapsed, .time-left {
+    width: 100%;
+    margin-bottom: 5px;
+  }
+}
+
+/* Collapsible sidebar styles */
+.sidebar {
+  position: relative;
+  width: 280px;
+  transition: width 0.3s ease;
+  overflow-x: hidden;
+}
+
+.sidebar.collapsed {
+  width: 60px;
+}
+
+.sidebar-toggle {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.sidebar-content {
+  width: 280px; /* Same as expanded sidebar width */
+  padding: 15px;
+}
+
+.sidebar.collapsed .sidebar-section h2,
+.sidebar.collapsed .sidebar-section .setting-group,
+.sidebar.collapsed .sidebar-section .mode-buttons,
+.sidebar.collapsed .sidebar-section .start-button-container,
+.sidebar.collapsed .sidebar-section .user-section {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sidebar.collapsed .sidebar-toggle {
+  right: 15px;
+}
+
+/* Fix invisible text in mode buttons */
+.mode-button {
+  padding: 8px 15px;
+  margin: 5px;
+  border: 1px solid #ccc;
+  background-color: #f8f9fa;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  color: #333; /* Ensure text is visible on light background */
+  font-weight: 500; /* Make text a bit bolder */
+}
+
+.mode-button.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #0056b3;
+}
+
+.mode-button:hover:not(:disabled) {
+  background-color: #e9ecef;
+}
+
+.mode-button.active:hover:not(:disabled) {
+  background-color: #0069d9;
+}
+
+/* If the problem persists, try inspecting and adding this override */
+.mode-buttons button {
+  color: #333 !important; /* Force text color */
+}
+
+.mode-buttons button.active {
+  color: white !important; /* Force white text for active state */
 }
