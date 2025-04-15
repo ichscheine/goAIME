@@ -67,7 +67,7 @@ const AppContent = ({ user }) => {
   return (
     <div className="app-container">
       <header className="app-header">
-        <div className="logo">AMC Practice</div>
+        <div className="logo">goAIME</div>
         <Timer />
         {sessionStarted && problem && (
           <div className="progress-indicator">

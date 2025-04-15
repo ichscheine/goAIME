@@ -305,9 +305,62 @@ export const ProblemProvider = ({ children }) => {
   }, [sessionId, setProblem, setProblemStartTime, setAnswered, setSelectedOption, setProblemStatementWithMeta, setSessionComplete]);
   
   const handleOptionSelect = useCallback((option) => {
+    if (answersDisabled) return;
+    
+    console.log("Option selected:", option, "for problem index:", currentIndex);
+    
     setSelectedOption(option);
-    // Any additional answer selection logic
-  }, []);
+    setAnswersDisabled(true);
+    setAnswered(true);
+    
+    const isCorrect = option === problem.answer;
+    console.log("Is answer correct?", isCorrect, "Expected:", problem.answer);
+    
+    // Update score if answer is correct
+    if (isCorrect) {
+      setScore(prevScore => prevScore + 1);
+    } else {
+      // Add to incorrect problems list for review
+      setIncorrectProblems(prev => [...prev, currentIndex]);
+    }
+    
+    // Record this attempt with complete data
+    const timeSpent = Date.now() - problemStartTime;
+    const attemptRecord = {
+      problemNumber: currentIndex + 1,
+      number: currentIndex + 1,
+      attempted: true,
+      isCorrect: isCorrect, 
+      correct: isCorrect,
+      selectedAnswer: option,
+      answer: option,
+      userAnswer: option,
+      timeSpent: timeSpent,
+      timestamp: new Date().toISOString()
+    };
+    
+    console.log("Recording attempt:", attemptRecord);
+    
+    // Add to attempt records using a function to ensure state updates properly
+    setAttemptRecords(prev => {
+      const newRecords = [...prev, attemptRecord];
+      console.log("Updated attempt records:", newRecords);
+      return newRecords;
+    });
+    
+    // Track that we've attempted one more problem
+    setAttempted(prev => prev + 1);
+    
+    // Calculate elapsed time for this problem
+    const elapsed = timeSpent;
+    setCumulativeTime(prev => prev + elapsed);
+    
+    // Move to next problem after a short delay
+    setTimeout(() => {
+      nextProblem();
+    }, 1000);
+  }, [problem, problemStartTime, answersDisabled, currentIndex, setSelectedOption, setAnswersDisabled, 
+      setAnswered, setScore, setIncorrectProblems, setAttemptRecords, setAttempted, setCumulativeTime, nextProblem]);
 
   const handlePauseSession = useCallback(() => {
     setIsPaused(true);
