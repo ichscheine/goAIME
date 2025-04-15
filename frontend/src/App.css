@@ -1,26 +1,26 @@
-/* Global resets or general styling */
+/* ==============================
+   GLOBAL STYLES & RESET
+   ============================== */
 body {
   margin: 0;
   padding: 0;
-  font-family: "Helvetica Neue", Arial, sans-serif;
-  background-color: #f8f9fa;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: #f0f2f5;
   color: #333;
 }
 
+/* ==============================
+   LAYOUT & CONTAINERS
+   ============================== */
 .app-container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
 }
 
-.sidebar {
-  width: 280px; /* Reduce from whatever it was before */
-  flex-shrink: 0;
-  border-right: 1px solid #e0e0e0;
-  background-color: #f8f9fa;
-  transition: width 0.3s ease;
-  overflow-y: auto;
-  z-index: 100;
+.main-layout {
+  flex: 1;
+  display: flex;
 }
 
 .main-content {
@@ -30,11 +30,9 @@ body {
   min-width: 0; /* Important for flexbox to prevent content overflow */
 }
 
-/* Add responsive behavior */
-@media (max-width: 992px) {
-  .sidebar {
-    width: 240px;
-  }
+.content-panel {
+  flex: 1;
+  padding: 1rem 2rem;
 }
 
 @media (max-width: 768px) {
@@ -42,570 +40,52 @@ body {
     flex-direction: column;
   }
   
-  .sidebar {
-    width: 100%;
-    height: auto;
-    border-right: none;
-    border-bottom: 1px solid #e0e0e0;
+  .main-layout {
+    flex-direction: column;
   }
   
   .main-content {
     padding: 15px;
   }
-}
-
-/* Header styling */
-.app-header {
-  background-color: #343a40;
-  color: #fff;
-  padding: 1rem 2rem;
-  display: flex;
-  align-items: center;
-  gap: 2rem;  /* Add spacing between elements */
-  justify-content: space-between;
-}
-
-.app-header h1 {
-  margin: 0;
-  font-size: 1.5rem;
-}
-
-.score-board {
-  font-size: 0.9rem;
-}
-
-/* Main layout */
-.main-layout {
-  flex: 1;
-  display: flex;
-}
-
-/* Filter sidebar enhancements */
-.filter-sidebar {
-  width: 220px;
-  background-color: #ffffff;
-  border-right: 1px solid #dee2e6;
-  padding: 1rem;
-  /* optional: give it a subtle box shadow to stand out */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.filter-sidebar h3 {
-  margin-top: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-}
-
-.filter-sidebar label {
-  display: block;
-  margin-bottom: 0.75rem; /* reduce spacing for a tighter layout */
-  font-weight: 500;
-  color: #555; /* subtle text color */
-}
-
-.filter-sidebar select {
-  display: block;
-  width: 100%;
-  padding: 0.4rem;
-  font-size: 0.9rem;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  background-color: #fff;
-  margin-top: 0.3rem;
-  transition: border-color 0.2s ease;
-}
-
-.filter-sidebar select:focus {
-  outline: none;
-  border-color: #80bdff;
-}
-
-.filter-btn {
-  background-color: #007bff;
-  color: #fff;
-  border: none;
-  padding: 0.6rem 1rem;
-  cursor: pointer;
-  margin-top: 0.75rem;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  transition: background-color 0.2s ease;
-  width: 100%; /* full width button */
-}
-
-.filter-btn:hover {
-  background-color: #0056b3;
-}
-
-/* Optional: add some margin to the bottom to separate the filter section from the main content on smaller screens */
-@media (max-width: 768px) {
-  .filter-sidebar {
-    margin-bottom: 1rem;
-  }
-}
-
-/* Content panel */
-.content-panel {
-  flex: 1;
-  padding: 1rem 2rem;
-}
-
-/* Mode selection container */
-.mode-selection-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 2rem;
-}
-
-.mode-selection-title {
-  font-size: 1.2rem;
-  margin-bottom: 1rem;
-}
-
-.mode-buttons {
-  display: flex;
-  gap: 1rem;
-}
-
-.mode-button {
-  background-color: #0069d9;
-  color: #fff;
-  border: none;
-  padding: 0.7rem 1.2rem;
-  cursor: pointer;
-  border-radius: 4px;
-  font-size: 1rem;
-  transition: background-color 0.2s ease;
-}
-
-.mode-button:hover {
-  background-color: #0056b3;
-}
-
-/* Info, error, and completion messages */
-.info-message {
-  color: #007bff;
-  font-weight: 500;
-}
-
-.error-message {
-  color: #dc3545;
-  font-weight: 600;
-}
-
-.completion-message h2 {
-  margin-top: 0;
-}
-
-/* Question and answer sections */
-.question-section, .answer-section {
-  margin-bottom: 1.5rem;
-}
-
-.question-section h2, .answer-section h2 {
-  margin-top: 0;
-  margin-bottom: 0.5rem;
-  border-bottom: 1px solid #dee2e6;
-  padding-bottom: 0.5rem;
-}
-
-.markdown-content {
-  background-color: #fff;
-  padding: 1rem;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-}
-
-/* Answer choices */
-.answer-choices {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.choice-button {
-  background-color: #e2e6ea;
-  border: none;
-  padding: 0.6rem 1rem;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: background-color 0.2s ease;
-  font-size: 1rem;
-}
-
-.choice-button:hover {
-  background-color: #d0d4d7;
-}
-
-/* Feedback section */
-.feedback-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 2rem;
-}
-
-.result.correct {
-  color: #28a745;
-}
-
-.result.incorrect {
-  color: #dc3545;
-}
-
-.result-image-container {
-  width: 300px;
-  height: 300px;
-  margin-top: 1rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-  border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.result-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  transition: transform 0.3s ease;
-}
-
-.result-image:hover {
-  transform: scale(1.05);
-}
-
-@media (max-width: 768px) {
-  .result-image-container {
-    width: 200px;
-    height: 200px;
-  }
-}
-
-/* Start Button Styling - add after the next-problem-button styles */
-.start-button {
-  background-color: #007bff;
-  color: #fff;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.2s ease;
-  width: 100%;
-  margin-top: 1rem;
-}
-
-.start-button:hover {
-  background-color: #0056b3;
-}
-
-.start-button:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
-}
-
-/* The solution toggle button */
-.solution-button {
-  background-color: #ffc107;
-  color: #212529;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.2s ease;
-}
-
-.solution-button:hover {
-  background-color: #e0a800;
-}
-
-/* Next Problem Button Styling */
-.next-problem-button {
-  background-color: #28a745;
-  color: #fff;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.2s ease;
-}
-
-.next-problem-button:hover {
-  background-color: #218838;
-}
-
-/* New container for heading + practice buttons horizontally */
-.answer-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between; /* or 'flex-end', 'center', etc. */
-  margin-bottom: 0.5rem;
-}
-
-/* Row for the two practice mode buttons */
-.practice-buttons-row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 1rem;
-}
-
-/* The solution-section styling */
-.solution-section {
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  padding: 1rem;
-  margin-top: 1rem;
-}
-
-/* Similar questions styling */
-.similar-questions-section, .review-panel {
-  margin-top: 2rem;
-}
-
-.similar-problem {
-  margin-top: 1rem;
-  padding: 1rem;
-  background-color: #ffffff;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-}
-
-.similar-problem strong {
-  display: block;
-  margin-bottom: 0.5rem;
-}
-
-/* Mobile responsiveness */
-@media (max-width: 768px) {
-  .main-layout {
-    flex-direction: column;
-  }
-  .filter-sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid #dee2e6;
-    margin-bottom: 1rem;
-  }
+  
   .content-panel {
     padding: 1rem;
   }
 }
 
-.result-image-container {
-  margin: 1rem 0;
-  display: flex;
-  justify-content: center;
-}
-
-.result-image {
-  max-width: 200px;
-  height: auto;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.registration-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 2rem;
-  background-color: #f5f5f5;
-}
-
-.registration-container h2 {
-  margin-bottom: 2rem;
-  color: #333;
-}
-
-.registration-container form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: 100%;
-  max-width: 400px;
-  padding: 2rem;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.registration-container input {
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.registration-container button {
-  padding: 0.5rem;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.registration-container button:hover {
-  background-color: #0056b3;
-}
-
-/* Update user-info to be inline with header */
-.user-info {
-  position: relative;  /* Change from absolute */
-  right: auto;
-  top: auto;
-  color: #fff;
-  font-size: 0.9rem;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 8px 16px;
-  border-radius: 20px;
-  backdrop-filter: blur(5px);
-  margin-left: auto;  /* Push to right side */
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-/* Add an icon or avatar placeholder */
-.user-info::before {
-  content: "👋";
-  font-size: 1.1rem;
-}
-
-/* Add hover effect */
-.user-info:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transition: background-color 0.2s ease;
-}
-
-.choice-button {
-  display: flex;
-  align-items: flex-start;
-  width: 100%;
-  text-align: left;
-  margin: 0.5rem 0;
-  padding: 0.75rem;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  background-color: white;
-  transition: all 0.2s;
-}
-
-.choice-button:hover:not(:disabled) {
-  background-color: #f8f9fa;
-  border-color: #adb5bd;
-}
-
-.choice-button.selected {
-  background-color: #e9ecef;
-  border-color: #6c757d;
-  font-weight: bold;
-}
-
-.choice-label {
-  font-weight: bold;
-  margin-right: 0.5rem;
-  min-width: 1.5rem;
-}
-
-/* Add this to your CSS file */
-.incorrect-problems-section {
-  margin: 30px 0;
-}
-
-.incorrect-problem {
-  margin-bottom: 25px;
-  padding: 20px;
-  background: #fff;
-  border-left: 4px solid #dc3545;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.incorrect-problem h4 {
-  margin-top: 0;
-  color: #dc3545;
-}
-
-.problem-text {
-  margin: 15px 0;
-}
-
-.problem-answer-info {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin: 15px 0;
-}
-
-.problem-solution {
-  margin-top: 15px;
-  background-color: #f8f9fa;
-  padding: 15px;
-  border-radius: 8px;
-}
-
-.problem-image {
-  max-width: 100%;
-  height: auto;
-  margin: 10px 0;
-}
-
-/* Header base styling with stronger colors */
+/* ==============================
+   HEADER STYLING
+   ============================== */
 .app-header {
+  background: linear-gradient(90deg, #001529, #003366);
+  padding: 12px 20px;
   display: flex;
   align-items: center;
-  padding: 12px 20px;
-  background-color: #343a40; /* Darker background */
-  color: white;
   justify-content: space-between;
+  color: white;
   flex-wrap: nowrap;
   gap: 15px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  position: relative;
+  z-index: 10;
 }
 
-/* Logo styling with better visibility */
 .logo {
   font-weight: bold;
-  font-size: 20px;
-  color: white; /* White text for contrast */
-  flex-shrink: 0;
-  background-color: #007bff;
-  padding: 6px 15px;
-  border-radius: 6px;
-  letter-spacing: 0.5px;
-}
-
-/* Timer container with better visibility */
-.timer-container {
-  display: flex;
-  gap: 15px;
-  align-items: center;
-  font-family: monospace;
-  padding: 6px 15px;
-  background: rgba(255,255,255,0.15);
-  border-radius: 5px;
+  font-size: 1.4rem;
   color: white;
-  font-size: 15px;
-  font-weight: 500;
-  border: 1px solid rgba(255,255,255,0.2);
-}
-
-.time-elapsed, .time-left {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
-/* Score and Attempted styling with better contrast */
+.logo:before {
+  content: "📊";
+  font-size: 1.2em;
+}
+
+/* Score and progress styling */
 .score-board {
   display: flex;
   align-items: center;
@@ -617,45 +97,12 @@ body {
   border: 1px solid rgba(255,255,255,0.2);
 }
 
-/* Styling for score/attempted numbers with better visibility */
 .score-board strong {
   font-size: 16px;
-  color: #62dbfb; /* Light blue for contrast */
+  color: #62dbfb;
   margin: 0 3px;
 }
 
-/* User info section with better visibility */
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 6px 15px;
-  background-color: rgba(255,255,255,0.15);
-  border-radius: 6px;
-  font-size: 14px;
-  color: white;
-  border: 1px solid rgba(255,255,255,0.2);
-}
-
-/* Logout button styling with more contrast */
-.logout-btn {
-  background-color: rgba(255,255,255,0.9);
-  border: none;
-  border-radius: 4px;
-  padding: 5px 12px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #333;
-}
-
-.logout-btn:hover {
-  background-color: white;
-  transform: translateY(-1px);
-}
-
-/* Progress indicator styling */
 .progress-indicator {
   display: flex;
   align-items: center;
@@ -694,6 +141,83 @@ body {
   transition: width 0.3s ease;
 }
 
+/* User info and controls */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 15px;
+  background-color: rgba(255,255,255,0.15);
+  border-radius: 6px;
+  font-size: 14px;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.2);
+  margin-left: auto;
+}
+
+.user-info::before {
+  content: "👋";
+  font-size: 1.1rem;
+}
+
+.user-info:hover {
+  background: rgba(255,255,255,0.2);
+  transition: background-color 0.2s ease;
+}
+
+.logout-btn {
+  background-color: rgba(255,255,255,0.9);
+  border: none;
+  border-radius: 4px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #333;
+}
+
+.logout-btn:hover {
+  background-color: white;
+  transform: translateY(-1px);
+}
+
+/* Timer styling */
+.timer-container {
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  border-radius: 6px;
+  padding: 8px 15px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.time-section {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.time-label {
+  font-size: 0.8em;
+  opacity: 0.8;
+}
+
+.time-value {
+  font-family: monospace;
+  font-size: 1.1em;
+  font-weight: 500;
+}
+
+.timer-container .time-elapsed .time-value {
+  color: #36cfc9;
+}
+
+.timer-container .time-left .time-value {
+  color: #ff7875;
+}
+
 /* Session control styling */
 .session-controls {
   display: flex;
@@ -729,7 +253,602 @@ body {
 .session-btn.resume { color: #27ae60; }
 .session-btn.restart { color: #f39c12; }
 
-/* Modal for paused session */
+@media (max-width: 576px) {
+  .timer-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .time-elapsed, .time-left {
+    width: 100%;
+    margin-bottom: 5px;
+  }
+}
+
+/* ==============================
+   SIDEBAR STYLING
+   ============================== */
+.sidebar {
+  position: relative;
+  width: 300px;
+  flex-shrink: 0;
+  border-right: 1px solid #e0e0e0;
+  background-color: #f8f9fa;
+  transition: width 0.3s ease;
+  overflow: visible;
+  /* overflow-x: hidden; */
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.sidebar-content {
+  width: 195px;
+  padding: 15px;
+}
+
+.sidebar.collapsed {
+  width: 60px;
+  height: 60px;
+  overflow: hidden;
+}
+
+.sidebar-toggle:hover {
+  background-color: #f0f7ff;
+  border-color: #99c2ff;
+}
+
+.sidebar-toggle {
+  position: relative;
+  top: 15px;
+  right: -15px;
+  width: 30px;
+  height: 30px;
+  background: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  transform: translateX(0);
+}
+
+.sidebar.collapsed .sidebar-toggle {
+  right: 15px;
+}
+
+.sidebar.collapsed .sidebar-section h2,
+.sidebar.collapsed .sidebar-section .setting-group,
+.sidebar.collapsed .sidebar-section .mode-buttons,
+.sidebar.collapsed .sidebar-section .start-button-container,
+.sidebar.collapsed .sidebar-section .user-section {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (max-width: 992px) {
+  .sidebar {
+    width: 240px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .mobile-sidebar-toggle {
+    display: block;
+  }
+}
+
+/* Filter sidebar styling */
+.filter-sidebar {
+  width: 220px;
+  background-color: #ffffff;
+  border-right: 1px solid #dee2e6;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.filter-sidebar h3 {
+  margin-top: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.filter-sidebar label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+  color: #555;
+}
+
+.filter-sidebar select {
+  display: block;
+  width: 100%;
+  padding: 0.4rem;
+  font-size: 0.9rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  background-color: #fff;
+  margin-top: 0.3rem;
+  transition: border-color 0.2s ease;
+}
+
+.filter-sidebar select:focus {
+  outline: none;
+  border-color: #80bdff;
+}
+
+.filter-btn {
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  margin-top: 0.75rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+  width: 100%;
+}
+
+.filter-btn:hover {
+  background-color: #0056b3;
+}
+
+@media (max-width: 768px) {
+  .filter-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: 1rem;
+  }
+}
+
+/* User section in sidebar */
+.user-section {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+}
+
+.user-section h3 {
+  margin-top: 0;
+  font-size: 1.1rem;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.user-section h3::before {
+  content: "👤";
+  font-size: 1.2em;
+}
+
+.stats-summary {
+  margin: 0;
+  line-height: 1.6;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+/* Style each stat with icons and better formatting */
+.stat-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.stat-label {
+  font-weight: 500;
+  margin-right: 8px;
+  min-width: 100px;
+}
+
+.stat-value {
+  font-weight: 600;
+  color: #333;
+}
+
+.stat-value.highlight {
+  color: #0076e4;
+}
+
+/* Badge for best score */
+.score-badge {
+  background-color: #e6f7ff;
+  border: 1px solid #91d5ff;
+  border-radius: 12px;
+  padding: 2px 8px;
+  color: #0050b3;
+  font-weight: 600;
+  display: inline-block;
+}
+
+/* ==============================
+   QUESTION & ANSWER COMPONENTS
+   ============================== */
+.question-section, .answer-section {
+  margin-bottom: 1.5rem;
+}
+
+.question-section {
+  padding: 20px 25px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  margin-bottom: 20px;
+}
+
+.question-section h2, .answer-section h2 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 0.5rem;
+}
+
+.problem-meta {
+  color: #666;
+  font-size: 0.9em;
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}
+
+.markdown-content {
+  background-color: #fff;
+  padding: 1rem;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+}
+
+/* Answer section styling */
+.answer-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.answer-choices {
+  margin-top: 25px;
+}
+
+.answer-choices-container {
+  margin: 20px 0;
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+@media (min-width: 768px) {
+  .options-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Enhanced answer options styling */
+.answer-option, .choice-button {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  padding: 15px 20px;
+  margin: 10px 0;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.answer-option:hover:not(.disabled), .choice-button:hover:not(:disabled) {
+  background-color: #eef7ff;
+  border-color: #99c2ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+}
+
+.answer-option.selected, .choice-button.selected {
+  background-color: #e6f7ff;
+  border-color: #1890ff;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+}
+
+.answer-option.disabled, .choice-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.answer-option.selected.disabled {
+  opacity: 1;
+}
+
+.option-label, .choice-label {
+  font-weight: bold;
+  margin-right: 15px;
+  font-size: 1.1em;
+  min-width: 30px;
+  min-width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: #ddd;
+}
+
+.answer-option.selected .option-label, .choice-button.selected .option-label {
+  background-color: #1890ff;
+  color: white;
+}
+
+.option-text {
+  flex: 1;
+}
+
+/* Animation for click feedback */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.answer-option:active:not(.disabled), .choice-button:active:not(:disabled) {
+  animation: pulse 0.3s;
+}
+
+/* ==============================
+   BUTTONS & CONTROLS
+   ============================== */
+button, select, input[type="checkbox"] {
+  transition: all 0.2s ease;
+}
+
+.button-row {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.practice-buttons-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Mode buttons */
+.mode-selection-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 2rem;
+}
+
+.mode-selection-title {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.mode-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.mode-button {
+  padding: 8px 15px;
+  margin: 0px;
+  border: 1px solid #ccc;
+  background-color: #f8f9fa;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  color: #333;
+  font-weight: 500;
+  min-width: 90px;
+  font-size: 15px;
+}
+
+.mode-button.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #0056b3;
+}
+
+.mode-button:hover:not(:disabled) {
+  background-color: #e9ecef;
+}
+
+.mode-button.active:hover:not(:disabled) {
+  background-color: #0069d9;
+}
+
+/* Force text colors if needed */
+.mode-buttons button {
+  color: #333 !important;
+}
+
+.mode-buttons button.active {
+  color: white !important;
+}
+
+/* Start button */
+.start-button {
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s ease;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.start-button:hover {
+  background-color: #0056b3;
+}
+
+.start-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Next problem button */
+.next-problem-button {
+  background-color: #28a745;
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.next-problem-button:hover {
+  background-color: #218838;
+}
+
+/* Solution button */
+.solution-button {
+  background-color: #ffc107;
+  color: #212529;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.solution-button:hover {
+  background-color: #e0a800;
+}
+
+/* Mobile button enhancements */
+@media (max-width: 768px) {
+  button {
+    padding: 10px 15px;
+    margin: 5px;
+    min-height: 44px;
+  }
+}
+
+/* ==============================
+   FEEDBACK & RESULTS
+   ============================== */
+/* Info, error, and completion messages */
+.info-message, .error-message {
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.info-message {
+  color: #007bff;
+  font-weight: 500;
+  background-color: #e6f7ff;
+  border-left: 4px solid #1890ff;
+  color: #0050b3;
+}
+
+.error-message {
+  color: #dc3545;
+  font-weight: 600;
+  background-color: #fff2f0;
+  border-left: 4px solid #ff4d4f;
+  color: #cf1322;
+}
+
+.completion-message h2 {
+  margin-top: 0;
+}
+
+/* Feedback section */
+.feedback-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 2rem;
+}
+
+.result.correct {
+  color: #28a745;
+}
+
+.result.incorrect {
+  color: #dc3545;
+}
+
+.result-image-container {
+  width: 300px;
+  height: 300px;
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.result-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+  max-width: 200px;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.result-image:hover {
+  transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  .result-image-container {
+    width: 200px;
+    height: 200px;
+  }
+}
+
+/* Solution section */
+.solution-section {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+/* ==============================
+   PAUSE MODAL
+   ============================== */
 .pause-modal {
   position: fixed;
   top: 0;
@@ -783,193 +902,147 @@ body {
   color: white;
 }
 
-/* Create the CSS for the answer options */
+/* ==============================
+   REVIEW & SIMILAR PROBLEMS
+   ============================== */
+/* Similar questions and review panel */
+.similar-questions-section, .review-panel {
+  margin-top: 2rem;
+}
 
-.answer-option {
-  display: flex;
-  align-items: center;
-  padding: 10px 15px;
-  margin: 8px 0;
-  border: 2px solid #ddd;
+.similar-problem {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+}
+
+.similar-problem strong {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+/* Incorrect problems section */
+.incorrect-problems-section {
+  margin: 30px 0;
+}
+
+.incorrect-problem {
+  margin-bottom: 25px;
+  padding: 20px;
+  background: #fff;
+  border-left: 4px solid #dc3545;
   border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background-color: #f9f9f9;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-.answer-option:hover {
-  background-color: #eef7ff;
-  border-color: #99c2ff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+.incorrect-problem h4 {
+  margin-top: 0;
+  color: #dc3545;
 }
 
-.answer-option.selected {
-  background-color: #e6f7ff;
-  border-color: #1890ff;
-  font-weight: 500;
-  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+.problem-text {
+  margin: 15px 0;
 }
 
-.answer-option.disabled {
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.answer-option.selected.disabled {
-  opacity: 1;
-}
-
-.option-label {
-  font-weight: bold;
-  margin-right: 10px;
-  min-width: 24px;
-  height: 24px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background-color: #ddd;
-}
-
-.answer-option.selected .option-label {
-  background-color: #1890ff;
-  color: white;
-}
-
-.option-text {
-  flex: 1;
-}
-
-/* Add animation for click feedback */
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.02); }
-  100% { transform: scale(1); }
-}
-
-.answer-option:active {
-  animation: pulse 0.3s;
-}
-
-.answer-choices-container {
-  margin: 20px 0;
-}
-
-.options-grid {
+.problem-answer-info {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-bottom: 20px;
+  margin: 15px 0;
 }
 
-@media (min-width: 768px) {
-  .options-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.answer-option {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  border: 2px solid #ddd;
+.problem-solution {
+  margin-top: 15px;
+  background-color: #f8f9fa;
+  padding: 15px;
   border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background-color: #f9f9f9;
 }
 
-.answer-option:hover:not(.disabled) {
-  background-color: #eef7ff;
-  border-color: #99c2ff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+.problem-image {
+  max-width: 100%;
+  height: auto;
+  margin: 10px 0;
 }
 
-.answer-option.selected {
-  background-color: #e6f7ff;
-  border-color: #1890ff;
-  font-weight: 500;
-  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
-}
-
-.answer-option.disabled {
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.answer-option.selected.disabled {
-  opacity: 1;
-}
-
-.option-label {
-  font-weight: bold;
-  margin-right: 12px;
-  min-width: 28px;
-  height: 28px;
-  display: inline-flex;
+/* ==============================
+   REGISTRATION & LOGIN
+   ============================== */
+.registration-container {
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background-color: #ddd;
+  min-height: 100vh;
+  padding: 2rem;
+  background-color: #f5f5f5;
 }
 
-.answer-option.selected .option-label {
-  background-color: #1890ff;
-  color: white;
+.registration-container h2 {
+  margin-bottom: 2rem;
+  color: #333;
 }
 
-.option-text {
-  flex: 1;
-}
-
-.button-row {
+.registration-container form {
   display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin-top: 20px;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 400px;
+  padding: 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Add animation for click feedback */
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.02); }
-  100% { transform: scale(1); }
+.registration-container input {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 }
 
-.answer-option:active:not(.disabled) {
-  animation: pulse 0.3s;
+.registration-container button {
+  padding: 0.5rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
-/* Enhanced math rendering */
+.registration-container button:hover {
+  background-color: #0056b3;
+}
+
+/* ==============================
+   MATH RENDERING
+   ============================== */
 .katex-display {
   overflow-x: auto;
   overflow-y: hidden;
   padding: 0.5em 0;
 }
 
-/* Fix for overbar and other special symbols */
 .katex {
   font-size: 1.1em;
   line-height: 1.2;
 }
 
-/* Make sure overbar displays correctly */
 .katex .overline {
   border-top: 1px solid currentColor;
   padding-top: 0.1em;
 }
 
-/* Ensure math formulas don't break layout on small screens */
 .markdown-content .katex-display {
   max-width: 100%;
   margin: 0.5em 0;
 }
 
-/* Mobile responsive improvements */
+/* ==============================
+   MOBILE RESPONSIVENESS
+   ============================== */
 @media (max-width: 768px) {
-  /* Adjust font sizes for mobile */
   body {
     font-size: 14px;
   }
@@ -982,137 +1055,22 @@ body {
     font-size: 1.5rem;
   }
   
-  /* Better spacing for answer options */
   .answer-option {
     padding: 10px;
     margin: 6px 0;
   }
   
-  /* Optimize problem view layout */
   .question-section {
     padding: 10px;
   }
   
-  /* Make buttons easier to tap */
-  button {
-    padding: 10px 15px;
-    margin: 5px;
-    min-height: 44px; /* For better touch targets */
-  }
-  
-  /* Improve navigation on small screens */
   .navbar-container {
     padding: 8px;
   }
-  
-  /* Create a collapsible sidebar for mobile */
-  .mobile-sidebar-toggle {
-    display: block; /* Show toggle button on mobile */
-  }
-  
-  .sidebar.collapsed {
-    height: 60px;
-    overflow: hidden;
-  }
 }
 
-/* Add touch-friendly targets for mobile */
 @media (max-width: 576px) {
   .answer-option {
     padding: 12px 10px;
   }
-  
-  .timer-container {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .time-elapsed, .time-left {
-    width: 100%;
-    margin-bottom: 5px;
-  }
-}
-
-/* Collapsible sidebar styles */
-.sidebar {
-  position: relative;
-  width: 280px;
-  transition: width 0.3s ease;
-  overflow-x: hidden;
-}
-
-.sidebar.collapsed {
-  width: 60px;
-}
-
-.sidebar-toggle {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  background: #f0f0f0;
-  border: 1px solid #ddd;
-  border-radius: 50%;
-  cursor: pointer;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-}
-
-.sidebar-content {
-  width: 280px; /* Same as expanded sidebar width */
-  padding: 15px;
-}
-
-.sidebar.collapsed .sidebar-section h2,
-.sidebar.collapsed .sidebar-section .setting-group,
-.sidebar.collapsed .sidebar-section .mode-buttons,
-.sidebar.collapsed .sidebar-section .start-button-container,
-.sidebar.collapsed .sidebar-section .user-section {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.sidebar.collapsed .sidebar-toggle {
-  right: 15px;
-}
-
-/* Fix invisible text in mode buttons */
-.mode-button {
-  padding: 8px 15px;
-  margin: 5px;
-  border: 1px solid #ccc;
-  background-color: #f8f9fa;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.2s;
-  color: #333; /* Ensure text is visible on light background */
-  font-weight: 500; /* Make text a bit bolder */
-}
-
-.mode-button.active {
-  background-color: #007bff;
-  color: white;
-  border-color: #0056b3;
-}
-
-.mode-button:hover:not(:disabled) {
-  background-color: #e9ecef;
-}
-
-.mode-button.active:hover:not(:disabled) {
-  background-color: #0069d9;
-}
-
-/* If the problem persists, try inspecting and adding this override */
-.mode-buttons button {
-  color: #333 !important; /* Force text color */
-}
-
-.mode-buttons button.active {
-  color: white !important; /* Force white text for active state */
 }

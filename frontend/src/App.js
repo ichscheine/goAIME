@@ -110,14 +110,11 @@ const AppContent = ({ user }) => {
             </button>
           </div>
         )}
-        <div className="score-board">
-          {mode === "practice" ? (
-            <>Score: <strong>{score}</strong> / <strong>{attempted}</strong></>
-          ) : (
-            <>Attempted: <strong>{attempted}</strong></>
-          )}
-        </div>
-
+        {mode === "practice" && (
+          <div className="score-board">
+            Score: <strong>{score}</strong> / <strong>{attempted}</strong>
+          </div>
+        )}
         <div className="user-info">
           Welcome, {user?.username}!
           <button 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useProblem } from '../contexts/ProblemContext';
 
 const SessionSummary = () => {
@@ -8,12 +8,14 @@ const SessionSummary = () => {
     cumulativeTime, 
     attemptRecords, 
     incorrectProblems, // Add this
-    selectedContest,    // Add this
-    selectedYear,       // Add this
-    shuffle,            // Add this
     resetSession, 
-    startSession 
+    startSession,
+    completeSession
   } = useProblem();
+
+    useEffect(() => {
+      completeSession();
+    }, [completeSession]);
   
   // Calculate statistics
   const totalTimeSeconds = (cumulativeTime / 1000).toFixed(2);

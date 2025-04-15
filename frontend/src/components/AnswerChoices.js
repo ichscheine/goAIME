@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -11,11 +11,21 @@ const AnswerChoices = ({
   onChoiceClick,
   onShowSolution,
   onNextProblem,
-  showSolution
+  showSolution,
+  selectedChoice // Add this to track selected answer
 }) => {
+  // Track selected option locally
+  const [localSelectedChoice, setLocalSelectedChoice] = useState(selectedChoice);
+  
+  // Update when prop changes
+  useEffect(() => {
+    setLocalSelectedChoice(selectedChoice);
+  }, [selectedChoice]);
+  
   const handleChoiceClick = (choice) => {
     console.log(`AnswerChoices - Button clicked: ${choice}`);
     console.log(`AnswerChoices - Button state: mode=${mode}, answered=${answered}, answersDisabled=${answersDisabled}`);
+    setLocalSelectedChoice(choice); // Update local state for immediate feedback
     onChoiceClick(choice);
   };
 
@@ -44,8 +54,9 @@ const AnswerChoices = ({
       <div className="answer-choices">
         {Array.isArray(problem?.answer_choices) &&
           problem.answer_choices.map((choice, index) => {
-            const isDisabled = mode === "practice" ? answered : answersDisabled;
-            const isSelected = answered === choice;
+            // const letter = String.fromCharCode(65 + index); // A, B, C, D, E
+            const isSelected = localSelectedChoice === choice; // Define isSelected
+            const isDisabled = answersDisabled; // Define isDisabled
             
             return (
               <button
@@ -54,7 +65,7 @@ const AnswerChoices = ({
                 onClick={() => handleChoiceClick(choice)}
                 disabled={isDisabled}
               >
-                <span className="choice-label">{String.fromCharCode(65 + index)}.</span>
+                {/* <span className="choice-label">{letter}</span> */}
                 <ReactMarkdown
                   remarkPlugins={[remarkMath]}
                   rehypePlugins={[rehypeKatex]}

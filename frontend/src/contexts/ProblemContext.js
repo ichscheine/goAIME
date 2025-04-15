@@ -366,10 +366,71 @@ export const ProblemProvider = ({ children }) => {
     }
   }, [resetSession]);
   
-  // Add this ref for tracking pause time
   const setPauseTimeRef = useRef(null);
 
-// Update the context provider value to include the new functions
+  const completeSession = useCallback(() => {
+    try {
+      // Try to get the user from localStorage
+      const userData = localStorage.getItem('user');
+      if (!userData) {
+        console.log("No user data found in localStorage, stats not saved");
+        return;
+      }
+      
+      const user = JSON.parse(userData);
+      const username = user.username || 'guest';
+      
+      const now = new Date();
+      const sessionDate = now.toISOString();
+      
+      // Get previous sessions from localStorage for this specific user
+      const storageKey = `user_stats_${username}`;
+      const storedStats = localStorage.getItem(storageKey);
+      let userStats = storedStats ? JSON.parse(storedStats) : {
+        sessions: [],
+        bestScore: 0,
+        lastSession: null
+      };
+      
+      // Add new session with current stats
+      userStats.sessions.push({
+        id: Date.now(),
+        score,
+        attempted,
+        timeSpent: cumulativeTime,
+        date: sessionDate,
+        contest: selectedContest,
+        year: selectedYear,
+        mode
+      });
+      
+      // Update best score if current score is higher
+      if (score > userStats.bestScore) {
+        userStats.bestScore = score;
+      }
+      
+      // Update last session date
+      userStats.lastSession = sessionDate;
+      
+      // Save back to localStorage
+      localStorage.setItem(storageKey, JSON.stringify(userStats));
+      
+      console.log(`Session stats saved for user ${username}:`, userStats);
+      
+      // If API exists for backend storage, use it
+      if (api && api.updateUserStats) {
+        api.updateUserStats({
+          userId: user.id,
+          score,
+          attempted,
+          timeSpent: cumulativeTime,
+          sessionDate
+        }).catch(err => console.error("Failed to update stats on server:", err));
+      }
+    } catch (error) {
+      console.error("Error saving session stats:", error);
+    }
+  }, [score, attempted, cumulativeTime, selectedContest, selectedYear, mode]);
 
 return (
   <ProblemContext.Provider value={{
@@ -401,6 +462,7 @@ return (
     fetchProblem,
     resetContestProblems,
     startSession,
+    completeSession,
     sessionId,
     setSessionId,
     sessionStartTime,

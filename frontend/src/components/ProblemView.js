@@ -341,7 +341,7 @@ const ProblemView = () => {
             <SolutionDisplay problem={problem} />
           )}
           
-          {isCorrect !== null && showProblemFeedback && (
+          {isCorrect !== null && showProblemFeedback && mode === "practice" && (
             <FeedbackPanel isCorrect={isCorrect} feedbackImage={feedbackImage} />
           )}
         </>

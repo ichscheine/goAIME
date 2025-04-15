@@ -1,4 +1,4 @@
-import React, { useState } from 'react'; // Add useState import
+import React, { useState, useEffect } from 'react'; // Add useEffect import
 import { useProblem } from '../contexts/ProblemContext';
 
 const CONTEST_OPTIONS = ['AMC 8', 'AMC 10A', 'AMC 10B', 'AMC 12A', 'AMC 12B', 'AIME I', 'AIME II'];
@@ -6,8 +6,12 @@ const YEAR_OPTIONS = [2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015];
 const SKIN_OPTIONS = ['Minecraft', 'Pokemon', 'Classic'];
 
 const Sidebar = ({ user }) => {
-  // Add state for collapsed sidebar
   const [collapsed, setCollapsed] = useState(false);
+  const [userStats, setUserStats] = useState({
+    sessions: [],
+    bestScore: '--',
+    lastSession: 'Never'
+  });
   
   const {
     selectedContest,
@@ -25,6 +29,46 @@ const Sidebar = ({ user }) => {
     startSession,
     resetContestProblems
   } = useProblem();
+
+  // Load user stats from localStorage when user changes
+  useEffect(() => {
+    if (user && user.username) {
+      const storageKey = `user_stats_${user.username}`;
+      const storedStats = localStorage.getItem(storageKey);
+      
+      if (storedStats) {
+        const parsedStats = JSON.parse(storedStats);
+        setUserStats(parsedStats);
+      } else {
+        // Reset to default if no stats found
+        setUserStats({
+          sessions: [],
+          bestScore: '--',
+          lastSession: 'Never'
+        });
+      }
+    }
+  }, [user]);
+
+  const formatLastSession = () => {
+    if (!userStats || !userStats.lastSession) return 'Never';
+    
+    try {
+      // Simple formatting
+      const lastSession = new Date(userStats.lastSession);
+      const now = new Date();
+      const diffTime = Math.abs(now - lastSession);
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return 'Yesterday';
+      if (diffDays < 7) return `${diffDays} days ago`;
+      
+      return lastSession.toLocaleDateString();
+    } catch (e) {
+      return 'Unknown';
+    }
+  };
 
   // Existing handler functions
   const handleContestChange = (e) => {
@@ -52,11 +96,12 @@ const Sidebar = ({ user }) => {
 
   const handleStartClick = () => {
     startSession();
+    // Automatically collapse sidebar when starting a session
+    setCollapsed(true);
   };
 
   return (
     <aside className={`sidebar filter-sidebar ${collapsed ? 'collapsed' : ''}`}>
-      {/* Add toggle button */}
       <button 
         className="sidebar-toggle" 
         onClick={() => setCollapsed(!collapsed)}
@@ -160,11 +205,24 @@ const Sidebar = ({ user }) => {
         {user && (
           <div className="sidebar-section user-section">
             <h3>User: {user.username}</h3>
-            <p className="stats-summary">
-              Total Sessions: 1<br />
-              Best Score: --<br />
-              Last Session: Now
-            </p>
+            <div className="stats-summary">
+              <div className="stat-item">
+                <span className="stat-label">Total Sessions:</span>
+                <span className="stat-value">{userStats.sessions ? userStats.sessions.length : 0}</span>
+              </div>
+              
+              <div className="stat-item">
+                <span className="stat-label">Best Score:</span>
+                <span className={`stat-value ${userStats.bestScore > 0 ? 'highlight' : ''}`}>
+                  {userStats.bestScore || '--'}
+                </span>
+              </div>
+              
+              <div className="stat-item">
+                <span className="stat-label">Last Session:</span>
+                <span className="stat-value">{formatLastSession()}</span>
+              </div>
+            </div>
           </div>
         )}
       </div>
