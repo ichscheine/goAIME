@@ -24,31 +24,23 @@ const SessionSummary = () => {
   // Debug and process attemptRecords when they change
   useEffect(() => {
     console.log("Raw attempt records:", attemptRecords);
-    
-    // Transform records into a consistent format
+  
     const processed = [];
-    
-    // Create a record entry for each problem number
+  
     for (let i = 1; i <= totalProblems; i++) {
-      // Try different property names for problem number matching
-      const found = attemptRecords.find(r => 
-        (r.problemNumber === i || r.number === i || r.problem_number === i || r.index === i-1)
-      );
-      
-      // Debug which records are being found
-      if (found) {
-        console.log(`Found record for problem ${i}:`, found);
-      }
-      
-      processed[i-1] = {
+      const found = attemptRecords.find(r => r.problemNumber === i);
+  
+      const wasAttempted = Boolean(found?.attempted);
+  
+      processed[i - 1] = {
         problemNumber: i,
-        attempted: Boolean(found?.attempted || found?.isCorrect || found?.correct || found?.selectedAnswer || found?.answer),
-        isCorrect: Boolean(found?.isCorrect || found?.correct || false),
+        attempted: wasAttempted,
+        isCorrect: Boolean(found?.isCorrect),
         timeSpent: Number(found?.timeSpent || 0),
-        answer: found?.selectedAnswer || found?.answer || found?.userAnswer || '—'
+        answer: found?.selectedAnswer || '—'
       };
     }
-    
+  
     console.log("Processed records:", processed);
     setProcessedRecords(processed);
   }, [attemptRecords, totalProblems]);
@@ -121,11 +113,11 @@ const SessionSummary = () => {
                   <span className="incorrect">Incorrect</span>
                 )
               ) : (
-                <span className="unattempted">Unattempted</span>
+                <span className="unattempted">Not attempted</span>
               )}
             </div>
             <div className="grid-cell time">
-              {record.timeSpent > 0 ? formatTime(record.timeSpent/1000) : "—"}
+              {record.timeSpent > 0 ? formatTime(record.timeSpent / 1000) : "—"}
             </div>
             <div className="grid-cell answer">
               {record.answer && record.answer !== '—' ? record.answer : "—"}

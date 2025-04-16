@@ -306,16 +306,18 @@ export const ProblemProvider = ({ children }) => {
   
   const handleOptionSelect = useCallback((option) => {
     if (answersDisabled) return;
-    
+  
     console.log("Option selected:", option, "for problem index:", currentIndex);
-    
+  
     setSelectedOption(option);
     setAnswersDisabled(true);
     setAnswered(true);
-    
-    const isCorrect = option === problem.answer;
+  
+    const isCorrect = option === problem.answer; // Compare the selected option with the correct answer
     console.log("Is answer correct?", isCorrect, "Expected:", problem.answer);
-    
+  
+    const timeSpent = Date.now() - problemStartTime; // Calculate time spent on the problem
+  
     // Update score if answer is correct
     if (isCorrect) {
       setScore(prevScore => prevScore + 1);
@@ -323,38 +325,31 @@ export const ProblemProvider = ({ children }) => {
       // Add to incorrect problems list for review
       setIncorrectProblems(prev => [...prev, currentIndex]);
     }
-    
-    // Record this attempt with complete data
-    const timeSpent = Date.now() - problemStartTime;
+  
     const attemptRecord = {
-      problemNumber: currentIndex + 1,
-      number: currentIndex + 1,
-      attempted: true,
-      isCorrect: isCorrect, 
-      correct: isCorrect,
-      selectedAnswer: option,
-      answer: option,
-      userAnswer: option,
-      timeSpent: timeSpent,
-      timestamp: new Date().toISOString()
+      problemNumber: currentIndex + 1, // 1-based index
+      attempted: true,                // Explicitly marks as attempted
+      isCorrect: isCorrect,           // Boolean for correctness
+      selectedAnswer: option,         // User's selected answer
+      timeSpent: timeSpent,           // Time spent on the problem
+      timestamp: new Date().toISOString() // Timestamp of the attempt
     };
-    
+  
     console.log("Recording attempt:", attemptRecord);
-    
+  
     // Add to attempt records using a function to ensure state updates properly
     setAttemptRecords(prev => {
       const newRecords = [...prev, attemptRecord];
       console.log("Updated attempt records:", newRecords);
       return newRecords;
     });
-    
+  
     // Track that we've attempted one more problem
     setAttempted(prev => prev + 1);
-    
+  
     // Calculate elapsed time for this problem
-    const elapsed = timeSpent;
-    setCumulativeTime(prev => prev + elapsed);
-    
+    setCumulativeTime(prev => prev + timeSpent);
+  
     // Move to next problem after a short delay
     setTimeout(() => {
       nextProblem();

@@ -1465,3 +1465,141 @@ button, select, input[type="checkbox"] {
   padding: 20px;
   overflow-y: auto;
 }
+
+/* General Styles */
+body {
+  font-family: 'Arial', sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f9f9f9;
+  color: #333;
+}
+
+/* Landing Page Container */
+.landing-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(to bottom, #4facfe, #00f2fe);
+}
+
+/* Form Container */
+.form-container {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+}
+
+/* Title and Subtitle */
+.title {
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+/* Form Styles */
+.registration-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-group {
+  text-align: left;
+}
+
+label {
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 0.3rem;
+  display: block;
+}
+
+.required {
+  color: #e63946;
+}
+
+.optional {
+  color: #888;
+}
+
+input {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+input:focus {
+  border-color: #4facfe;
+  outline: none;
+  box-shadow: 0 0 4px rgba(79, 172, 254, 0.5);
+}
+
+/* Button Styles */
+.primary-button {
+  background-color: #4facfe;
+  color: #fff;
+  border: none;
+  padding: 0.8rem 1.2rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.primary-button:hover {
+  background-color: #00aaff;
+}
+
+/* Note */
+.note {
+  font-size: 0.8rem;
+  color: #777;
+  margin-top: 1rem;
+}
+
+/* Secondary Button */
+.secondary-button {
+  background-color: #f0f0f0;
+  color: #333;
+  border: 1px solid #ccc;
+  padding: 0.8rem 1.2rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.secondary-button:hover {
+  background-color: #e0e0e0;
+  color: #000;
+}
+
+/* Register Link Section */
+.register-link {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.register-link p {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
+}

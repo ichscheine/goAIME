@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import { ProblemProvider, useProblem } from './contexts/ProblemContext';
 
+import LandingPage from './components/LandingPage';
 import Registration from './components/Registration';
 import Sidebar from './components/Sidebar';
 import ProblemView from './components/ProblemView';
@@ -30,13 +31,14 @@ function App() {
   return (
     <ProblemProvider>
       <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={!user ? <Registration onRegister={handleRegistration} /> : <Navigate to="/dashboard" />} />
-          <Route path="/dashboard" element={user ? <AppContent user={user} /> : <Navigate to="/login" />} />
-          <Route path="/problems/:id" element={user ? <ProblemView /> : <Navigate to="/login" />} />
-          <Route path="/summary" element={user ? <SessionSummary /> : <Navigate to="/login" />} />
-          <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
-        </Routes>
+      <Routes>
+        <Route path="/login" element={!user ? <LandingPage /> : <Navigate to="/dashboard" />} />
+        <Route path="/register" element={!user ? <Registration onRegister={handleRegistration} /> : <Navigate to="/dashboard" />} />
+        <Route path="/dashboard" element={user ? <AppContent user={user} /> : <Navigate to="/login" />} />
+        <Route path="/problems/:id" element={user ? <ProblemView /> : <Navigate to="/login" />} />
+        <Route path="/summary" element={user ? <SessionSummary /> : <Navigate to="/login" />} />
+        <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
+      </Routes>
       </BrowserRouter>
     </ProblemProvider>
   );
