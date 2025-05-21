@@ -5,7 +5,12 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 
 const SolutionDisplay = ({ problem }) => {
-  if (!problem || !problem.detailed_solution) {
+  const text = problem.solution;
+  const similar = problem.similar_questions 
+               || problem.similar_problems 
+               || [];      // catch both possible names
+
+  if (!problem || !text) {
     return (
       <div className="solution-section">
         <h3>Solution</h3>
@@ -22,22 +27,32 @@ const SolutionDisplay = ({ problem }) => {
           remarkPlugins={[remarkMath]}
           rehypePlugins={[rehypeKatex]}
         >
-          {problem.detailed_solution}
+          {text}
         </ReactMarkdown>
       </div>
-      
-      {problem.similar_questions && problem.similar_questions.length > 0 && (
-        <div className="similar-problems">
-          <h4>Similar Problems:</h4>
+
+      <div className="similar-problems">
+        <h4>Similar Questions:</h4>
+        {similar.length > 0 ? (
           <ul>
-            {problem.similar_questions.map((similar, index) => (
-              <li key={index}>
-                {similar.contest} {similar.year}, Problem {similar.problem_number}
+            {similar.map((s, i) => (
+              <li key={i}>
+                <strong>{s.difficulty}</strong>: 
+                <div className="markdown-content">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkMath]}
+                    rehypePlugins={[rehypeKatex]}
+                  >
+                    {s.question}
+                  </ReactMarkdown>
+                </div>
               </li>
             ))}
           </ul>
-        </div>
-      )}
+        ) : (
+          <p>No similar questions found.</p>
+        )}
+      </div>
     </div>
   );
 };

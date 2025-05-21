@@ -28,6 +28,19 @@ export const ProblemProvider = ({ children }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
   const [totalProblems, setTotalProblems] = useState(25); // Update this based on your actual count
+  const [unattempted, setUnattempted] = useState(25);
+  
+  // Update totalProblems when student completes or skips a problem
+  const handleProblemCompleted = (problem) => {
+    setAttempted(attempted + 1);
+    setUnattempted(unattempted - 1);
+    setTotalProblems(attempted);
+  };
+  
+  const handleProblemSkipped = (problem) => {
+    setUnattempted(unattempted - 1);
+    setTotalProblems(attempted + unattempted);
+  };
 
   // Request tracking
   const isFetchingRef = useRef(false);
@@ -52,6 +65,7 @@ export const ProblemProvider = ({ children }) => {
     });
     
     // Throttle API requests
+    // eslint-disable-next-line no-undef
     const now = Date.now();
     if (isFetchingRef.current || now - lastFetchTimeRef.current < MIN_FETCH_INTERVAL) {
       console.log('Ignoring fetch request - already fetching or too soon');
@@ -59,6 +73,7 @@ export const ProblemProvider = ({ children }) => {
     }
     
     try {
+      const now = Date.now();
       setLoading(true);
       setError(null);
       isFetchingRef.current = true;
@@ -71,6 +86,35 @@ export const ProblemProvider = ({ children }) => {
         shuffle: options.shuffle !== undefined ? options.shuffle : shuffle,
         excludeIds: options.excludeIds || usedProblemNumbersRef.current
       });
+
+      // Call handleProblemCompleted or handleProblemSkipped here
+      if (response.data.completed) {
+        handleProblemCompleted(response.data);
+      } else if (response.data.skipped) {
+        handleProblemSkipped(response.data);
+      }
+
+      setLoading(false);
+      isFetchingRef.current = false;
+    } catch (error) {
+      setError(error);
+      setLoading(false);
+      isFetchingRef.current = false;
+    }
+  }, [selectedYear, selectedContest, currentIndex, shuffle, api, handleProblemCompleted, handleProblemSkipped]);
+
+  // Fetch a problem from the backend and update the problem state
+  const fetchProblemAndUpdateState = useCallback(async (options = {}) => {
+    try {
+      console.log('ProblemContext.fetchProblemAndUpdateState called with:', {
+        ...options,
+        selectedYear: options.year || selectedYear, 
+        selectedContest: options.contest || selectedContest, 
+        currentIndex: options.index || currentIndex,
+        shuffle: options.shuffle !== undefined ? options.shuffle : shuffle
+      });
+      
+      const response = await fetchProblem(options);
       
       console.log('Problem response:', response);
       
@@ -114,6 +158,8 @@ export const ProblemProvider = ({ children }) => {
         setUsedProblemNumbers(newUsedProblems);
       }
       
+      // Define the current time before using it
+      const now = Date.now();
       setProblemStartTime(now);
       return true;
     } catch (err) {
@@ -482,6 +528,11 @@ export const ProblemProvider = ({ children }) => {
 
 return (
   <ProblemContext.Provider value={{
+    totalProblems,
+    attempted,
+    unattempted,
+    handleProblemCompleted,
+    handleProblemSkipped,
     problem,
     problemStatementWithMeta,
     loading,
@@ -530,7 +581,6 @@ return (
     isPaused,
     setIsPaused,
     currentProblemIndex,
-    totalProblems,
     handleOptionSelect,
     handlePauseSession,
     handleResumeSession,
