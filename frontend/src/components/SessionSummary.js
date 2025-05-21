@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import { useProblem } from '../contexts/ProblemContext';
-import ReviewSession from './SessionReview';
+import api from '../services/api';
 
 const SessionSummary = () => {
   const { 
@@ -15,11 +19,20 @@ const SessionSummary = () => {
     resetSession,
     selectedContest,
     selectedYear,
-    mode
+    mode,
+    showSolution // Import this from ProblemContext
   } = useProblem();
 
-  const [showReview, setShowReview] = useState(false);
   const [processedRecords, setProcessedRecords] = useState([]);
+
+  // Modify the review solution handler to use the shared solution function
+  const handleReviewSolution = (problemNumber) => {
+    console.log(`Opening solution for problem ${problemNumber} from ${selectedContest} ${selectedYear}`);
+    
+    // Use the showSolution function from ProblemContext to display the solution
+    // This will use the same mechanism as the "Show Solution" button in Practice Mode
+    showSolution(problemNumber, selectedContest, selectedYear);
+  };
 
   // Clean, simplified record processing - no debugging or dummy data
   useEffect(() => {
@@ -49,12 +62,12 @@ const SessionSummary = () => {
         // Skip invalid indices
         if (index < 0 || index >= problemCount) return;
         
-        // Mark as attempted and update data
+        // Mark as attempted and update data - Remove the minimum time constraint
         processed[index] = {
           problemNumber,
           attempted: true,
           isCorrect: Boolean(record.isCorrect),
-          timeSpent: Math.max(record.timeSpent || 0, 1000),
+          timeSpent: record.timeSpent || 0, // Remove the Math.max forcing minimum 1000ms
           answer: record.selectedAnswer || '—'
         };
         
@@ -70,7 +83,7 @@ const SessionSummary = () => {
               problemNumber: i + 1,
               attempted: true,
               isCorrect: Boolean(record.isCorrect),
-              timeSpent: Math.max(record.timeSpent || 0, 1000),
+              timeSpent: record.timeSpent || 0, // Remove the Math.max forcing minimum
               answer: record.selectedAnswer || '—'
             };
           }
@@ -98,9 +111,9 @@ const SessionSummary = () => {
   // Calculate total time by summing all timeSpent values from records
   // This ensures we get accurate data even if cumulativeTime is not set correctly
   const calcTotalTime = () => {
-    // If we have valid attempt records, sum their times
+    // If we have valid attempt records, sum their times without enforcing minimum
     if (attemptRecords && attemptRecords.length > 0) {
-      return attemptRecords.reduce((sum, record) => sum + (record.timeSpent || 1000), 0);
+      return attemptRecords.reduce((sum, record) => sum + (record.timeSpent || 0), 0);
     }
     
     // Fallback to cumulativeTime if available
@@ -108,8 +121,8 @@ const SessionSummary = () => {
       return cumulativeTime;
     }
     
-    // If all else fails, estimate a reasonable time (30 seconds per attempted problem)
-    return Math.max(attempted * 30000, 1000);
+    // If all else fails, estimate a reasonable time
+    return Math.max(attempted * 1000, 0); // Reduced from 30000 to be more realistic
   };
   
   // Calculate the time values
@@ -170,20 +183,44 @@ const SessionSummary = () => {
           return;
         }
         
-        console.log(`Processing record ${recordIndex} for problem ${problemNumber}:`);
-        console.log('- Record:', record);
-        console.log('- isCorrect:', Boolean(record.isCorrect));
+        console.log(`Processing record ${recordIndex} for problem ${problemNumber}:`, record);
+        
+        // Determine the time spent in milliseconds, checking all possible properties
+        let timeSpentMs = 0;
+        
+        // Try to get time in milliseconds from all possible properties
+        if (typeof record.timeSpent === 'number' && record.timeSpent > 0) {
+          timeSpentMs = record.timeSpent;
+        } else if (typeof record.timeSpentMs === 'number' && record.timeSpentMs > 0) {
+          timeSpentMs = record.timeSpentMs;
+        } else if (typeof record.time === 'number' && record.time > 0) {
+          // Convert seconds to milliseconds if needed
+          timeSpentMs = record.time * 1000;
+        } else if (typeof record.time_spent === 'number' && record.time_spent > 0) {
+          timeSpentMs = record.time_spent;
+        }
+        
+        console.log(`Time data for problem ${problemNumber}:`, {
+          timeSpentMs,
+          original: {
+            timeSpent: record.timeSpent,
+            timeSpentMs: record.timeSpentMs,
+            time: record.time,
+            time_spent: record.time_spent
+          }
+        });
+        
+        // Get the selected answer from various possible properties
+        const answer = record.selectedAnswer || record.selected_answer || record.choice || record.answer || '—';
         
         // Mark as attempted and update data
         processed[index] = {
           problemNumber,
-          attempted: true,  // Always mark as attempted
+          attempted: true,
           isCorrect: Boolean(record.isCorrect || record.correct),
-          timeSpent: Math.max(record.timeSpent || record.time_spent || 0, 1000),
-          answer: record.selectedAnswer || record.selected_answer || record.choice || record.answer || '—'
+          timeSpent: timeSpentMs,  // Store time in milliseconds
+          answer
         };
-        
-        console.log(`- Processed to:`, processed[index]);
       });
     }
     
@@ -251,58 +288,66 @@ const SessionSummary = () => {
         <div className="grid-header">
           <div className="grid-cell">#</div>
           <div className="grid-cell">Status</div>
-          <div className="grid-cell">Time</div>
           <div className="grid-cell">Your Answer</div>
+          <div className="grid-cell">Time</div>
+          <div className="grid-cell">Actions</div>
         </div>
         
         {processedRecords.map((record, index) => {
-          // Log each record as it's being rendered
-          console.log(`Rendering row ${index}:`, record);
-          
           return (
             <div className="grid-row" key={index}>
               <div className="grid-cell problem-number">{record.problemNumber}</div>
               <div className="grid-cell status">
                 {record.attempted ? (
                   record.isCorrect ? (
-                    <span className="correct">Correct</span>
+                    <span className="correct">✓ Correct</span>
                   ) : (
-                    <span className="incorrect">Incorrect</span>
+                    <span className="incorrect">✗ Incorrect</span>
                   )
                 ) : (
                   <span className="unattempted">Not attempted</span>
                 )}
               </div>
+              <div className="grid-cell answer">
+                {record.answer && record.answer !== '—' ? (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkMath]}
+                    rehypePlugins={[rehypeKatex]}
+                  >
+                    {record.answer}
+                  </ReactMarkdown>
+                ) : "—"}
+              </div>
               <div className="grid-cell time">
                 {record.timeSpent > 0 ? formatTime(record.timeSpent / 1000) : "—"}
               </div>
-              <div className="grid-cell answer">
-                {record.answer && record.answer !== '—' ? record.answer : "—"}
+              <div className="grid-cell actions">
+                {record.attempted && (
+                  <a 
+                    href="#" 
+                    className="review-link" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleReviewSolution(record.problemNumber);
+                    }}
+                  >
+                    Review Solution
+                  </a>
+                )}
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Combined summary actions with all buttons */}
+      {/* Replace buttons with just one print button */}
       <div className="summary-actions">
-        <button className="primary-button" onClick={() => window.location.reload()}>
-          Start New Session
-        </button>
-        <button className="secondary-button" onClick={() => setShowReview(true)}>
-          Review Solutions
-        </button>
-        <button className="secondary-button" onClick={() => window.print()}>
+        <button className="primary-button" onClick={() => window.print()}>
           Print Results
         </button>
       </div>
 
-      {/* ReviewSession component */}
-      {showReview && (
-        <div className="review-overlay">
-          <ReviewSession onClose={() => setShowReview(false)} />
-        </div>
-      )}
+      {/* Remove custom solution modal since we're using the shared solution display */}
     </div>
   );
 };

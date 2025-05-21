@@ -8,6 +8,7 @@ import Sidebar from './components/Sidebar';
 import ProblemView from './components/ProblemView';
 import SessionSummary from './components/SessionSummary';
 import Timer from './components/Timer';
+import SolutionModal from './components/SolutionModal';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 function App() {
@@ -158,6 +159,9 @@ const AppContent = ({ user }) => {
           )}
         </main>
       </div>
+
+      {/* Solution Modal - For viewing solutions from anywhere in the app */}
+      <SolutionModal />
 
       {/* Pause Modal - Add this at the end of your component, before the closing div */}
       {isPaused && (

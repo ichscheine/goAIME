@@ -173,7 +173,7 @@ const ProblemView = () => {
 
   // Handle choice click
   const handleChoiceClick = useCallback(async (choice) => {
-    setSelectedChoice(choice); // Add this line to track the selected option
+    setSelectedChoice(choice); // Track the selected option
     console.log("Choice clicked:", choice);
     
     // Skip if answers are disabled or already answered
@@ -182,12 +182,12 @@ const ProblemView = () => {
       return;
     }
     
-    // Calculate time spent on this problem
-    const timeTaken = Math.floor((Date.now() - problemStartTime) / 1000);
-    console.log(`Time taken: ${timeTaken} seconds`);
+    // Calculate time spent on this problem in milliseconds
+    const timeSpentMs = Date.now() - problemStartTime;
+    console.log(`Time taken: ${timeSpentMs}ms (${timeSpentMs/1000} seconds)`);
     
-    // Update accumulated time
-    setCumulativeTime(prev => prev + timeTaken);
+    // Update accumulated time in milliseconds
+    setCumulativeTime(prev => prev + timeSpentMs);
     
     // Mark as answered
     setAnswered(true);
@@ -196,7 +196,6 @@ const ProblemView = () => {
     // Check if the answer is correct
     const correctAnswer = problem.correct_answer;
     const isAnswerCorrect = choice === correctAnswer;
-    
     console.log(`Answer: ${choice}, Correct: ${correctAnswer}, Result: ${isAnswerCorrect ? "Correct" : "Incorrect"}`);
     
     // Update score and tracking
@@ -214,7 +213,7 @@ const ProblemView = () => {
       setIncorrectProblems(prev => [...prev, {
         ...problem,
         userAnswer: choice,
-        timeTaken
+        timeSpentMs
       }]);
       
       // Play sound for incorrect answer
@@ -223,12 +222,15 @@ const ProblemView = () => {
       }
     }
     
-    // Record this attempt
+    // Record this attempt - store time in milliseconds for accuracy
     setAttemptRecords(prev => [...prev, {
       problem_id: problem._id,
       correct: isAnswerCorrect,
-      time: timeTaken,
-      choice: choice
+      timeSpent: timeSpentMs,      // Store in milliseconds
+      time: timeSpentMs / 1000,    // Also store seconds for backward compatibility
+      problemNumber: currentIndex, // Add problem number for easier reference
+      choice: choice,
+      selectedAnswer: choice       // Add selectedAnswer for consistent naming
     }]);
     
     // Show feedback

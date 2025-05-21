@@ -16,6 +16,7 @@ export const ProblemProvider = ({ children }) => {
   const [currentIndex, setCurrentIndex] = useState(1);
   const [problemStatementWithMeta, setProblemStatementWithMeta] = useState('');
   const [problemStartTime, setProblemStartTime] = useState(null);
+  const [pausedTime, setPausedTime] = useState(0); // Track time spent paused
   const [cumulativeTime, setCumulativeTime] = useState(0);
   const [attemptRecords, setAttemptRecords] = useState([]);
   const [incorrectProblems, setIncorrectProblems] = useState([]);
@@ -362,7 +363,23 @@ export const ProblemProvider = ({ children }) => {
     const isCorrect = option === problem.answer; // Compare the selected option with the correct answer
     console.log("Is answer correct?", isCorrect, "Expected:", problem.answer);
   
-    const timeSpent = Date.now() - problemStartTime; // Calculate time spent on the problem
+    // Calculate time spent on this problem in milliseconds
+    const endTime = Date.now();
+    let timeSpentMs = endTime - problemStartTime;
+    
+    // Subtract paused time for more accurate time measurement
+    if (pausedTime > 0) {
+      timeSpentMs -= pausedTime;
+      console.log(`Subtracting paused time: ${pausedTime}ms, adjusted time: ${timeSpentMs}ms`);
+      
+      // Reset pausedTime after using it
+      setPausedTime(0);
+    }
+  
+    // Ensure timeSpentMs is at least 100ms to avoid negative or zero values from timing glitches
+    timeSpentMs = Math.max(100, timeSpentMs);
+    
+    console.log(`Time spent on problem: ${timeSpentMs}ms (${timeSpentMs/1000}s)`);
   
     // Update score if answer is correct
     if (isCorrect) {
@@ -377,7 +394,8 @@ export const ProblemProvider = ({ children }) => {
       attempted: true,                // Explicitly marks as attempted
       isCorrect: isCorrect,           // Boolean for correctness
       selectedAnswer: option,         // User's selected answer
-      timeSpent: timeSpent,           // Time spent on the problem
+      timeSpent: timeSpentMs,         // Store in milliseconds for consistent access
+      time: timeSpentMs / 1000,       // Also include seconds for backward compatibility
       timestamp: new Date().toISOString() // Timestamp of the attempt
     };
   
@@ -394,32 +412,44 @@ export const ProblemProvider = ({ children }) => {
     setAttempted(prev => prev + 1);
   
     // Calculate elapsed time for this problem
-    setCumulativeTime(prev => prev + timeSpent);
+    setCumulativeTime(prev => prev + timeSpentMs);
   
     // Move to next problem after a short delay
     setTimeout(() => {
       nextProblem();
     }, 1000);
-  }, [problem, problemStartTime, answersDisabled, currentIndex, setSelectedOption, setAnswersDisabled, 
+  }, [problem, problemStartTime, pausedTime, answersDisabled, currentIndex, setSelectedOption, setAnswersDisabled, 
       setAnswered, setScore, setIncorrectProblems, setAttemptRecords, setAttempted, setCumulativeTime, nextProblem]);
 
+  // Reference to track pause start time
+  const pauseStartTimeRef = useRef(null);
+
   const handlePauseSession = useCallback(() => {
+    if (isPaused) return; // Prevent duplicate pause actions
+    
     setIsPaused(true);
     // Store the time when paused to calculate elapsed time correctly
     const pauseTime = Date.now();
-    setPauseTimeRef.current = pauseTime;
-  }, []);
+    pauseStartTimeRef.current = pauseTime;
+    
+    console.log('Session paused at:', new Date(pauseTime).toISOString());
+  }, [isPaused]);
   
   const handleResumeSession = useCallback(() => {
-    setIsPaused(false);
+    if (!isPaused) return; // Only resume if currently paused
     
-    // Adjust the session start time to account for the pause duration
-    if (setPauseTimeRef.current) {
-      const pauseDuration = Date.now() - setPauseTimeRef.current;
-      setSessionStartTime(prevTime => prevTime + pauseDuration);
-      setPauseTimeRef.current = null;
+    // Calculate how long the session was paused
+    if (pauseStartTimeRef.current) {
+      const pauseDuration = Date.now() - pauseStartTimeRef.current;
+      console.log(`Session resumed after ${pauseDuration/1000}s pause`);
+      
+      // Add this pause duration to our total paused time counter
+      setPausedTime(prevPausedTime => prevPausedTime + pauseDuration);
+      pauseStartTimeRef.current = null;
     }
-  }, []);
+    
+    setIsPaused(false);
+  }, [isPaused]);
   
   const handleRestartSession = useCallback(() => {
     // Logic to restart the current session
@@ -526,6 +556,71 @@ export const ProblemProvider = ({ children }) => {
     }
   }, [score, attempted, cumulativeTime, selectedContest, selectedYear, mode]);
 
+  // Solution viewing functionality
+  const [solutionProblem, setSolutionProblem] = useState(null);
+  const [showingSolution, setShowingSolution] = useState(false);
+  const [solutionError, setSolutionError] = useState(null);
+  
+  const showSolution = useCallback(async (problemNumber, contest, year) => {
+    console.log(`Showing solution for problem ${problemNumber} from ${contest} ${year}`);
+    setLoading(true);
+    setSolutionError(null);
+    
+    try {
+      // Format the inputs to ensure consistency
+      const formattedContest = contest ? contest.trim() : selectedContest;
+      const formattedYear = year ? year.toString() : selectedYear.toString();
+      const formattedProblemNumber = parseInt(problemNumber, 10);
+      
+      console.log(`Fetching solution with params:`, {
+        contest: formattedContest,
+        year: formattedYear,
+        problem_number: formattedProblemNumber
+      });
+      
+      // Fetch the problem details to get the solution
+      const response = await api.getProblemByParams({
+        contest: formattedContest,
+        year: formattedYear,
+        problem_number: formattedProblemNumber
+      });
+      
+      if (response && response.data) {
+        console.log("Solution data received:", response.data);
+        
+        // Only use the solution if it's provided in the data
+        // Don't create a placeholder as solutions should exist
+        setSolutionProblem(response.data);
+        setShowingSolution(true);
+      } else {
+        console.error("Failed to fetch solution data - empty response");
+        setSolutionError("Could not load the solution. Please try again later.");
+      }
+    } catch (error) {
+      console.error("Error fetching solution:", error);
+      setSolutionError(`Error: ${error.message || "Failed to fetch solution"}`);
+      
+      // Try to find the problem in the current session data
+      if (attemptRecords && attemptRecords.length > 0) {
+        console.log("Attempting to find solution in existing records...");
+        const record = attemptRecords.find(r => r.problemNumber === problemNumber);
+        if (record && record.solution) {
+          console.log("Found solution in attempt records:", record);
+          setSolutionProblem(record);
+          setShowingSolution(true);
+          setSolutionError(null);
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedContest, selectedYear, attemptRecords]);
+  
+  const hideSolution = useCallback(() => {
+    setShowingSolution(false);
+    setSolutionProblem(null);
+  }, []);
+
 return (
   <ProblemContext.Provider value={{
     totalProblems,
@@ -585,7 +680,12 @@ return (
     handlePauseSession,
     handleResumeSession,
     handleRestartSession,
-    handleQuitSession
+    handleQuitSession,
+    showingSolution,
+    solutionProblem,
+    solutionError,
+    showSolution,
+    hideSolution
   }}>
     {children}
   </ProblemContext.Provider>

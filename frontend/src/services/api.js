@@ -242,7 +242,7 @@ const api = {
         
         // Check for similar_problems
         if (Array.isArray(problemData.similar_problems) && problemData.similar_problems.length > 0) {
-          console.log('Similar problems found:', problemData.similar_problems.length);
+          console.log('Similar problems found:', problemData.similar_problems);
         }
         
         // Ensure difficulty is available
@@ -322,15 +322,161 @@ const api = {
     try {
       const response = await apiClient.get(`/api/problems/${id}`);
       
-      // ... existing code ...
+      // Extract the actual problem data from the response structure
+      let problemData = response.data;
+      if (response.data && response.data.data) {
+        // Unwrap from Flask's success_response format
+        problemData = response.data.data;
+      }
       
-      return response;
+      // Process the response to ensure consistent field names
+      if (problemData) {
+        // Extract contest and year from contest_id if available
+        if (problemData.contest_id) {
+          const parts = problemData.contest_id.split('_');
+          if (parts.length === 2) {
+            problemData.year = parts[1];
+            // Convert "AMC10A" to "AMC 10A" for display
+            problemData.contest = parts[0].replace(/(\d+)([A-Z])/g, '$1 $2');
+          }
+        }
+        
+        // Ensure description field exists
+        if (!problemData.description && problemData.problem_text) {
+          problemData.description = problemData.problem_text;
+        }
+        
+        // Process solution if available
+        if (problemData.solution) {
+          // Format solution text if needed
+          if (problemData.solution.startsWith("++")) {
+            problemData.formattedSolution = problemData.solution
+              .replace(/\+\+([^+]+)\+\+/g, '<strong>$1</strong>');
+          }
+          console.log('Solution found');
+        }
+        
+        console.log('Processed problem data:', problemData);
+      }
+      
+      return {
+        ...response,
+        data: problemData
+      };
     } catch (error) {
       console.error('API Error in getProblemById:', error);
       throw error;
     }
   },
   
+  getProblemByParams: async (params) => {
+    try {
+      console.log('API Call: getProblemByParams with params:', params);
+      
+      // Construct a query string for the contest and year from the params
+      const contestId = `${params.contest.replace(/\s+/g, '')}_${params.year}`;
+      console.log('Constructed contest_id:', contestId);
+      
+      // For AMC 10A 2022 Problem 1, try direct fetch with the specific ID format
+      let response;
+      
+      // First try direct problem fetch by ID if possible
+      if (params.problem_number && contestId) {
+        try {
+          const problemId = `${contestId}-${params.problem_number}`;
+          console.log(`Trying direct fetch with ID: ${problemId}`);
+          response = await apiClient.get(`/api/problems/${problemId}`);
+          console.log('Direct problem fetch succeeded:', response.data);
+        } catch (err) {
+          console.log('Direct fetch failed, falling back to query params');
+          // Continue with the query parameters approach
+          response = await apiClient.get('/api/problems', { 
+            params: {
+              contest_id: contestId,
+              problem_number: params.problem_number
+            }
+          });
+        }
+      } else {
+        // Use the regular query approach if we don't have all params
+        response = await apiClient.get('/api/problems', { 
+          params: {
+            contest_id: contestId,
+            problem_number: params.problem_number
+          }
+        });
+      }
+      
+      console.log('Raw API response:', response);
+      console.log('Problem data from API:', response.data);
+      
+      // Extract the actual problem data from the response structure
+      let problemData = response.data;
+      if (response.data && response.data.data && Array.isArray(response.data.data) && response.data.data.length > 0) {
+        // Unwrap from Flask's success_response format and get the first matching problem
+        problemData = response.data.data[0];
+        console.log('Unwrapped problem data:', problemData);
+      }
+      
+      // Process the response to ensure consistent field names
+      if (problemData) {
+        // Extract contest and year from contest_id if available
+        if (problemData.contest_id) {
+          const parts = problemData.contest_id.split('_');
+          if (parts.length === 2) {
+            problemData.year = parts[1];
+            // Convert "AMC10A" to "AMC 10A" for display
+            problemData.contest = parts[0].replace(/(\d+)([A-Z])/g, '$1 $2');
+          }
+        }
+        
+        // Ensure description field exists
+        if (!problemData.description && problemData.problem_text) {
+          problemData.description = problemData.problem_text;
+        }
+        
+        // Process solution if available - Debug the solution data
+        console.log('Solution field exists:', problemData.hasOwnProperty('solution'));
+        console.log('Solution value:', problemData.solution);
+        
+        // If we don't have a solution, we need to try mockApi as a fallback
+        if (!problemData.solution && !problemData.solution_text) {
+          console.log('No solution found in API response, trying mockApi fallback');
+          try {
+            // Import the mockApi module dynamically
+            const mockApiModule = await import('./mockApi.js');
+            const mockApi = mockApiModule.default;
+            
+            if (mockApi && mockApi.getProblemById) {
+              // Format the ID for mockApi: "AMC10A_2022-1"
+              const mockId = `${contestId}-${params.problem_number}`;
+              console.log(`Trying mockApi.getProblemById with ID: ${mockId}`);
+              
+              const mockResult = await mockApi.getProblemById(mockId);
+              
+              if (mockResult && mockResult.data && mockResult.data.solution) {
+                console.log('Found solution in mockApi:', mockResult.data.solution);
+                problemData.solution = mockResult.data.solution;
+              }
+            }
+          } catch (mockError) {
+            console.error('Error using mockApi as fallback:', mockError);
+          }
+        }
+        
+        console.log('Final processed problem data:', problemData);
+      }
+      
+      return {
+        ...response,
+        data: problemData
+      };
+    } catch (error) {
+      console.error('API Error in getProblemByParams:', error);
+      throw error;
+    }
+  },
+
   resetSession: async (data) => {
     try {
       console.log('API Call: resetSession with data:', data);
