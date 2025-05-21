@@ -9,6 +9,7 @@ from utils.response_utils import success_response, error_response
 from utils.logging_utils import log_exception
 import random  # For random.choice()
 import uuid
+from datetime import datetime, timedelta # Add datetime for TTL
 
 def register_problem_routes(app):
     """Register routes for problem management"""
@@ -93,20 +94,26 @@ def register_problem_routes(app):
                     query['problem_number'] = {'$nin': problem_nums}
 
             print(f"MongoDB Query: {query}")
+
+            # Construct aggregation pipeline
+            pipeline = [
+                {'$match': query},
+                {'$sample': {'size': 1}}
+            ]
             
-            # Get random problem from MongoDB
-            problems = list(db.problems.find(query))
-            print(f"Found {len(problems)} matching problems")
+            # Execute aggregation
+            result = list(db.problems.aggregate(pipeline))
             
-            if not problems:
+            if not result:
+                print("No problems found matching criteria for $sample")
                 return error_response("No problems match the filter criteria", 404)
                 
-            # Select random problem
-            problem = random.choice(problems)
+            problem = result[0]
             
             # Convert ObjectId to string
             problem['_id'] = str(problem['_id'])
             
+            print(f"Found random problem: {problem['_id']}")
             return success_response(problem)
             
         except Exception as e:
@@ -160,7 +167,7 @@ def register_problem_routes(app):
             log_exception(e, {'data': data})
             return error_response("Failed to create problem", 500)
         
-    session_problem_orders = {}  # Store by session ID
+    # session_problem_orders = {} # Store by session ID - REMOVED
 
     @app.route('/api/problems/session', methods=['POST'])
     def initialize_session():
@@ -172,37 +179,39 @@ def register_problem_routes(app):
             contest = data.get('contest')
             year = data.get('year')
             
-            # Get database connection
             db = get_db()
             
-            # Build query for MongoDB to find all relevant problems
             query = {}
             if contest and year:
                 contest_prefix = contest.replace(' ', '')
                 query['contest_id'] = f"{contest_prefix}_{year}"
             
-            # Find all matching problems
-            problems = list(db.problems.find(query, {"problem_number": 1}))
-            problem_numbers = [str(p.get('problem_number')) for p in problems]
+            problems_cursor = db.problems.find(query, {"problem_number": 1, "_id": 0}) # Fetch only problem_number
+            problem_numbers = [str(p.get('problem_number')) for p in problems_cursor if p.get('problem_number') is not None]
             
             if not problem_numbers:
                 return error_response("No problems found for the specified criteria", 404)
                 
-            # Sort numerically
             problem_numbers.sort(key=lambda x: int(x) if x.isdigit() else 0)
             
-            # Shuffle if requested
             if shuffle:
                 random.shuffle(problem_numbers)
             
-            # Store the problem order for this session
-            session_problem_orders[session_id] = {
+            # NEW LOGIC: Store/update session in 'problem_sessions' collection
+            session_data = {
                 'problem_numbers': problem_numbers,
                 'current_index': 0,
                 'shuffle': shuffle,
                 'contest': contest,
-                'year': year
+                'year': year,
+                'last_updated_at': datetime.utcnow()
             }
+            
+            db.problem_sessions.update_one(
+                {'_id': session_id}, # Use session_id as the document _id
+                {'$set': session_data},
+                upsert=True
+            )
             
             return success_response({
                 'session_id': session_id, 
@@ -219,47 +228,52 @@ def register_problem_routes(app):
         """Get the next problem in the session order"""
         try:
             session_id = request.args.get('session_id')
-            if not session_id or session_id not in session_problem_orders:
-                return error_response("Invalid or expired session", 400)
+            if not session_id:
+                return error_response("Session ID is required", 400)
                 
-            session_data = session_problem_orders[session_id]
-            problem_numbers = session_data['problem_numbers']
-            current_index = session_data['current_index']
+            db = get_db()
             
-            # Check if we've reached the end
+            # NEW LOGIC: Fetch session from 'problem_sessions' collection
+            session_doc = db.problem_sessions.find_one({'_id': session_id})
+            
+            if not session_doc:
+                return error_response("Invalid or expired session", 400) # Or 404
+                
+            problem_numbers = session_doc['problem_numbers']
+            current_index = session_doc['current_index']
+            
             if current_index >= len(problem_numbers):
                 return error_response("End of problem set reached", 404)
                 
-            # Get the next problem number
-            problem_number = problem_numbers[current_index]
+            problem_number_str = problem_numbers[current_index]
             
-            # Increment the index for next time
-            session_data['current_index'] += 1
+            # Increment the index and update last_updated_at for the session
+            db.problem_sessions.update_one(
+                {'_id': session_id},
+                {'$set': {'current_index': current_index + 1, 'last_updated_at': datetime.utcnow()}}
+            )
             
-            # Get database connection
-            db = get_db()
-            
-            # Get the problem
-            query = {
-                'problem_number': int(problem_number) if problem_number.isdigit() else problem_number
+            # Get the problem details
+            problem_query = {
+                'problem_number': int(problem_number_str) if problem_number_str.isdigit() else problem_number_str
             }
-            if session_data.get('contest') and session_data.get('year'):
-                contest_prefix = session_data['contest'].replace(' ', '')
-                query['contest_id'] = f"{contest_prefix}_{session_data['year']}"
+            if session_doc.get('contest') and session_doc.get('year'):
+                contest_prefix = session_doc['contest'].replace(' ', '')
+                problem_query['contest_id'] = f"{contest_prefix}_{session_doc['year']}"
             
-            problem = db.problems.find_one(query)
+            problem = db.problems.find_one(problem_query)
             
             if not problem:
-                return error_response(f"Problem not found: {problem_number}", 404)
+                 # This case should ideally not happen if problem_numbers are sourced correctly
+                log_event('problem.next.not_found', {'session_id': session_id, 'problem_number_str': problem_number_str, 'query': problem_query})
+                return error_response(f"Problem {problem_number_str} not found for session's criteria", 404)
                 
-            # Convert ObjectId to string
             problem['_id'] = str(problem['_id'])
             
-            # Add session progress info
             problem['session_progress'] = {
-                'current': current_index,
+                'current': current_index + 1, # User-facing index is 1-based
                 'total': len(problem_numbers),
-                'remaining': len(problem_numbers) - current_index
+                'remaining': len(problem_numbers) - (current_index + 1)
             }
             
             return success_response(problem)
