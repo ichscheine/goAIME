@@ -274,6 +274,7 @@ export const ProblemProvider = ({ children }) => {
       setProblemStartTime(Date.now());
       setAnswered(false);
       setSelectedOption(null);
+      setAnswersDisabled(false); // <--- ADD THIS LINE
       
       const problemData = result.data;
       let year = problemData.year;
@@ -316,6 +317,7 @@ export const ProblemProvider = ({ children }) => {
       setProblemStartTime(Date.now());
       setAnswered(false);
       setSelectedOption(null);
+      setAnswersDisabled(false); // <--- ADD THIS LINE
       
       // Format problem statement with metadata
       const problemData = result.data;

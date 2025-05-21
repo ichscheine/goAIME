@@ -191,7 +191,9 @@ const ProblemView = () => {
     
     // Mark as answered
     setAnswered(true);
-    setAnswersDisabled(true);
+    if (mode === 'contest') {
+      setAnswersDisabled(true);
+    }
     
     // Check if the answer is correct
     const correctAnswer = problem.correct_answer;
