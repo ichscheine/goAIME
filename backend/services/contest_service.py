@@ -1,4 +1,4 @@
-from services.db_service import get_db
+from services.db_service import get_db, get_db_client # Import get_db_client
 from bson.objectid import ObjectId
 from datetime import datetime
 from models.contest import Contest  # Import the model
@@ -111,80 +111,89 @@ def delete_contest_by_id(contest_id):
 def register_user_for_contest(contest_id, user_id):
     """Register a user for a contest"""
     db = get_db()
-    
+    client = get_db_client()
+
     try:
-        # Check if contest exists and is open for registration
-        contest = db.contests.find_one({'_id': ObjectId(contest_id)})
-        
-        if not contest:
-            return False, "Contest not found"
-            
-        now = datetime.utcnow()
-        if contest.get('registration_end') and now > contest['registration_end']:
-            return False, "Registration period has ended"
-            
-        if now > contest['start_time']:
-            return False, "Contest has already started"
-            
-        # Check if user is already registered
-        if db.contest_registrations.find_one({
-            'contest_id': ObjectId(contest_id),
-            'user_id': ObjectId(user_id)
-        }):
-            return False, "User is already registered for this contest"
-            
-        # Register user
-        db.contest_registrations.insert_one({
-            'contest_id': ObjectId(contest_id),
-            'user_id': ObjectId(user_id),
-            'registered_at': now
-        })
-        
-        return True, "Registration successful"
+        with client.start_session() as session:
+            with session.start_transaction():
+                # Check if contest exists and is open for registration
+                contest = db.contests.find_one({'_id': ObjectId(contest_id)}, session=session)
+                
+                if not contest:
+                    return False, "Contest not found"
+                    
+                now = datetime.utcnow()
+                if contest.get('registration_end') and now > contest['registration_end']:
+                    return False, "Registration period has ended"
+                    
+                if now > contest['start_time']:
+                    return False, "Contest has already started"
+                    
+                # Check if user is already registered
+                if db.contest_registrations.find_one({
+                    'contest_id': ObjectId(contest_id),
+                    'user_id': ObjectId(user_id)
+                }, session=session):
+                    return False, "User is already registered for this contest"
+                    
+                # Register user
+                db.contest_registrations.insert_one({
+                    'contest_id': ObjectId(contest_id),
+                    'user_id': ObjectId(user_id),
+                    'registered_at': now
+                }, session=session)
+                
+                return True, "Registration successful"
     except Exception as e:
+        # Consider logging the exception here: log_exception(e)
         return False, f"Registration failed: {str(e)}"
 
 def submit_contest_solution(contest_id, problem_id, user_id, solution):
     """Submit a solution for a contest problem"""
     db = get_db()
+    client = get_db_client()
     
     try:
-        # Check if contest exists and is active
-        contest = db.contests.find_one({'_id': ObjectId(contest_id)})
-        
-        if not contest:
-            return False, "Contest not found", None
-            
-        now = datetime.utcnow()
-        if now < contest['start_time']:
-            return False, "Contest has not started yet", None
-            
-        if now > contest['end_time']:
-            return False, "Contest has ended", None
-            
-        # Check if problem belongs to contest
-        if ObjectId(problem_id) not in contest.get('problems', []):
-            return False, "Problem is not part of this contest", None
-            
-        # Check if user is registered for contest
-        if not db.contest_registrations.find_one({
-            'contest_id': ObjectId(contest_id),
-            'user_id': ObjectId(user_id)
-        }):
-            return False, "User is not registered for this contest", None
-            
-        # Create submission
-        submission = {
-            'contest_id': ObjectId(contest_id),
-            'problem_id': ObjectId(problem_id),
-            'user_id': ObjectId(user_id),
-            'solution': solution,
-            'submitted_at': now,
-            'status': 'pending'  # Will be processed by evaluation service
-        }
-        
-        result = db.submissions.insert_one(submission)
-        
-        return True, "Solution submitted successfully", str(result.inserted_id)
+        with client.start_session() as session:
+            with session.start_transaction():
+                # Check if contest exists and is active
+                contest = db.contests.find_one({'_id': ObjectId(contest_id)}, session=session)
+                
+                if not contest:
+                    return False, "Contest not found", None
+                    
+                now = datetime.utcnow()
+                if now < contest['start_time']:
+                    return False, "Contest has not started yet", None
+                    
+                if now > contest['end_time']:
+                    return False, "Contest has ended", None
+                    
+                # Check if problem belongs to contest
+                # Note: contest['problems'] contains ObjectIds, so direct comparison is fine
+                if ObjectId(problem_id) not in contest.get('problems', []):
+                    return False, "Problem is not part of this contest", None
+                    
+                # Check if user is registered for contest
+                if not db.contest_registrations.find_one({
+                    'contest_id': ObjectId(contest_id),
+                    'user_id': ObjectId(user_id)
+                }, session=session):
+                    return False, "User is not registered for this contest", None
+                    
+                # Create submission
+                submission = {
+                    'contest_id': ObjectId(contest_id),
+                    'problem_id': ObjectId(problem_id),
+                    'user_id': ObjectId(user_id),
+                    'solution': solution,
+                    'submitted_at': now,
+                    'status': 'pending'  # Will be processed by evaluation service
+                }
+                
+                result = db.submissions.insert_one(submission, session=session)
+                
+                return True, "Solution submitted successfully", str(result.inserted_id)
     except Exception as e:
+        # Consider logging the exception here: log_exception(e)
         return False, f"Submission failed: {str(e)}", None
