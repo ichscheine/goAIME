@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useProblem } from '../contexts/ProblemContext';
-import api from '../services/api';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
+import api from '../services/api';  // Import the API service
 
 const SessionSummary = () => {
   const { 
@@ -16,20 +20,84 @@ const SessionSummary = () => {
     selectedContest,
     selectedYear,
     mode,
-    showSolution // Import this from ProblemContext
+    showSolution
   } = useProblem();
 
   const [processedRecords, setProcessedRecords] = useState([]);
+  const [expandedSolutions, setExpandedSolutions] = useState({});
+  const [solutionData, setSolutionData] = useState({});
+  const [loadingSolutions, setLoadingSolutions] = useState({});
 
-  // Modify the review solution handler to use the shared solution function
-  const handleReviewSolution = (problemNumber) => {
-    console.log(`Opening solution for problem ${problemNumber}`);
+  // Handle reviewing solution - inline expansion
+  const handleReviewSolution = async (problemNumber) => {
+    console.log(`Toggling solution for problem ${problemNumber}`);
     
-    // Use the shared showSolution function from ProblemContext instead of custom modal
-    showSolution(problemNumber, selectedContest, selectedYear);
+    // If already expanded, collapse it
+    if (expandedSolutions[problemNumber]) {
+      setExpandedSolutions(prev => ({
+        ...prev,
+        [problemNumber]: false
+      }));
+      return;
+    }
+    
+    // Mark as loading and expand
+    setLoadingSolutions(prev => ({
+      ...prev,
+      [problemNumber]: true
+    }));
+    
+    setExpandedSolutions(prev => ({
+      ...prev,
+      [problemNumber]: true
+    }));
+    
+    try {
+      // Use the proper API service to fetch solution data
+      const response = await api.getProblemByParams({
+        contest: selectedContest,
+        year: selectedYear,
+        problem_number: problemNumber
+      });
+      
+      if (response && response.data) {
+        // Store the solution text
+        setSolutionData(prev => ({
+          ...prev,
+          [problemNumber]: {
+            solution: response.data.solution || response.data.formattedSolution || response.data.solution_text || "No solution available.",
+            similarProblems: response.data.similar_problems || response.data.similar_questions || []
+          }
+        }));
+        console.log(`Solution loaded for problem ${problemNumber}:`, response.data);
+      } else {
+        console.error("Empty response when fetching solution");
+        setSolutionData(prev => ({
+          ...prev,
+          [problemNumber]: {
+            solution: "No solution data available.",
+            similarProblems: []
+          }
+        }));
+      }
+    } catch (error) {
+      console.error(`Error fetching solution for problem ${problemNumber}:`, error);
+      setSolutionData(prev => ({
+        ...prev,
+        [problemNumber]: {
+          solution: "Error loading solution. Please try again.",
+          similarProblems: []
+        }
+      }));
+    } finally {
+      setLoadingSolutions(prev => ({
+        ...prev,
+        [problemNumber]: false
+      }));
+    }
   };
 
-  // Clean, simplified record processing - no debugging or dummy data
+  // Clean, simplified record processing 
   useEffect(() => {
     // Set a reasonable default for totalProblems if it's not provided
     const problemCount = totalProblems || 25;
@@ -103,118 +171,25 @@ const SessionSummary = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
   
-  // Calculate total time by summing all timeSpent values from records
-  // This ensures we get accurate data even if cumulativeTime is not set correctly
+  // Calculate total time
   const calcTotalTime = () => {
-    // First priority: use cumulativeTime as it represents the total session time
     if (cumulativeTime && cumulativeTime > 0) {
       return cumulativeTime;
     }
     
-    // Second option: sum individual problem times
     if (attemptRecords && attemptRecords.length > 0) {
       return attemptRecords.reduce((sum, record) => sum + (record.timeSpent || 1000), 0);
     }
     
-    // If all else fails, estimate a reasonable time (30 seconds per attempted problem)
     return Math.max(attempted * 30000, 1000);
   };
   
-  // Calculate the time values
   const totalTimeMS = calcTotalTime();
   const totalTimeSeconds = Math.round(totalTimeMS / 1000);
   
-  // Calculate average time per problem
   const avgTimeSeconds = attempted > 0 
     ? Math.round(totalTimeSeconds / attempted) 
     : 0;
-
-  // Add debugging to analyze the problem details section creation
-  useEffect(() => {
-    // Set a reasonable default for totalProblems if it's not provided
-    const problemCount = totalProblems || 25;
-    
-    console.log('Processing attempt records into problem details...');
-    console.log('Total problems to process:', problemCount);
-    console.log('Attempt records available:', attemptRecords);
-    
-    // Create a fixed array of default "not attempted" records
-    const processed = Array(problemCount).fill().map((_, i) => ({
-      problemNumber: i + 1,
-      attempted: false,
-      isCorrect: false,
-      timeSpent: 0,
-      answer: '—'
-    }));
-    
-    // If we have real attempt records, update the processed records
-    if (attemptRecords && attemptRecords.length > 0) {
-      // Inspect format of the attemptRecords to see what's available
-      console.log('First attempt record:', attemptRecords[0]);
-      console.log('Available properties:', Object.keys(attemptRecords[0] || {}));
-      
-      // Process each record
-      attemptRecords.forEach((record, recordIndex) => {
-        // Try different ways to get the problem number
-        let problemNumber;
-        
-        if (typeof record.problemNumber === 'number') {
-          problemNumber = record.problemNumber;
-          console.log(`Using record.problemNumber: ${problemNumber}`);
-        } else if (typeof record.problem_number === 'number') {
-          problemNumber = record.problem_number;
-          console.log(`Using record.problem_number: ${problemNumber}`);
-        } else {
-          // Default to index+1
-          problemNumber = recordIndex + 1;
-          console.log(`Using index+1: ${problemNumber}`);
-        }
-        
-        const index = problemNumber - 1;
-        
-        // Skip invalid indices
-        if (index < 0 || index >= problemCount) {
-          console.log(`Invalid index ${index} for problem number ${problemNumber}`);
-          return;
-        }
-        
-        console.log(`Processing record ${recordIndex} for problem ${problemNumber}:`);
-        console.log('- Record:', record);
-        console.log('- isCorrect:', Boolean(record.isCorrect));
-        
-        // Mark as attempted and update data
-        processed[index] = {
-          problemNumber,
-          attempted: true,  // Always mark as attempted
-          isCorrect: Boolean(record.isCorrect || record.correct),
-          timeSpent: Math.max(record.timeSpent || record.time_spent || 0, 1000),
-          answer: record.selectedAnswer || record.selected_answer || record.choice || record.answer || '—'
-        };
-        
-        console.log(`- Processed to:`, processed[index]);
-      });
-    }
-    
-    console.log('Final processed records:', processed);
-    setProcessedRecords(processed);
-    
-    // Add explicit check of state after update
-    setTimeout(() => {
-      console.log('Processed records state after update:', processedRecords);
-    }, 100);
-  }, [attemptRecords, totalProblems]);
-
-  // Add debugging for the render phase
-  const renderDebug = () => {
-    console.log('Rendering problem details with:', {
-      processedRecords,
-      recordsLength: processedRecords.length,
-      attempted: processedRecords.filter(r => r.attempted).length
-    });
-  };
-  
-  // Call render debugging
-  renderDebug();
 
   return (
     <div className="session-summary">
@@ -248,14 +223,7 @@ const SessionSummary = () => {
         Problem Details - {selectedContest} {selectedYear}
       </h2>
       
-      {/* Add debug info above the grid */}
-      <div className="debug-info" style={{ marginBottom: '10px', fontSize: '12px', color: '#666' }}>
-        Total records: {processedRecords.length}, 
-        Attempted: {processedRecords.filter(r => r.attempted).length},
-        Records with time: {processedRecords.filter(r => r.timeSpent > 0).length}
-      </div>
-      
-      <div className="problems-grid">
+      <div className="problems-grid inline-solutions">
         <div className="grid-header">
           <div className="grid-cell">#</div>
           <div className="grid-cell">Status</div>
@@ -264,9 +232,9 @@ const SessionSummary = () => {
           <div className="grid-cell">Actions</div>
         </div>
         
-        {processedRecords.map((record, index) => {
-          return (
-            <div className="grid-row" key={index}>
+        {processedRecords.map((record, index) => (
+          <React.Fragment key={index}>
+            <div className="grid-row">
               <div className="grid-cell problem-number">{record.problemNumber}</div>
               <div className="grid-cell status">
                 {record.attempted ? (
@@ -287,31 +255,76 @@ const SessionSummary = () => {
               </div>
               <div className="grid-cell actions">
                 {record.attempted && (
-                  <a 
-                    href="#" 
-                    className="review-link" 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleReviewSolution(record.problemNumber);
-                    }}
+                  <button 
+                    className={`solution-toggle-btn ${expandedSolutions[record.problemNumber] ? 'expanded' : ''}`}
+                    onClick={() => handleReviewSolution(record.problemNumber)}
                   >
-                    Review Solution
-                  </a>
+                    {expandedSolutions[record.problemNumber] ? 'Hide Solution' : 'Show Solution'}
+                  </button>
                 )}
               </div>
             </div>
-          );
-        })}
+            
+            {/* Expandable solution section */}
+            {expandedSolutions[record.problemNumber] && (
+              <div className="expanded-solution-row">
+                {loadingSolutions[record.problemNumber] ? (
+                  <div className="solution-loading">Loading solution...</div>
+                ) : (
+                  <div className="inline-solution-content">
+                    <h3>Solution for Problem {record.problemNumber}</h3>
+                    <div className="solution-text">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkMath]}
+                        rehypePlugins={[rehypeKatex]}
+                      >
+                        {solutionData[record.problemNumber]?.solution || "No solution available."}
+                      </ReactMarkdown>
+                    </div>
+                    
+                    {solutionData[record.problemNumber]?.similarProblems?.length > 0 && (
+                      <div className="similar-problems-section">
+                        <h4>Similar Problems</h4>
+                        <ul className="similar-problems-list">
+                          {solutionData[record.problemNumber].similarProblems.map((problem, i) => (
+                            <li key={i} className="similar-problem-item">
+                              <strong>{problem.difficulty || 'Practice'}</strong>
+                              <div className="similar-problem-text">
+                                <ReactMarkdown
+                                  remarkPlugins={[remarkMath]}
+                                  rehypePlugins={[rehypeKatex]}
+                                >
+                                  {problem.question || problem.text || '(No preview available)'}
+                                </ReactMarkdown>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    <button 
+                      className="close-solution-btn"
+                      onClick={() => setExpandedSolutions(prev => ({
+                        ...prev,
+                        [record.problemNumber]: false
+                      }))}
+                    >
+                      Close Solution
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </React.Fragment>
+        ))}
       </div>
 
-      {/* Replace buttons with just one print button */}
       <div className="summary-actions">
         <button className="primary-button" onClick={() => window.print()}>
           Print Results
         </button>
       </div>
-
-      {/* Remove custom solution modal since we're using the shared solution display */}
     </div>
   );
 };

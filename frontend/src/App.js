@@ -160,8 +160,8 @@ const AppContent = ({ user }) => {
         </main>
       </div>
 
-      {/* Solution Modal - For viewing solutions from anywhere in the app */}
-      {!sessionComplete && <SolutionModal />}
+      {/* Solution Modal - Always show regardless of session state */}
+      <SolutionModal />
 
       {/* Pause Modal - Add this at the end of your component, before the closing div */}
       {isPaused && (

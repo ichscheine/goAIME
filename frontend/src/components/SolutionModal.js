@@ -31,19 +31,11 @@ const SolutionModal = () => {
      solutionProblem.similar_questions || 
      []) : [];
   
-  // Debug output
-  console.log('Solution modal rendering with:', {
-    haveSolutionProblem: !!solutionProblem,
-    solutionText,
-    solutionFields: solutionProblem ? Object.keys(solutionProblem) : [],
-    similarProblems: similarProblems?.length || 0
-  });
-  
   return (
     <div className="solution-modal-overlay" onClick={hideSolution}>
       <div className="solution-modal" onClick={e => e.stopPropagation()}>
         <div className="solution-modal-header">
-          <h2>Solution</h2>
+          <h2>Solution for Problem {solutionProblem?.problem_number}</h2>
           <button 
             className="close-button"
             onClick={hideSolution}
