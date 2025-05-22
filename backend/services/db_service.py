@@ -1,5 +1,15 @@
 from pymongo import MongoClient
 import os
+import logging
+import sys
+
+# Fix the import error by changing from relative to absolute import
+sys.path.append('/Users/daoming/Documents/Github/goAIME')
+from backend.config import get_config  # Use absolute import instead
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # MongoDB connection
 _client = None
@@ -10,7 +20,14 @@ def get_db_client():
     global _client
     
     if _client is None:
-        mongodb_uri = os.environ.get('MONGODB_URI')
+        # Use the config module to get the MongoDB URI
+        config = get_config()
+        mongodb_uri = config.MONGODB_URI
+        
+        if not mongodb_uri:
+            raise ValueError("MongoDB URI is not configured. Check your .env file.")
+            
+        logger.info(f"Connecting to MongoDB")
         _client = MongoClient(mongodb_uri)
         
     return _client
@@ -20,16 +37,25 @@ def get_db():
     global _db
     
     if _db is None:
+        # Use the config module to get the database name
+        config = get_config()
         client = get_db_client()
-        db_name = os.environ.get('MONGODB_DB', 'goaime')
+        db_name = config.MONGODB_DB
+        
+        if not db_name:
+            raise ValueError("MongoDB database name is not configured. Check your .env file.")
+            
+        logger.info(f"Using database: {db_name}")
         _db = client[db_name]
         
     return _db
 
 def init_db():
-    """Initialize the database connection"""
-    get_db()
-    
+    """Initialize the database connection and log connection info"""
+    db = get_db()
+    logger.info(f"Database initialized: {db.name}")
+    return db
+
 def close_db():
     """Close the database connection"""
     global _client

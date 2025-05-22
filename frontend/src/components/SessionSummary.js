@@ -1,8 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
 import { useProblem } from '../contexts/ProblemContext';
 import api from '../services/api';
 
@@ -27,10 +23,9 @@ const SessionSummary = () => {
 
   // Modify the review solution handler to use the shared solution function
   const handleReviewSolution = (problemNumber) => {
-    console.log(`Opening solution for problem ${problemNumber} from ${selectedContest} ${selectedYear}`);
+    console.log(`Opening solution for problem ${problemNumber}`);
     
-    // Use the showSolution function from ProblemContext to display the solution
-    // This will use the same mechanism as the "Show Solution" button in Practice Mode
+    // Use the shared showSolution function from ProblemContext instead of custom modal
     showSolution(problemNumber, selectedContest, selectedYear);
   };
 
@@ -62,12 +57,12 @@ const SessionSummary = () => {
         // Skip invalid indices
         if (index < 0 || index >= problemCount) return;
         
-        // Mark as attempted and update data - Remove the minimum time constraint
+        // Mark as attempted and update data
         processed[index] = {
           problemNumber,
           attempted: true,
           isCorrect: Boolean(record.isCorrect),
-          timeSpent: record.timeSpent || 0, // Remove the Math.max forcing minimum 1000ms
+          timeSpent: Math.max(record.timeSpent || 0, 1000),
           answer: record.selectedAnswer || '—'
         };
         
@@ -83,7 +78,7 @@ const SessionSummary = () => {
               problemNumber: i + 1,
               attempted: true,
               isCorrect: Boolean(record.isCorrect),
-              timeSpent: record.timeSpent || 0, // Remove the Math.max forcing minimum
+              timeSpent: Math.max(record.timeSpent || 0, 1000),
               answer: record.selectedAnswer || '—'
             };
           }
@@ -111,18 +106,18 @@ const SessionSummary = () => {
   // Calculate total time by summing all timeSpent values from records
   // This ensures we get accurate data even if cumulativeTime is not set correctly
   const calcTotalTime = () => {
-    // If we have valid attempt records, sum their times without enforcing minimum
-    if (attemptRecords && attemptRecords.length > 0) {
-      return attemptRecords.reduce((sum, record) => sum + (record.timeSpent || 0), 0);
-    }
-    
-    // Fallback to cumulativeTime if available
+    // First priority: use cumulativeTime as it represents the total session time
     if (cumulativeTime && cumulativeTime > 0) {
       return cumulativeTime;
     }
     
-    // If all else fails, estimate a reasonable time
-    return Math.max(attempted * 1000, 0); // Reduced from 30000 to be more realistic
+    // Second option: sum individual problem times
+    if (attemptRecords && attemptRecords.length > 0) {
+      return attemptRecords.reduce((sum, record) => sum + (record.timeSpent || 1000), 0);
+    }
+    
+    // If all else fails, estimate a reasonable time (30 seconds per attempted problem)
+    return Math.max(attempted * 30000, 1000);
   };
   
   // Calculate the time values
@@ -183,44 +178,20 @@ const SessionSummary = () => {
           return;
         }
         
-        console.log(`Processing record ${recordIndex} for problem ${problemNumber}:`, record);
-        
-        // Determine the time spent in milliseconds, checking all possible properties
-        let timeSpentMs = 0;
-        
-        // Try to get time in milliseconds from all possible properties
-        if (typeof record.timeSpent === 'number' && record.timeSpent > 0) {
-          timeSpentMs = record.timeSpent;
-        } else if (typeof record.timeSpentMs === 'number' && record.timeSpentMs > 0) {
-          timeSpentMs = record.timeSpentMs;
-        } else if (typeof record.time === 'number' && record.time > 0) {
-          // Convert seconds to milliseconds if needed
-          timeSpentMs = record.time * 1000;
-        } else if (typeof record.time_spent === 'number' && record.time_spent > 0) {
-          timeSpentMs = record.time_spent;
-        }
-        
-        console.log(`Time data for problem ${problemNumber}:`, {
-          timeSpentMs,
-          original: {
-            timeSpent: record.timeSpent,
-            timeSpentMs: record.timeSpentMs,
-            time: record.time,
-            time_spent: record.time_spent
-          }
-        });
-        
-        // Get the selected answer from various possible properties
-        const answer = record.selectedAnswer || record.selected_answer || record.choice || record.answer || '—';
+        console.log(`Processing record ${recordIndex} for problem ${problemNumber}:`);
+        console.log('- Record:', record);
+        console.log('- isCorrect:', Boolean(record.isCorrect));
         
         // Mark as attempted and update data
         processed[index] = {
           problemNumber,
-          attempted: true,
+          attempted: true,  // Always mark as attempted
           isCorrect: Boolean(record.isCorrect || record.correct),
-          timeSpent: timeSpentMs,  // Store time in milliseconds
-          answer
+          timeSpent: Math.max(record.timeSpent || record.time_spent || 0, 1000),
+          answer: record.selectedAnswer || record.selected_answer || record.choice || record.answer || '—'
         };
+        
+        console.log(`- Processed to:`, processed[index]);
       });
     }
     
@@ -309,14 +280,7 @@ const SessionSummary = () => {
                 )}
               </div>
               <div className="grid-cell answer">
-                {record.answer && record.answer !== '—' ? (
-                  <ReactMarkdown
-                    remarkPlugins={[remarkMath]}
-                    rehypePlugins={[rehypeKatex]}
-                  >
-                    {record.answer}
-                  </ReactMarkdown>
-                ) : "—"}
+                {record.answer && record.answer !== '—' ? record.answer : "—"}
               </div>
               <div className="grid-cell time">
                 {record.timeSpent > 0 ? formatTime(record.timeSpent / 1000) : "—"}

@@ -1,4 +1,4 @@
-// Update the Timer component to respect isPaused
+// Update the Timer component to fix the Time Left calculation
 import React, { useState, useEffect } from 'react';
 import { useProblem } from '../contexts/ProblemContext';
 
@@ -7,21 +7,26 @@ const Timer = () => {
     sessionStartTime, 
     mode,
     sessionComplete,
-    isPaused // Add this to get pause state
+    isPaused,
+    totalProblems,
+    contestType
   } = useProblem();
   
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [elapsedDisplay, setElapsedDisplay] = useState('0:00');
-  const [remainingDisplay, setRemainingDisplay] = useState('--:--');
+  const [remainingDisplay, setRemainingDisplay] = useState('75:00');
   // Store the time when paused
   const [pausedElapsedTime, setPausedElapsedTime] = useState(null);
   
+  // AMC10 has exactly 75 minutes
+  const CONTEST_DURATION_SECONDS = 75 * 60;
+  
   // Format time function
-  const formatTime = (milliseconds) => {
-    if (!milliseconds || isNaN(milliseconds)) return '0:00';
-    const totalSeconds = Math.floor(milliseconds / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  const formatTime = (seconds) => {
+    if (!seconds || isNaN(seconds)) return '0:00';
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
   
   useEffect(() => {
@@ -30,7 +35,9 @@ const Timer = () => {
     // Store current elapsed time when pausing
     if (isPaused) {
       if (!pausedElapsedTime && sessionStartTime) {
-        setPausedElapsedTime(Date.now() - sessionStartTime);
+        const elapsedMsAtPause = Date.now() - sessionStartTime;
+        const elapsedSecondsAtPause = Math.floor(elapsedMsAtPause / 1000);
+        setPausedElapsedTime(elapsedSecondsAtPause);
       }
       return; // Don't update timer while paused
     } else {
@@ -40,38 +47,48 @@ const Timer = () => {
     
     const timerInterval = setInterval(() => {
       if (!sessionStartTime) {
+        setElapsedSeconds(0);
         setElapsedDisplay('0:00');
+        setRemainingDisplay(formatTime(CONTEST_DURATION_SECONDS));
         return;
       }
       
-      const elapsed = Date.now() - sessionStartTime;
-      setElapsedDisplay(formatTime(elapsed));
+      // Calculate elapsed time in seconds (not milliseconds)
+      const elapsedMs = Date.now() - sessionStartTime;
+      const elapsedSecs = Math.floor(elapsedMs / 1000);
+      setElapsedSeconds(elapsedSecs);
       
-      if (mode === 'contest') {
-        const contestDuration = 75 * 60 * 1000; // 75 minutes for contest
-        const remaining = Math.max(0, contestDuration - elapsed);
-        setRemainingDisplay(formatTime(remaining));
-      }
+      // Format and set display values
+      setElapsedDisplay(formatTime(elapsedSecs));
+      
+      // Calculate remaining time (ensure it's never negative)
+      const remainingSecs = Math.max(0, CONTEST_DURATION_SECONDS - elapsedSecs);
+      setRemainingDisplay(formatTime(remainingSecs));
+      
     }, 1000);
     
     return () => clearInterval(timerInterval);
   }, [sessionStartTime, mode, sessionComplete, isPaused, pausedElapsedTime]);
   
-  // If paused, show the frozen time
-  const displayElapsed = isPaused && pausedElapsedTime 
+  // Display values when paused
+  const displayElapsed = isPaused && pausedElapsedTime !== null
     ? formatTime(pausedElapsedTime)
     : elapsedDisplay;
     
-  const displayRemaining = isPaused && pausedElapsedTime && mode === 'contest'
-    ? formatTime(Math.max(0, 75 * 60 * 1000 - pausedElapsedTime))
+  const displayRemaining = isPaused && pausedElapsedTime !== null
+    ? formatTime(Math.max(0, CONTEST_DURATION_SECONDS - pausedElapsedTime))
     : remainingDisplay;
   
   return (
     <div className="timer-container">
-      <span className="time-elapsed">Time Elapsed: {displayElapsed}</span>
-      {mode === 'contest' && (
-        <span className="time-left">Time Left: {displayRemaining}</span>
-      )}
+      <div className="time-section time-elapsed">
+        <span className="time-label">Time Elapsed:</span>
+        <span className="time-value">{displayElapsed}</span>
+      </div>
+      <div className="time-section time-left">
+        <span className="time-label">Time Left:</span>
+        <span className="time-value">{displayRemaining}</span>
+      </div>
     </div>
   );
 };

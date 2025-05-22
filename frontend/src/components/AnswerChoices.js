@@ -36,7 +36,7 @@ const AnswerChoices = ({
         {mode === "practice" && (
           <div className="practice-buttons-row">
             <button
-              className="solution-button"
+              className={showSolution ? "hide-solution-button" : "solution-button"}
               onClick={onShowSolution}
             >
               {showSolution ? "Hide Solution" : "Show Solution"}

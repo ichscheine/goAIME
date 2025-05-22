@@ -1,8 +1,18 @@
 import os
 from dotenv import load_dotenv
+from pymongo import MongoClient
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
+
+# MongoDB connection (moved from db_service)
+_client = None
+_db = None
 
 class Config:
     """Base configuration"""
@@ -11,7 +21,7 @@ class Config:
     TESTING = False
     
     # MongoDB
-    MONGODB_URI = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017')
+    MONGODB_URI = os.environ.get('MONGODB_URI')
     MONGODB_DB = os.environ.get('MONGODB_DB', 'goaime')
     
     # JWT
@@ -53,3 +63,57 @@ config = {
 def get_config():
     env = os.environ.get('FLASK_ENV', 'development')
     return config.get(env, config['default'])
+
+def get_db_client():
+    """Returns a MongoDB client instance"""
+    global _client
+    
+    if _client is None:
+        # Get configuration based on the current environment
+        config = get_config()
+        mongodb_uri = config.MONGODB_URI
+        
+        if not mongodb_uri:
+            raise ValueError("MongoDB URI is not configured. Check your .env file.")
+        
+        logger.info(f"Connecting to MongoDB at {mongodb_uri.split('@')[1].split('/')[0] if mongodb_uri else 'unknown'}")
+        _client = MongoClient(mongodb_uri)
+        
+    return _client
+
+def get_db():
+    """Returns the database instance"""
+    global _db
+    
+    if _db is None:
+        # Get configuration based on the current environment
+        config = get_config()
+        client = get_db_client()
+        db_name = config.MONGODB_DB
+        
+        if not db_name:
+            raise ValueError("MongoDB database name is not configured. Check your .env file.")
+        
+        logger.info(f"Using database: {db_name}")
+        _db = client[db_name]
+        
+    return _db
+
+def close_db():
+    """Close the database connection"""
+    global _client
+    if _client:
+        logger.info("Closing MongoDB connection")
+        _client.close()
+        _client = None
+
+def get_db_info():
+    """Returns current database connection information (for debugging)"""
+    curr_config = get_config()
+    connection_info = {
+        'host': curr_config.MONGODB_URI.split('@')[1].split('/')[0] if curr_config.MONGODB_URI else 'Not configured',
+        'database': curr_config.MONGODB_DB,
+        'provider': 'MongoDB Atlas (Cloud)' if 'mongodb+srv://' in (curr_config.MONGODB_URI or '') else 'Local MongoDB',
+        'env': os.environ.get('FLASK_ENV', 'development')
+    }
+    return connection_info

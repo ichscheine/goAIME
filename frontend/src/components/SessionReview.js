@@ -106,15 +106,22 @@ const ReviewSession = ({ onClose }) => {
                       </div>
                     </div>
                     
-                    {problemDetails[problemNumber].similarProblems?.length > 0 && (
+                    {problemDetails[problemNumber].similar_problems?.length > 0 && (
                       <div className="similar-problems">
                         <h3>Similar Problems for Practice</h3>
                         <ul className="similar-list">
-                          {problemDetails[problemNumber].similarProblems.map(problem => (
-                            <li key={problem.id} className="similar-problem-item">
+                          {problemDetails[problemNumber].similar_problems.map((problem, index) => (
+                            <li key={index} className="similar-problem-item">
                               <div className="problem-info">
-                                <span className="problem-contest">{problem.contest} {problem.year}</span>
-                                <span className="problem-number">Problem {problem.number}</span>
+                                <span className="problem-difficulty">{problem.difficulty || 'Practice'}</span>
+                              </div>
+                              <div className="problem-question">
+                                <ReactMarkdown
+                                  remarkPlugins={[remarkMath]}
+                                  rehypePlugins={[rehypeKatex]}
+                                >
+                                  {problem.question || '(No question text available)'}
+                                </ReactMarkdown>
                               </div>
                               <button className="practice-button">Practice</button>
                             </li>

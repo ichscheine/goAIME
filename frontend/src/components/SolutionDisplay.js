@@ -5,18 +5,7 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 
 const SolutionDisplay = ({ problem }) => {
-  const text = problem.solution;
-  // Log the full problem object to inspect structure
-  console.log("Problem in SolutionDisplay:", problem);
-  
-  const similar = problem.similar_questions 
-               || problem.similar_problems 
-               || [];      // catch both possible names
-  
-  // Log what we found for debugging
-  console.log("Similar questions found:", similar);
-
-  if (!problem || !text) {
+  if (!problem || !problem.solution) {
     return (
       <div className="solution-section">
         <h3>Solution</h3>
@@ -33,46 +22,38 @@ const SolutionDisplay = ({ problem }) => {
           remarkPlugins={[remarkMath]}
           rehypePlugins={[rehypeKatex]}
         >
-          {text}
+          {problem.solution}
         </ReactMarkdown>
       </div>
-
-      <div className="similar-problems">
-        <h4>Similar Questions:</h4>
-        {similar.length > 0 ? (
+      
+      {problem.similar_problems && problem.similar_problems.length > 0 && (
+        <div className="similar-problems">
+          <h4>Similar Problems:</h4>
           <ul>
-            {similar.map((s, i) => (
-              <li key={i} className="similar-question-item">
-                <strong>{s.difficulty || 'Practice'}</strong>: 
-                <div className="markdown-content">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkMath]}
-                    rehypePlugins={[rehypeKatex]}
-                  >
-                    {s.question || "(Question content not available)"}
-                  </ReactMarkdown>
+            {problem.similar_problems.map((similar, index) => (
+              <li key={index}>
+                <div className="similar-problem">
+                  <strong>Question:</strong> {similar.question}
                 </div>
-                
-                {s.detailed_solution && (
+                <div className="difficulty">
+                  <strong>Difficulty:</strong> {similar.difficulty}
+                </div>
+                {similar.detailed_solution && (
                   <div className="similar-solution">
-                    <h5>Solution:</h5>
-                    <div className="markdown-content">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkMath]}
-                        rehypePlugins={[rehypeKatex]}
-                      >
-                        {s.detailed_solution}
-                      </ReactMarkdown>
-                    </div>
+                    <strong>Solution:</strong> 
+                    <ReactMarkdown
+                      remarkPlugins={[remarkMath]}
+                      rehypePlugins={[rehypeKatex]}
+                    >
+                      {similar.detailed_solution}
+                    </ReactMarkdown>
                   </div>
                 )}
               </li>
             ))}
           </ul>
-        ) : (
-          <p>No similar questions found.</p>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

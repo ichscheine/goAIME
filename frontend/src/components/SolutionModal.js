@@ -27,8 +27,8 @@ const SolutionModal = () => {
   
   // Get similar problems from various possible field names
   const similarProblems = solutionProblem ? 
-    (solutionProblem.similar_questions || 
-     solutionProblem.similar_problems || 
+    (solutionProblem.similar_problems || 
+     solutionProblem.similar_questions || 
      []) : [];
   
   // Debug output
@@ -80,11 +80,13 @@ const SolutionModal = () => {
               
               {similarProblems.length > 0 && (
                 <div className="similar-problems">
-                  <h4>Similar Questions:</h4>
+                  <h4>Similar Problems:</h4>
                   <ul>
                     {similarProblems.map((s, i) => (
                       <li key={i}>
-                        <strong>{s.difficulty || 'Practice'}</strong>: 
+                        <div className="similar-problem">
+                          <strong>{s.difficulty || 'Practice'}</strong>
+                        </div>
                         <div className="markdown-content">
                           <ReactMarkdown
                             remarkPlugins={[remarkMath]}
@@ -93,6 +95,17 @@ const SolutionModal = () => {
                             {s.question || s.text || '(No preview available)'}
                           </ReactMarkdown>
                         </div>
+                        {s.detailed_solution && (
+                          <div className="similar-solution">
+                            <strong>Solution:</strong> 
+                            <ReactMarkdown
+                              remarkPlugins={[remarkMath]}
+                              rehypePlugins={[rehypeKatex]}
+                            >
+                              {s.detailed_solution}
+                            </ReactMarkdown>
+                          </div>
+                        )}
                       </li>
                     ))}
                   </ul>
