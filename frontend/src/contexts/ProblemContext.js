@@ -392,7 +392,7 @@ export const ProblemProvider = ({ children }) => {
     }
   
     const attemptRecord = {
-      problemNumber: currentIndex + 1, // 1-based index
+      problemNumber: currentIndex, // Use the actual problem number
       attempted: true,                // Explicitly marks as attempted
       isCorrect: isCorrect,           // Boolean for correctness
       selectedAnswer: option,         // User's selected answer

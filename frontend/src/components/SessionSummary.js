@@ -20,7 +20,9 @@ const SessionSummary = () => {
     selectedContest,
     selectedYear,
     mode,
-    showSolution
+    showSolution,
+    sessionStartTime, // New state for session start time
+    pausedTime // New state for total paused time
   } = useProblem();
 
   const [processedRecords, setProcessedRecords] = useState([]);
@@ -125,12 +127,12 @@ const SessionSummary = () => {
         // Skip invalid indices
         if (index < 0 || index >= problemCount) return;
         
-        // Mark as attempted and update data
+        // Mark as attempted and update data - ensure timeSpent is valid
         processed[index] = {
           problemNumber,
           attempted: true,
           isCorrect: Boolean(record.isCorrect),
-          timeSpent: Math.max(record.timeSpent || 0, 1000),
+          timeSpent: Math.max(record.timeSpent || 0, 100), // Use a smaller minimum to preserve accuracy
           answer: record.selectedAnswer || '—'
         };
         
@@ -146,7 +148,7 @@ const SessionSummary = () => {
               problemNumber: i + 1,
               attempted: true,
               isCorrect: Boolean(record.isCorrect),
-              timeSpent: Math.max(record.timeSpent || 0, 1000),
+              timeSpent: Math.max(record.timeSpent || 0, 100), // Use a smaller minimum to preserve accuracy
               answer: record.selectedAnswer || '—'
             };
           }
@@ -173,15 +175,25 @@ const SessionSummary = () => {
   
   // Calculate total time
   const calcTotalTime = () => {
+    // Use the total elapsed time from session if available (excluding pause time)
+    if (sessionStartTime) {
+      const totalElapsedMs = Date.now() - sessionStartTime;
+      // Subtract any paused time if available
+      const effectiveTimeMs = pausedTime > 0 ? totalElapsedMs - pausedTime : totalElapsedMs;
+      return Math.max(effectiveTimeMs, 100);
+    }
+    
+    // Fallbacks if session time is not available
     if (cumulativeTime && cumulativeTime > 0) {
       return cumulativeTime;
     }
     
+    // Sum individual times as last resort
     if (attemptRecords && attemptRecords.length > 0) {
-      return attemptRecords.reduce((sum, record) => sum + (record.timeSpent || 1000), 0);
+      return attemptRecords.reduce((sum, record) => sum + (record.timeSpent || 100), 0);
     }
     
-    return Math.max(attempted * 30000, 1000);
+    return Math.max(attempted * 30000, 100);
   };
   
   const totalTimeMS = calcTotalTime();
