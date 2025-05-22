@@ -115,6 +115,7 @@ const SessionSummary = () => {
     
     // If we have real attempt records, update the processed records
     if (attemptRecords && attemptRecords.length > 0) {
+      console.log("Processing attempt records:", attemptRecords);
       // Get attempted problem count for validation
       let attemptedCount = 0;
       
@@ -127,13 +128,19 @@ const SessionSummary = () => {
         // Skip invalid indices
         if (index < 0 || index >= problemCount) return;
         
-        // Mark as attempted and update data - ensure timeSpent is valid
+        // More direct check for correctness, handling both property names
+        // This explicitly checks both properties that might indicate correctness
+        const isCorrect = record.correct === true || record.isCorrect === true;
+        
+        console.log(`Problem ${problemNumber}: isCorrect=${isCorrect}, record.correct=${record.correct}, record.isCorrect=${record.isCorrect}`);
+        
+        // Mark as attempted and update data
         processed[index] = {
           problemNumber,
           attempted: true,
-          isCorrect: Boolean(record.isCorrect),
-          timeSpent: Math.max(record.timeSpent || 0, 100), // Use a smaller minimum to preserve accuracy
-          answer: record.selectedAnswer || '—'
+          isCorrect: isCorrect,
+          timeSpent: Math.max(record.timeSpent || 0, 100),
+          answer: record.selectedAnswer || record.choice || '—'
         };
         
         attemptedCount++;
@@ -144,12 +151,16 @@ const SessionSummary = () => {
       if (attemptedCount === 0 && attemptRecords.length > 0) {
         attemptRecords.forEach((record, i) => {
           if (i < problemCount) {
+            // Same property checking logic for fallback
+            const isCorrect = record.hasOwnProperty('correct') ? record.correct : 
+                             record.hasOwnProperty('isCorrect') ? record.isCorrect : false;
+            
             processed[i] = {
               problemNumber: i + 1,
               attempted: true,
-              isCorrect: Boolean(record.isCorrect),
+              isCorrect: Boolean(isCorrect),
               timeSpent: Math.max(record.timeSpent || 0, 100), // Use a smaller minimum to preserve accuracy
-              answer: record.selectedAnswer || '—'
+              answer: record.selectedAnswer || record.choice || '—'
             };
           }
         });
@@ -260,7 +271,14 @@ const SessionSummary = () => {
                 )}
               </div>
               <div className="grid-cell answer">
-                {record.answer && record.answer !== '—' ? record.answer : "—"}
+                {record.answer && record.answer !== '—' ? (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkMath]}
+                    rehypePlugins={[rehypeKatex]}
+                  >
+                    {record.answer}
+                  </ReactMarkdown>
+                ) : "—"}
               </div>
               <div className="grid-cell time">
                 {record.timeSpent > 0 ? formatTime(record.timeSpent / 1000) : "—"}

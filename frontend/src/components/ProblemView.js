@@ -227,12 +227,13 @@ const ProblemView = () => {
     // Record this attempt - store time in milliseconds for accuracy
     setAttemptRecords(prev => [...prev, {
       problem_id: problem._id,
-      correct: isAnswerCorrect,
-      timeSpent: timeSpentMs,      // Store in milliseconds
-      time: timeSpentMs / 1000,    // Also store seconds for backward compatibility
-      problemNumber: currentIndex, // Add problem number for easier reference
+      correct: isAnswerCorrect,        // Original property
+      isCorrect: isAnswerCorrect,      // Add isCorrect for consistency with ProblemContext
+      timeSpent: timeSpentMs,          // Store in milliseconds
+      time: timeSpentMs / 1000,        // Also store seconds for backward compatibility
+      problemNumber: currentIndex,     // Add problem number for easier reference
       choice: choice,
-      selectedAnswer: choice       // Add selectedAnswer for consistent naming
+      selectedAnswer: choice           // Add selectedAnswer for consistent naming
     }]);
     
     // Show feedback

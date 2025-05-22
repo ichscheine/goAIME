@@ -395,6 +395,7 @@ export const ProblemProvider = ({ children }) => {
       problemNumber: currentIndex, // Use the actual problem number
       attempted: true,                // Explicitly marks as attempted
       isCorrect: isCorrect,           // Boolean for correctness
+      correct: isCorrect,             // Add for compatibility with ProblemView records
       selectedAnswer: option,         // User's selected answer
       timeSpent: timeSpentMs,         // Store in milliseconds for consistent access
       time: timeSpentMs / 1000,       // Also include seconds for backward compatibility
