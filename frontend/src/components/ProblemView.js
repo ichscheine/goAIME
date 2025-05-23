@@ -1,13 +1,11 @@
 import React, { useCallback, useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import api from '../services/api';
 
 import AnswerChoices from './AnswerChoices';
 import SolutionDisplay from './SolutionDisplay';
 import FeedbackPanel from './FeedbackPanel';
+import MathRenderer from './MathRenderer';
 import { useProblem } from '../contexts/ProblemContext';
 import { useAudio } from '../hooks/useAudio';
 import { useParams } from 'react-router-dom';
@@ -300,12 +298,9 @@ const ProblemView = () => {
           <section className="question-section">
             {mode === "practice" && <h2>Problem {currentIndex}</h2>}
             <div className="markdown-content">
-              <ReactMarkdown
-                remarkPlugins={[remarkMath]}
-                rehypePlugins={[rehypeKatex]}
-              >
+              <MathRenderer>
                 {problemStatementWithMeta}
-              </ReactMarkdown>
+              </MathRenderer>
             </div>
             {problem?.image && typeof problem.image === 'string' && (
               <div className="image-container">

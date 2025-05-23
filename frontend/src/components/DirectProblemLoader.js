@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import ReactMarkdown from 'react-markdown';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
+import MathRenderer from './MathRenderer';
 
 const DirectProblemLoader = () => {
   const [problem, setProblem] = useState(null);
@@ -109,12 +106,9 @@ const DirectProblemLoader = () => {
       <div className="problem-card" style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '20px', marginTop: '20px' }}>
         <h3>Problem {problem.problem_number}</h3>
         <div className="problem-text">
-          <ReactMarkdown
-            remarkPlugins={[remarkMath]}
-            rehypePlugins={[rehypeKatex]}
-          >
+          <MathRenderer>
             {problem.problem_text}
-          </ReactMarkdown>
+          </MathRenderer>
         </div>
         
         <div className="answer-choices" style={{ marginTop: '20px' }}>
@@ -122,12 +116,9 @@ const DirectProblemLoader = () => {
           <ul>
             {problem.answer_choices && problem.answer_choices.map((choice, index) => (
               <li key={index} style={{ margin: '10px 0' }}>
-                <ReactMarkdown
-                  remarkPlugins={[remarkMath]}
-                  rehypePlugins={[rehypeKatex]}
-                >
+                <MathRenderer>
                   {choice}
-                </ReactMarkdown>
+                </MathRenderer>
               </li>
             ))}
           </ul>

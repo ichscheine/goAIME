@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
+import MathRenderer from './MathRenderer';
 
 const AnswerChoices = ({
   problem,
@@ -66,12 +64,9 @@ const AnswerChoices = ({
                 disabled={isDisabled}
               >
                 {/* <span className="choice-label">{letter}</span> */}
-                <ReactMarkdown
-                  remarkPlugins={[remarkMath]}
-                  rehypePlugins={[rehypeKatex]}
-                >
+                <MathRenderer>
                   {choice}
-                </ReactMarkdown>
+                </MathRenderer>
               </button>
             );
           })}

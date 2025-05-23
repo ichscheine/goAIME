@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useProblem } from '../contexts/ProblemContext';
-import ReactMarkdown from 'react-markdown';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
+import MathRenderer from './MathRenderer';
 import api from '../services/api';  // Import the API service
 
 const SessionSummary = () => {
@@ -272,12 +269,9 @@ const SessionSummary = () => {
               </div>
               <div className="grid-cell answer">
                 {record.answer && record.answer !== '—' ? (
-                  <ReactMarkdown
-                    remarkPlugins={[remarkMath]}
-                    rehypePlugins={[rehypeKatex]}
-                  >
+                  <MathRenderer>
                     {record.answer}
-                  </ReactMarkdown>
+                  </MathRenderer>
                 ) : "—"}
               </div>
               <div className="grid-cell time">
@@ -304,12 +298,9 @@ const SessionSummary = () => {
                   <div className="inline-solution-content">
                     <h3>Solution for Problem {record.problemNumber}</h3>
                     <div className="solution-text">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkMath]}
-                        rehypePlugins={[rehypeKatex]}
-                      >
+                      <MathRenderer>
                         {solutionData[record.problemNumber]?.solution || "No solution available."}
-                      </ReactMarkdown>
+                      </MathRenderer>
                     </div>
                     
                     {solutionData[record.problemNumber]?.similarProblems?.length > 0 && (
@@ -320,12 +311,9 @@ const SessionSummary = () => {
                             <li key={i} className="similar-problem-item">
                               <strong>{problem.difficulty || 'Practice'}</strong>
                               <div className="similar-problem-text">
-                                <ReactMarkdown
-                                  remarkPlugins={[remarkMath]}
-                                  rehypePlugins={[rehypeKatex]}
-                                >
+                                <MathRenderer>
                                   {problem.question || problem.text || '(No preview available)'}
-                                </ReactMarkdown>
+                                </MathRenderer>
                               </div>
                             </li>
                           ))}

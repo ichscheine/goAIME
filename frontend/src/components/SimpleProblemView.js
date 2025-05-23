@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
+import MathRenderer from './MathRenderer';
 import { useSimpleProblem } from '../contexts/SimpleProblemContext';
 
 const SimpleProblemView = () => {
@@ -155,12 +152,9 @@ const SimpleProblemView = () => {
         marginBottom: '20px',
         backgroundColor: '#f9f9f9'
       }}>
-        <ReactMarkdown
-          remarkPlugins={[remarkMath]}
-          rehypePlugins={[rehypeKatex]}
-        >
+        <MathRenderer>
           {problem.problem_text}
-        </ReactMarkdown>
+        </MathRenderer>
       </div>
       
       <div>
@@ -182,12 +176,9 @@ const SimpleProblemView = () => {
                 opacity: answered ? 0.7 : 1
               }}
             >
-              <ReactMarkdown
-                remarkPlugins={[remarkMath]}
-                rehypePlugins={[rehypeKatex]}
-              >
+              <MathRenderer>
                 {choice}
-              </ReactMarkdown>
+              </MathRenderer>
             </button>
           ))}
         </div>

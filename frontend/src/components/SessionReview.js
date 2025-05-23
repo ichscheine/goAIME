@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
+import MathRenderer from './MathRenderer';
 import { useProblem } from '../contexts/ProblemContext';
 
 const ReviewSession = ({ onClose }) => {
@@ -97,12 +95,9 @@ const ReviewSession = ({ onClose }) => {
                     <div className="solution-section">
                       <h3>Solution</h3>
                       <div className="solution-content">
-                        <ReactMarkdown 
-                          remarkPlugins={[remarkMath]}
-                          rehypePlugins={[rehypeKatex]}
-                        >
+                        <MathRenderer>
                           {problemDetails[problemNumber].solution}
-                        </ReactMarkdown>
+                        </MathRenderer>
                       </div>
                     </div>
                     
@@ -116,12 +111,9 @@ const ReviewSession = ({ onClose }) => {
                                 <span className="problem-difficulty">{problem.difficulty || 'Practice'}</span>
                               </div>
                               <div className="problem-question">
-                                <ReactMarkdown
-                                  remarkPlugins={[remarkMath]}
-                                  rehypePlugins={[rehypeKatex]}
-                                >
+                                <MathRenderer>
                                   {problem.question || '(No question text available)'}
-                                </ReactMarkdown>
+                                </MathRenderer>
                               </div>
                               <button className="practice-button">Practice</button>
                             </li>

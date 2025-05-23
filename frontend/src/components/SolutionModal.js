@@ -1,8 +1,5 @@
 import React from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
+import MathRenderer from './MathRenderer';
 import { useProblem } from '../contexts/ProblemContext';
 
 const SolutionModal = () => {
@@ -56,12 +53,9 @@ const SolutionModal = () => {
             <>
               {solutionText ? (
                 <div className="markdown-content solution-content">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkMath]}
-                    rehypePlugins={[rehypeKatex]}
-                  >
+                  <MathRenderer>
                     {solutionText}
-                  </ReactMarkdown>
+                  </MathRenderer>
                 </div>
               ) : (
                 <div className="solution-placeholder">
@@ -80,22 +74,16 @@ const SolutionModal = () => {
                           <strong>{s.difficulty || 'Practice'}</strong>
                         </div>
                         <div className="markdown-content">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkMath]}
-                            rehypePlugins={[rehypeKatex]}
-                          >
+                          <MathRenderer>
                             {s.question || s.text || '(No preview available)'}
-                          </ReactMarkdown>
+                          </MathRenderer>
                         </div>
                         {s.detailed_solution && (
                           <div className="similar-solution">
                             <strong>Solution:</strong> 
-                            <ReactMarkdown
-                              remarkPlugins={[remarkMath]}
-                              rehypePlugins={[rehypeKatex]}
-                            >
+                            <MathRenderer>
                               {s.detailed_solution}
-                            </ReactMarkdown>
+                            </MathRenderer>
                           </div>
                         )}
                       </li>

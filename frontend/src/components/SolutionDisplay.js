@@ -1,8 +1,5 @@
 import React from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
+import MathRenderer from './MathRenderer';
 
 const SolutionDisplay = ({ problem }) => {
   if (!problem || !problem.solution) {
@@ -18,12 +15,9 @@ const SolutionDisplay = ({ problem }) => {
     <div className="solution-section">
       <h3>Solution</h3>
       <div className="markdown-content solution-content">
-        <ReactMarkdown
-          remarkPlugins={[remarkMath]}
-          rehypePlugins={[rehypeKatex]}
-        >
+        <MathRenderer>
           {problem.solution}
-        </ReactMarkdown>
+        </MathRenderer>
       </div>
       
       {problem.similar_problems && problem.similar_problems.length > 0 && (
@@ -41,12 +35,9 @@ const SolutionDisplay = ({ problem }) => {
                 {similar.detailed_solution && (
                   <div className="similar-solution">
                     <strong>Solution:</strong> 
-                    <ReactMarkdown
-                      remarkPlugins={[remarkMath]}
-                      rehypePlugins={[rehypeKatex]}
-                    >
+                    <MathRenderer>
                       {similar.detailed_solution}
-                    </ReactMarkdown>
+                    </MathRenderer>
                   </div>
                 )}
               </li>
