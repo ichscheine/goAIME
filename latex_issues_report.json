@@ -1,0 +1,48 @@
+{
+  "total_problems": 25,
+  "total_issues_found": 668,
+  "issues_by_type": {
+    "over_escaped_cmds": 269,
+    "special_chars": 399
+  },
+  "docs_with_issues_count": {
+    "over_escaped_cmds": 56,
+    "special_chars": 39
+  },
+  "samples": {
+    "over_escaped_cmds": [
+      {
+        "problem_id": "AMC10A_2022_6",
+        "field": "solution",
+        "sample": "**Conceptual Explanation:** Recognize that \\(\\\\sqrt\\{(a-1)^2\\}=|a-1|\\). For \\(a<0\\), we have \\(a-1<0..."
+      },
+      {
+        "problem_id": "AMC10A_2022_6_similar_0",
+        "field": "similar_problems.detailed_solution",
+        "sample": "**Conceptual Explanation:** For \\(t>5\\), \\(t-5>0\\), so \\(\\\\sqrt\\{(t-5)^2\\} = t-5\\). Therefore, the e..."
+      },
+      {
+        "problem_id": "AMC10A_2022_6_similar_1",
+        "field": "similar_problems.detailed_solution",
+        "sample": "**Conceptual Explanation:** With \\(x<-1\\), \\(x+1<0\\), so \\(\\\\sqrt\\{(x+1)^2\\}=-(x+1)\\). Substitute to..."
+      }
+    ],
+    "special_chars": [
+      {
+        "problem_id": "AMC10A_2022_6",
+        "field": "solution",
+        "sample": "**Conceptual Explanation:** Recognize that \\(\\\\sqrt\\{(a-1)^2\\}=|a-1|\\). For \\(a<0\\), we have \\(a-1<0..."
+      },
+      {
+        "problem_id": "AMC10A_2022_6_similar_0",
+        "field": "similar_problems.detailed_solution",
+        "sample": "**Conceptual Explanation:** For \\(t>5\\), \\(t-5>0\\), so \\(\\\\sqrt\\{(t-5)^2\\} = t-5\\). Therefore, the e..."
+      },
+      {
+        "problem_id": "AMC10A_2022_6_similar_1",
+        "field": "similar_problems.detailed_solution",
+        "sample": "**Conceptual Explanation:** With \\(x<-1\\), \\(x+1<0\\), so \\(\\\\sqrt\\{(x+1)^2\\}=-(x+1)\\). Substitute to..."
+      }
+    ]
+  }
+}

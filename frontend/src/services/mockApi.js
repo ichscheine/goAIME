@@ -1,18 +1,9 @@
+// Removed loading problems from local JSON
 let problems = null;
 let contests = null;
 
 const loadData = async () => {
-  if (!problems) {
-    const problemsResponse = await fetch('/data/problems.json');
-    problems = await problemsResponse.json();
-    console.log(`Loaded ${problems.length} problems from JSON file`);
-  }
-  
-  if (!contests) {
-    const contestsResponse = await fetch('/data/contests.json');
-    contests = await contestsResponse.json();
-    console.log(`Loaded ${contests.length} contests from JSON file`);
-  }
+  throw new Error('Local problem loading is disabled. Use the cloud MongoDB API.');
 };
 
 // Get all problems

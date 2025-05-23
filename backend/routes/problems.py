@@ -39,8 +39,9 @@ def register_problem_routes(app):
             if category:
                 filters['category'] = category
                 
-            # Get paginated problems
+            # Get paginated problems from problems_regularized
             problems, total = get_all_problems(
+                collection_name="problems_regularized",  # Specify the new collection
                 filters=filters,
                 page=page,
                 per_page=per_page
@@ -102,7 +103,7 @@ def register_problem_routes(app):
             ]
             
             # Execute aggregation
-            result = list(db.problems.aggregate(pipeline))
+            result = list(db.problems_regularized.aggregate(pipeline))
             
             if not result:
                 print("No problems found matching criteria for $sample")
@@ -127,7 +128,8 @@ def register_problem_routes(app):
             return error_response("Invalid problem ID format", 400)
         
         try:
-            problem = get_problem_by_id(problem_id)
+            # Fetch problem by ID from problems_regularized
+            problem = get_problem_by_id(problem_id, collection_name="problems_regularized")
             if not problem:
                 return error_response("Problem not found", 404)
             

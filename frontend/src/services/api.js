@@ -435,36 +435,17 @@ const api = {
           problemData.description = problemData.problem_text;
         }
         
-        // Process solution if available - Debug the solution data
-        console.log('Solution field exists:', problemData.hasOwnProperty('solution'));
-        console.log('Solution value:', problemData.solution);
-        
-        // If we don't have a solution, we need to try mockApi as a fallback
-        if (!problemData.solution && !problemData.solution_text) {
-          console.log('No solution found in API response, trying mockApi fallback');
-          try {
-            // Import the mockApi module dynamically
-            const mockApiModule = await import('./mockApi.js');
-            const mockApi = mockApiModule.default;
-            
-            if (mockApi && mockApi.getProblemById) {
-              // Format the ID for mockApi: "AMC10A_2022-1"
-              const mockId = `${contestId}-${params.problem_number}`;
-              console.log(`Trying mockApi.getProblemById with ID: ${mockId}`);
-              
-              const mockResult = await mockApi.getProblemById(mockId);
-              
-              if (mockResult && mockResult.data && mockResult.data.solution) {
-                console.log('Found solution in mockApi:', mockResult.data.solution);
-                problemData.solution = mockResult.data.solution;
-              }
-            }
-          } catch (mockError) {
-            console.error('Error using mockApi as fallback:', mockError);
+        // Process solution if available
+        if (problemData.solution) {
+          // Format solution text if needed
+          if (problemData.solution.startsWith("++")) {
+            problemData.formattedSolution = problemData.solution
+              .replace(/\+\+([^+]+)\+\+/g, '<strong>$1</strong>');
           }
+          console.log('Solution found');
         }
         
-        console.log('Final processed problem data:', problemData);
+        console.log('Processed problem data:', problemData);
       }
       
       return {
