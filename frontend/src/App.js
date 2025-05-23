@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import './App.css';
 import { ProblemProvider, useProblem } from './contexts/ProblemContext';
 
@@ -6,10 +6,12 @@ import LandingPage from './components/LandingPage';
 import Registration from './components/Registration';
 import Sidebar from './components/Sidebar';
 import ProblemView from './components/ProblemView';
-import SessionSummary from './components/SessionSummary';
 import Timer from './components/Timer';
 import SolutionModal from './components/SolutionModal';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+
+// Lazy load components
+const SessionSummary = React.lazy(() => import('./components/SessionSummary'));
 
 function App() {
   // User authentication state
@@ -147,11 +149,13 @@ const AppContent = ({ user }) => {
               {error && <p className="error-message">{error}</p>}
               
               {sessionComplete ? (
-                <SessionSummary 
-                  score={score} 
-                  attempted={attempted} 
-                  cumulativeTimeSeconds={cumulativeTimeSeconds} 
-                />
+                <Suspense fallback={<div>Loading...</div>}>
+                  <SessionSummary 
+                    score={score} 
+                    attempted={attempted} 
+                    cumulativeTimeSeconds={cumulativeTimeSeconds} 
+                  />
+                </Suspense>
               ) : (
                 problem && !loading && <ProblemView />
               )}

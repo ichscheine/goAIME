@@ -3,6 +3,8 @@ Flask==3.0.0
 Flask-Cors==4.0.0
 Flask-SQLAlchemy==3.0.5
 Flask-JWT-Extended==4.6.0
+flask_caching==1.11.0
+flask_compress==1.17
 
 # Extract Math Problems
 pymupdf==1.25.3

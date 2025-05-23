@@ -1,14 +1,24 @@
 from flask import Flask
 from flask_cors import CORS
+from flask_caching import Cache
+from flask_compress import Compress
 import os
 import sys
 from config import get_config
 # Remove this import from top level - it's causing the conflict
 # from routes.problems import register_problem_routes
 
+# Initialize caching and compression
+cache = Cache(config={'CACHE_TYPE': 'SimpleCache'})
+compress = Compress()
+
 def create_app(testing=False):
     app = Flask(__name__)
     CORS(app)
+
+    # Initialize caching and compression
+    cache.init_app(app)
+    compress.init_app(app)
     
     # Remove this line - we'll register all routes together later
     # register_problem_routes(app)
@@ -47,6 +57,12 @@ def create_app(testing=False):
         register_contest_routes(app)
         register_session_routes(app)
     
+    @app.route('/api/data')
+    @cache.cached(timeout=300)
+    def get_data():
+        # Example endpoint with caching
+        return {'data': 'This is cached data'}
+
     return app
 
 if __name__ == "__main__":

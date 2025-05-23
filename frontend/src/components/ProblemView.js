@@ -239,29 +239,26 @@ const ProblemView = () => {
     // Show feedback
     setIsCorrect(isAnswerCorrect);
     
-    // If in contest mode, automatically advance to next problem after delay
+    // If in contest mode, immediately advance to the next problem without delay
     if (mode === "contest") {
-      // Wait a moment to show feedback
-      setTimeout(async () => {
-        console.log("Contest mode - auto advancing to next problem");
-        
-        // Check if this was the last problem (25th)
-        if (currentIndex >= 25 || attempted >= 25) {
-          console.log("All 25 problems completed. Setting session complete.");
+      console.log("Contest mode - auto advancing to next problem");
+
+      // Check if this was the last problem (25th)
+      if (currentIndex >= 25 || attempted >= 25) {
+        console.log("All 25 problems completed. Setting session complete.");
+        setSessionComplete(true);
+        return;
+      }
+
+      try {
+        await handleNextProblem();
+      } catch (err) {
+        console.error("Error auto-advancing to next problem:", err);
+        // If we get a 404, it means the session is complete
+        if (err.response && err.response.status === 404) {
           setSessionComplete(true);
-          return;
         }
-        
-        try {
-          await handleNextProblem();
-        } catch (err) {
-          console.error("Error auto-advancing to next problem:", err);
-          // If we get a 404, it means the session is complete
-          if (err.response && err.response.status === 404) {
-            setSessionComplete(true);
-          }
-        }
-      }, 1500);
+      }
     }
   }, [
     problem, problemStartTime, answered, answersDisabled,
@@ -312,7 +309,7 @@ const ProblemView = () => {
             </div>
             {problem?.image && typeof problem.image === 'string' && (
               <div className="image-container">
-                <img src={problem.image} alt="Problem Diagram" />
+                <img src={problem.image} alt="Problem Diagram" loading="lazy" />
               </div>
             )}
           </section>

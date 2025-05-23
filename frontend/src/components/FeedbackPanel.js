@@ -7,7 +7,7 @@ const FeedbackPanel = ({ isCorrect, feedbackImage }) => {
         <h3>{isCorrect ? 'Correct!' : 'Incorrect'}</h3>
         {feedbackImage && (
           <div className="feedback-image">
-            <img src={feedbackImage} alt={isCorrect ? "Correct answer" : "Incorrect answer"} />
+            <img src={feedbackImage} alt={isCorrect ? "Correct answer" : "Incorrect answer"} loading="lazy" />
           </div>
         )}
       </div>

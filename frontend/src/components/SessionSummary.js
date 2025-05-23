@@ -354,6 +354,9 @@ const SessionSummary = () => {
         <button className="primary-button" onClick={() => window.print()}>
           Print Results
         </button>
+        <button className="secondary-button" onClick={() => window.location.href = '/'}>
+          Return to Homepage
+        </button>
       </div>
     </div>
   );
