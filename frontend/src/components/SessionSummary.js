@@ -211,6 +211,35 @@ const SessionSummary = () => {
     ? Math.round(totalTimeSeconds / attempted) 
     : 0;
 
+  // Add this CSS rule for print optimization
+  const printStyles = `
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      .session-summary, .session-summary * {
+        visibility: visible;
+      }
+      .session-summary {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+      }
+    }
+  `;
+
+  // Inject the print styles into the document head
+  useEffect(() => {
+    const styleElement = document.createElement('style');
+    styleElement.textContent = printStyles;
+    document.head.appendChild(styleElement);
+
+    return () => {
+      document.head.removeChild(styleElement);
+    };
+  }, []);
+
   return (
     <div className="session-summary">
       <h1 className="summary-title">{mode === "contest" ? "Contest" : "Practice"} Complete!</h1>
