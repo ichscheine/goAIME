@@ -27,7 +27,7 @@ const SolutionDisplay = ({ problem }) => {
             {problem.similar_problems.map((similar, index) => (
               <li key={index}>
                 <div className="similar-problem">
-                  <strong>Question:</strong> {similar.question}
+                  <strong>Question:</strong> <MathRenderer>{similar.question}</MathRenderer>
                 </div>
                 <div className="difficulty">
                   <strong>Difficulty:</strong> {similar.difficulty}
