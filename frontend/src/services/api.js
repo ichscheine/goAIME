@@ -43,38 +43,29 @@ apiClient.interceptors.response.use(
 const api = {
   getProblem: async (params) => {
     try {
-      console.log('API Call: getProblem with params:', params);
       
       // Log the full URL being requested
       const url = `${API_BASE_URL}/api/problems`;
-      console.log('Request URL:', url);
       
       const response = await apiClient.get('/api/problems', { params });
       
-      console.log('API Response:', response);
       
       if (!response.data) {
-        console.error('No data in response');
         throw new Error('No data received from API');
       }
       
       return response;
     } catch (error) {
-      console.error('API Error:', error);
-      console.error('Response status:', error.response?.status);
-      console.error('Response data:', error.response?.data);
       throw error;
     }
   },
   
   getRandomProblem: async (filters = {}) => {
     try {
-      console.log('API Call: getRandomProblem with filters:', filters);
       
       // Add /api prefix to the URL
       const response = await apiClient.get('/api/problems/random', { params: filters });
       
-      console.log('Problem data from MongoDB:', response.data);
       
       // Extract the actual problem data from the response structure
       let problemData = response.data;
@@ -102,12 +93,10 @@ const api = {
         
         // Make sure we have formatted answer choices
         if (Array.isArray(problemData.answer_choices)) {
-          console.log('Answer choices found:', problemData.answer_choices);
         }
         
         // Ensure correct_answer is available
         if (problemData.correct_answer) {
-          console.log('Correct answer found:', problemData.correct_answer);
         }
         
         // Process solution if available
@@ -118,30 +107,24 @@ const api = {
             problemData.formattedSolution = problemData.solution
               .replace(/\+\+([^+]+)\+\+/g, '<strong>$1</strong>');
           }
-          console.log('Solution found');
         }
         
         // Check for image_url
         if (problemData.image_url) {
-          console.log('Image URL found:', problemData.image_url);
         }
         
         // Check for similar_problems
         if (Array.isArray(problemData.similar_problems) && problemData.similar_problems.length > 0) {
-          console.log('Similar problems found:', problemData.similar_problems.length);
         }
         
         // Ensure difficulty is available
         if (problemData.difficulty) {
-          console.log('Difficulty found:', problemData.difficulty);
         }
         
         // Check for topics
         if (Array.isArray(problemData.topics) && problemData.topics.length > 0) {
-          console.log('Topics found:', problemData.topics.length);
         }
         
-        console.log('Processed problem data:', problemData);
       }
       
       return {
@@ -149,18 +132,15 @@ const api = {
         data: problemData // Return the processed data
       };
     } catch (error) {
-      console.error('API Error in getRandomProblem:', error);
       throw error;
     }
   },
 
   initializeSession: async (options = {}) => {
     try {
-      console.log('API Call: initializeSession with options:', options);
       
       const response = await apiClient.post('/api/problems/session', options);
       
-      console.log('Session initialization response:', response.data);
       
       // Extract the actual session data from the response structure
       let sessionData = response.data;
@@ -174,21 +154,16 @@ const api = {
         data: sessionData
       };
     } catch (error) {
-      console.error('API Error in initializeSession:', error);
-      console.error('Response status:', error.response?.status);
-      console.error('Response data:', error.response?.data);
       throw error;
     }
   },
 
   getNextProblem: async (params = {}) => {
     try {
-      console.log('API Call: getNextProblem with params:', params);
       
       // Call the correct endpoint with session_id
       const response = await apiClient.get('/api/problems/next', { params });
       
-      console.log('Next problem data from MongoDB:', response.data);
       
       // Extract the actual problem data from the response structure
       let problemData = response.data;
@@ -216,12 +191,10 @@ const api = {
         
         // Make sure we have formatted answer choices
         if (Array.isArray(problemData.answer_choices)) {
-          console.log('Answer choices found:', problemData.answer_choices);
         }
         
         // Ensure correct_answer is available
         if (problemData.correct_answer) {
-          console.log('Correct answer found:', problemData.correct_answer);
         }
         
         // Process solution if available
@@ -232,36 +205,29 @@ const api = {
             problemData.formattedSolution = problemData.solution
               .replace(/\+\+([^+]+)\+\+/g, '<strong>$1</strong>');
           }
-          console.log('Solution found');
         }
         
         // Check for image_url
         if (problemData.image_url) {
-          console.log('Image URL found:', problemData.image_url);
         }
         
         // Check for similar_problems
         if (Array.isArray(problemData.similar_problems) && problemData.similar_problems.length > 0) {
-          console.log('Similar problems found:', problemData.similar_problems);
         }
         
         // Ensure difficulty is available
         if (problemData.difficulty) {
-          console.log('Difficulty found:', problemData.difficulty);
         }
         
         // Check for topics
         if (Array.isArray(problemData.topics) && problemData.topics.length > 0) {
-          console.log('Topics found:', problemData.topics.length);
         }
         
         // Check for session progress info
         if (problemData.session_progress) {
-          console.log('Session progress:', 
-            `${problemData.session_progress.current}/${problemData.session_progress.total}`);
+          // Session progress available
         }
         
-        console.log('Processed problem data:', problemData);
       }
       
       return {
@@ -269,9 +235,6 @@ const api = {
         data: problemData
       };
     } catch (error) {
-      console.error('API Error in getNextProblem:', error);
-      console.error('Response status:', error.response?.status);
-      console.error('Response data:', error.response?.data);
       throw error;
     }
   },
@@ -313,7 +276,6 @@ const api = {
       const response = await apiClient.get('/api/problems', { params: filters });
       return response;
     } catch (error) {
-      console.error('API Error in getAllProblems:', error);
       throw error;
     }
   },
@@ -353,10 +315,8 @@ const api = {
             problemData.formattedSolution = problemData.solution
               .replace(/\+\+([^+]+)\+\+/g, '<strong>$1</strong>');
           }
-          console.log('Solution found');
         }
         
-        console.log('Processed problem data:', problemData);
       }
       
       return {
@@ -364,24 +324,20 @@ const api = {
         data: problemData
       };
     } catch (error) {
-      console.error('API Error in getProblemById:', error);
       throw error;
     }
   },
   
   getProblemByParams: async (params) => {
     try {
-      console.log('API Call: getProblemByParams with params:', params);
       
       // Construct a query string for the contest and year from the params
       const contestId = `${params.contest.replace(/\s+/g, '')}_${params.year}`;
-      console.log('Constructed contest_id:', contestId);
       
       // Always use the query parameter approach since it's more reliable
       let response;
       
       // Always use the /api prefix for backend routes
-      console.log(`Fetching problem with contest_id=${contestId} and problem_number=${params.problem_number}`);
       response = await apiClient.get('/api/problems', { 
         params: {
           contest_id: contestId,
@@ -389,10 +345,7 @@ const api = {
         }
       });
       
-      console.log('Problem query succeeded with status:', response.status);
       
-      console.log('Problem query succeeded with status:', response.status);
-      console.log('Raw API response:', response);
       
       // Extract the actual problem data from the response structure
       let problemData = null;
@@ -400,25 +353,20 @@ const api = {
       // Handle paginated response format (standard from backend)
       if (response.data && response.data.data && response.data.data.items && response.data.data.items.length > 0) {
         problemData = response.data.data.items[0];
-        console.log('Found problem in paginated response:', problemData);
       }
       // Handle array response format
       else if (response.data && response.data.data && Array.isArray(response.data.data) && response.data.data.length > 0) {
         problemData = response.data.data[0];
-        console.log('Found problem in array response:', problemData);
       }
       // Handle direct object response
       else if (response.data && response.data.data && !Array.isArray(response.data.data)) {
         problemData = response.data.data;
-        console.log('Found problem in direct object response:', problemData);
       }
       // Fall back to raw response data
       else if (response.data) {
         problemData = response.data;
-        console.log('Using raw response data:', problemData);
       }
       else {
-        console.log('No problem data found in the response');
       }
       
       // Process the response to ensure consistent field names
@@ -445,10 +393,8 @@ const api = {
             problemData.formattedSolution = problemData.solution
               .replace(/\+\+([^+]+)\+\+/g, '<strong>$1</strong>');
           }
-          console.log('Solution found');
         }
         
-        console.log('Processed problem data:', problemData);
       }
       
       return {
@@ -456,22 +402,15 @@ const api = {
         data: problemData
       };
     } catch (error) {
-      console.error('API Error in getProblemByParams:', error);
-      console.error('Response status:', error.response?.status);
-      console.error('Response data:', error.response?.data);
-      console.error('Request URL:', error.config?.url);
-      console.error('Request params:', error.config?.params);
       throw error;
     }
   },
 
   resetSession: async (data) => {
     try {
-      console.log('API Call: resetSession with data:', data);
       const response = await apiClient.post('/api/reset-session', data);
       return response;
     } catch (error) {
-      console.error('API Error in resetSession:', error);
       throw error;
     }
   },

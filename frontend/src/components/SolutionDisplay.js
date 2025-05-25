@@ -2,13 +2,7 @@ import React from 'react';
 import MathRenderer from './MathRenderer';
 
 const SolutionDisplay = ({ problem }) => {
-  // Debug logging
-  console.log('SolutionDisplay: Received problem:', problem);
-  console.log('SolutionDisplay: Problem solution field:', problem?.solution);
-  console.log('SolutionDisplay: Problem keys:', problem ? Object.keys(problem) : 'No problem');
-  
   if (!problem || !problem.solution) {
-    console.log('SolutionDisplay: No solution found, showing "No solution available" message');
     return (
       <div className="solution-section">
         <h3>Solution</h3>

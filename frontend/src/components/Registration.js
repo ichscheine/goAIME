@@ -32,7 +32,6 @@ const Registration = ({ onRegister }) => {
       // Force page redirect to dashboard
       window.location.href = '/dashboard';
     } catch (error) {
-      console.error('Registration error:', error);
       setError('Registration failed. Please try again.');
       setLoading(false);
     }

@@ -21,8 +21,6 @@ const AnswerChoices = ({
   }, [selectedChoice]);
   
   const handleChoiceClick = (choice) => {
-    console.log(`AnswerChoices - Button clicked: ${choice}`);
-    console.log(`AnswerChoices - Button state: mode=${mode}, answered=${answered}, answersDisabled=${answersDisabled}`);
     setLocalSelectedChoice(choice); // Update local state for immediate feedback
     onChoiceClick(choice);
   };

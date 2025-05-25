@@ -54,16 +54,9 @@ const ProblemView = () => {
 
   // Debug useEffect
   useEffect(() => {
-    console.log('ProblemView render state:', {
-      problem,
-      problemStatementWithMeta,
-      loading,
-      error,
-      id
-    });
+    // Debug logging removed during decluttering
     
     if (!problem && !loading && !error) {
-      console.log('No problem loaded, triggering fetchProblem');
       fetchProblem();
     }
   }, [problem, loading, error, fetchProblem, id, problemStatementWithMeta]); 
@@ -74,7 +67,6 @@ const ProblemView = () => {
       if (id) {
         try {
           const result = await api.getProblemById(id);
-          console.log('API response for specific problem:', result);
           
           if (result && result.data) {
             const problem = result.data;
@@ -111,7 +103,6 @@ const ProblemView = () => {
             setProblemStartTime(Date.now());
           }
         } catch (error) {
-          console.error('Error fetching problem by ID:', error);
         }
       }
     };
@@ -122,7 +113,6 @@ const ProblemView = () => {
   // Handle next problem click
   const handleNextProblem = useCallback(async () => {
     try {
-      console.log("Next problem button clicked");
       
       setAnswersDisabled(true);
       
@@ -135,23 +125,18 @@ const ProblemView = () => {
       
       // Check if we've reached 25 problems
       if (currentIndex >= 25) {
-        console.log("All 25 problems completed. Setting session complete.");
         setSessionComplete(true);
         return; // Exit early - no need to fetch more problems
       }
       
       // Use nextProblem for ordered problem navigation
-      console.log("Getting next problem from session...");
       if (nextProblem) {
         const result = await nextProblem();
-        console.log("Next problem result:", result);
       }
     } catch (error) {
-      console.error("Error in handleNextProblem:", error);
       
       // If we get a 404, this means the session is complete
       if (error.response && error.response.status === 404) {
-        console.log("End of session detected. Setting session complete.");
         setSessionComplete(true);
       }
     } finally {
@@ -172,17 +157,14 @@ const ProblemView = () => {
   // Handle choice click
   const handleChoiceClick = useCallback(async (choice) => {
     setSelectedChoice(choice); // Track the selected option
-    console.log("Choice clicked:", choice);
     
     // Skip if answers are disabled or already answered
     if (answersDisabled || answered) {
-      console.log("Answers disabled or already answered");
       return;
     }
     
     // Calculate time spent on this problem in milliseconds
     const timeSpentMs = Date.now() - problemStartTime;
-    console.log(`Time taken: ${timeSpentMs}ms (${timeSpentMs/1000} seconds)`);
     
     // Update accumulated time in milliseconds
     setCumulativeTime(prev => prev + timeSpentMs);
@@ -196,7 +178,6 @@ const ProblemView = () => {
     // Check if the answer is correct
     const correctAnswer = problem.correct_answer;
     const isAnswerCorrect = choice === correctAnswer;
-    console.log(`Answer: ${choice}, Correct: ${correctAnswer}, Result: ${isAnswerCorrect ? "Correct" : "Incorrect"}`);
     
     // Update score and tracking
     setAttempted(prev => prev + 1);
@@ -239,11 +220,9 @@ const ProblemView = () => {
     
     // If in contest mode, immediately advance to the next problem without delay
     if (mode === "contest") {
-      console.log("Contest mode - auto advancing to next problem");
 
       // Check if this was the last problem (25th)
       if (currentIndex >= 25 || attempted >= 25) {
-        console.log("All 25 problems completed. Setting session complete.");
         setSessionComplete(true);
         return;
       }
@@ -251,7 +230,6 @@ const ProblemView = () => {
       try {
         await handleNextProblem();
       } catch (err) {
-        console.error("Error auto-advancing to next problem:", err);
         // If we get a 404, it means the session is complete
         if (err.response && err.response.status === 404) {
           setSessionComplete(true);

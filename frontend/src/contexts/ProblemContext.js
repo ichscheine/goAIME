@@ -57,19 +57,10 @@ export const ProblemProvider = ({ children }) => {
   
   // Fetch a problem from the backend
   const fetchProblem = useCallback(async (options = {}) => {
-    console.log('ProblemContext.fetchProblem called with:', {
-      ...options,
-      selectedYear: options.year || selectedYear, 
-      selectedContest: options.contest || selectedContest, 
-      currentIndex: options.index || currentIndex,
-      shuffle: options.shuffle !== undefined ? options.shuffle : shuffle
-    });
     
     // Throttle API requests
-    // eslint-disable-next-line no-undef
     const now = Date.now();
     if (isFetchingRef.current || now - lastFetchTimeRef.current < MIN_FETCH_INTERVAL) {
-      console.log('Ignoring fetch request - already fetching or too soon');
       return false;
     }
     
@@ -107,17 +98,15 @@ export const ProblemProvider = ({ children }) => {
   // Fetch a problem from the backend and update the problem state
   const fetchProblemAndUpdateState = useCallback(async (options = {}) => {
     try {
-      console.log('ProblemContext.fetchProblemAndUpdateState called with:', {
+      const fetchOptions = {
         ...options,
         selectedYear: options.year || selectedYear, 
         selectedContest: options.contest || selectedContest, 
         currentIndex: options.index || currentIndex,
         shuffle: options.shuffle !== undefined ? options.shuffle : shuffle
-      });
+      };
       
       const response = await fetchProblem(options);
-      
-      console.log('Problem response:', response);
       
       // Extract problem data from the response
       const problemData = response.data;
@@ -128,7 +117,6 @@ export const ProblemProvider = ({ children }) => {
         return false;
       }
       
-      console.log('Setting problem state with:', problemData);
       setProblem(problemData);
       
       // Create problem statement with metadata by extracting from contest_id
@@ -207,10 +195,8 @@ export const ProblemProvider = ({ children }) => {
   
   const startSession = useCallback(async () => {
     const currentTime = Date.now();
-    console.log("Setting session start time:", new Date(currentTime).toISOString());
     setSessionStartTime(currentTime);
   
-    console.log("startSession called with mode:", mode);
     if (!mode) {
       setError("Please select a mode before starting");
       return false;
@@ -223,12 +209,6 @@ export const ProblemProvider = ({ children }) => {
       setSessionStarted(true);
       
       // Initialize the session first
-      console.log('Initializing session with:', {
-        shuffle: shuffle,
-        year: selectedYear,
-        contest: selectedContest
-      });
-      
       const sessionResult = await api.initializeSession({
         shuffle: shuffle,
         year: selectedYear,
@@ -254,7 +234,6 @@ export const ProblemProvider = ({ children }) => {
       // Store the session ID
       const sessionId = sessionResult.data.session_id;
       setSessionId(sessionId);
-      console.log(`Session initialized with ID: ${sessionId}`);
       
       // Now fetch the first problem
       const result = await api.getNextProblem({ 
@@ -296,7 +275,6 @@ export const ProblemProvider = ({ children }) => {
       const meta = `\n\n**(${year || '?'}, ${contest || '?'}, Problem ${problemData.problem_number || '?'})**`;
       setProblemStatementWithMeta(statement + meta);
 
-      console.log('Session started successfully with first problem:', result.data);
       setLoading(false);
       return true;
     } catch (err) {
@@ -356,14 +334,12 @@ export const ProblemProvider = ({ children }) => {
   const handleOptionSelect = useCallback((option) => {
     if (answersDisabled) return;
   
-    console.log("Option selected:", option, "for problem index:", currentIndex);
   
     setSelectedOption(option);
     setAnswersDisabled(true);
     setAnswered(true);
   
     const isCorrect = option === problem.answer; // Compare the selected option with the correct answer
-    console.log("Is answer correct?", isCorrect, "Expected:", problem.answer);
   
     // Calculate time spent on this problem in milliseconds
     const endTime = Date.now();
@@ -372,7 +348,6 @@ export const ProblemProvider = ({ children }) => {
     // Subtract paused time for more accurate time measurement
     if (pausedTime > 0) {
       timeSpentMs -= pausedTime;
-      console.log(`Subtracting paused time: ${pausedTime}ms, adjusted time: ${timeSpentMs}ms`);
       
       // Reset pausedTime after using it
       setPausedTime(0);
@@ -381,7 +356,6 @@ export const ProblemProvider = ({ children }) => {
     // Ensure timeSpentMs is at least 100ms to avoid negative or zero values from timing glitches
     timeSpentMs = Math.max(100, timeSpentMs);
     
-    console.log(`Time spent on problem: ${timeSpentMs}ms (${timeSpentMs/1000}s)`);
   
     // Update score if answer is correct
     if (isCorrect) {
@@ -402,12 +376,10 @@ export const ProblemProvider = ({ children }) => {
       timestamp: new Date().toISOString() // Timestamp of the attempt
     };
   
-    console.log("Recording attempt:", attemptRecord);
   
     // Add to attempt records using a function to ensure state updates properly
     setAttemptRecords(prev => {
       const newRecords = [...prev, attemptRecord];
-      console.log("Updated attempt records:", newRecords);
       return newRecords;
     });
   
@@ -435,7 +407,6 @@ export const ProblemProvider = ({ children }) => {
     const pauseTime = Date.now();
     pauseStartTimeRef.current = pauseTime;
     
-    console.log('Session paused at:', new Date(pauseTime).toISOString());
   }, [isPaused]);
   
   const handleResumeSession = useCallback(() => {
@@ -444,7 +415,6 @@ export const ProblemProvider = ({ children }) => {
     // Calculate how long the session was paused
     if (pauseStartTimeRef.current) {
       const pauseDuration = Date.now() - pauseStartTimeRef.current;
-      console.log(`Session resumed after ${pauseDuration/1000}s pause`);
       
       // Add this pause duration to our total paused time counter
       setPausedTime(prevPausedTime => prevPausedTime + pauseDuration);
@@ -500,7 +470,6 @@ export const ProblemProvider = ({ children }) => {
       // Try to get the user from localStorage
       const userData = localStorage.getItem('user');
       if (!userData) {
-        console.log("No user data found in localStorage, stats not saved");
         return;
       }
       
@@ -542,7 +511,6 @@ export const ProblemProvider = ({ children }) => {
       // Save back to localStorage
       localStorage.setItem(storageKey, JSON.stringify(userStats));
       
-      console.log(`Session stats saved for user ${username}:`, userStats);
       
       // If API exists for backend storage, use it
       if (api && api.updateUserStats) {
@@ -565,7 +533,6 @@ export const ProblemProvider = ({ children }) => {
   const [solutionError, setSolutionError] = useState(null);
   
   const showSolution = useCallback(async (problemNumber, contest, year) => {
-    console.log(`Showing solution for problem ${problemNumber} from ${contest} ${year}`);
     setLoading(true);
     setSolutionError(null);
     
@@ -575,12 +542,6 @@ export const ProblemProvider = ({ children }) => {
       const formattedYear = year ? year.toString() : selectedYear.toString();
       const formattedProblemNumber = parseInt(problemNumber, 10);
       
-      console.log(`Fetching solution with params:`, {
-        contest: formattedContest,
-        year: formattedYear,
-        problem_number: formattedProblemNumber
-      });
-      
       // Fetch the problem details to get the solution
       const response = await api.getProblemByParams({
         contest: formattedContest,
@@ -589,7 +550,6 @@ export const ProblemProvider = ({ children }) => {
       });
       
       if (response && response.data) {
-        console.log("Solution data received:", response.data);
         
         // Only use the solution if it's provided in the data
         // Don't create a placeholder as solutions should exist
@@ -605,10 +565,8 @@ export const ProblemProvider = ({ children }) => {
       
       // Try to find the problem in the current session data
       if (attemptRecords && attemptRecords.length > 0) {
-        console.log("Attempting to find solution in existing records...");
         const record = attemptRecords.find(r => r.problemNumber === problemNumber);
         if (record && record.solution) {
-          console.log("Found solution in attempt records:", record);
           setSolutionProblem(record);
           setShowingSolution(true);
           setSolutionError(null);

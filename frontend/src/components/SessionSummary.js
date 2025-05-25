@@ -10,14 +10,10 @@ const SessionSummary = () => {
     attempted, 
     cumulativeTime,
     attemptRecords, 
-    incorrectProblems,
-    startSession,
     completeSession,
-    resetSession,
     selectedContest,
     selectedYear,
     mode,
-    showSolution,
     sessionStartTime, // New state for session start time
     pausedTime // New state for total paused time
   } = useProblem();
@@ -29,7 +25,6 @@ const SessionSummary = () => {
 
   // Handle reviewing solution - inline expansion
   const handleReviewSolution = async (problemNumber) => {
-    console.log(`Toggling solution for problem ${problemNumber}`);
     
     // If already expanded, collapse it
     if (expandedSolutions[problemNumber]) {
@@ -53,14 +48,12 @@ const SessionSummary = () => {
     
     try {
       // Use the proper API service to fetch solution data
-      console.log(`Fetching solution for contest ${selectedContest}, year ${selectedYear}, problem ${problemNumber}`);
       const response = await api.getProblemByParams({
         contest: selectedContest,
         year: selectedYear,
         problem_number: problemNumber
       });
 
-      console.log("Full API response:", response);
       
       if (response && response.data) {
         // Store the solution text - check multiple possible field names
@@ -82,9 +75,7 @@ const SessionSummary = () => {
             similarProblems: similarProblems
           }
         }));
-        console.log(`Solution loaded for problem ${problemNumber}:`, solutionText);
       } else {
-        console.error("Empty response when fetching solution");
         setSolutionData(prev => ({
           ...prev,
           [problemNumber]: {
@@ -94,9 +85,6 @@ const SessionSummary = () => {
         }));
       }
     } catch (error) {
-      console.error(`Error fetching solution for problem ${problemNumber}:`, error);
-      console.error("Error response status:", error.response?.status);
-      console.error("Error response data:", error.response?.data);
       setSolutionData(prev => ({
         ...prev,
         [problemNumber]: {
@@ -128,7 +116,6 @@ const SessionSummary = () => {
     
     // If we have real attempt records, update the processed records
     if (attemptRecords && attemptRecords.length > 0) {
-      console.log("Processing attempt records:", attemptRecords);
       // Get attempted problem count for validation
       let attemptedCount = 0;
       
@@ -145,7 +132,6 @@ const SessionSummary = () => {
         // This explicitly checks both properties that might indicate correctness
         const isCorrect = record.correct === true || record.isCorrect === true;
         
-        console.log(`Problem ${problemNumber}: isCorrect=${isCorrect}, record.correct=${record.correct}, record.isCorrect=${record.isCorrect}`);
         
         // Mark as attempted and update data
         processed[index] = {

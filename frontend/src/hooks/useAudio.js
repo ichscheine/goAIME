@@ -25,7 +25,6 @@ export const useAudio = () => {
     // Audio load handlers
     const handleLoaded = () => setAudioLoaded(true);
     const handleError = (e) => {
-      console.error("Audio loading error:", e);
       setAudioLoaded(false);
     };
     
@@ -53,7 +52,6 @@ export const useAudio = () => {
       audio.currentTime = 0;
       await audio.play();
     } catch (err) {
-      console.error("Error playing correct sound:", err);
     }
   };
   
@@ -63,7 +61,6 @@ export const useAudio = () => {
       audio.currentTime = 0;
       await audio.play();
     } catch (err) {
-      console.error("Error playing incorrect sound:", err);
     }
   };
   

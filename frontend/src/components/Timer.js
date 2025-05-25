@@ -5,14 +5,10 @@ import { useProblem } from '../contexts/ProblemContext';
 const Timer = () => {
   const { 
     sessionStartTime, 
-    mode,
     sessionComplete,
-    isPaused,
-    totalProblems,
-    contestType
+    isPaused
   } = useProblem();
   
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [elapsedDisplay, setElapsedDisplay] = useState('0:00');
   const [remainingDisplay, setRemainingDisplay] = useState('75:00');
   // Store the time when paused
@@ -47,7 +43,6 @@ const Timer = () => {
     
     const timerInterval = setInterval(() => {
       if (!sessionStartTime) {
-        setElapsedSeconds(0);
         setElapsedDisplay('0:00');
         setRemainingDisplay(formatTime(CONTEST_DURATION_SECONDS));
         return;
@@ -56,7 +51,6 @@ const Timer = () => {
       // Calculate elapsed time in seconds (not milliseconds)
       const elapsedMs = Date.now() - sessionStartTime;
       const elapsedSecs = Math.floor(elapsedMs / 1000);
-      setElapsedSeconds(elapsedSecs);
       
       // Format and set display values
       setElapsedDisplay(formatTime(elapsedSecs));
@@ -68,7 +62,7 @@ const Timer = () => {
     }, 1000);
     
     return () => clearInterval(timerInterval);
-  }, [sessionStartTime, mode, sessionComplete, isPaused, pausedElapsedTime]);
+  }, [sessionStartTime, sessionComplete, isPaused, pausedElapsedTime]);
   
   // Display values when paused
   const displayElapsed = isPaused && pausedElapsedTime !== null

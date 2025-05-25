@@ -30,7 +30,6 @@ export const UserProvider = ({ children }) => {
           // setUserStats(stats);
         }
       } catch (err) {
-        console.error('Error loading user:', err);
         setError('Failed to load user data');
       } finally {
         setLoading(false);
@@ -54,7 +53,6 @@ export const UserProvider = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(userData));
       return true;
     } catch (err) {
-      console.error('Registration error:', err);
       setError(err.response?.data?.message || 'Registration failed');
       return false;
     } finally {
@@ -90,7 +88,6 @@ export const UserProvider = ({ children }) => {
       
       return true;
     } catch (err) {
-      console.error('Error saving session:', err);
       return false;
     }
   };
