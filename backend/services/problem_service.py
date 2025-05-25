@@ -3,6 +3,7 @@ from bson.objectid import ObjectId
 from datetime import datetime
 from models.problem import Problem
 from utils.logging_utils import log_exception, log_event
+import logging
 
 def get_all_problems(filters=None, page=1, per_page=20):
     """Get paginated problems matching the provided filters"""
@@ -12,8 +13,9 @@ def get_all_problems(filters=None, page=1, per_page=20):
         filters = {}
         
     # Only return published problems to regular users
-    if 'admin' not in filters.get('_roles', []):
-        filters['published'] = True
+    # NOTE: Temporarily disabled as documents don't have 'published' field
+    # if 'admin' not in filters.get('_roles', []):
+    #     filters['published'] = True
         
     # Remove internal filter keys
     if '_roles' in filters:
@@ -34,9 +36,10 @@ def get_all_problems(filters=None, page=1, per_page=20):
         
         problems = []
         for problem_data in cursor:
-            problem = Problem.from_dict(problem_data)
-            if problem:  # Make sure problem is not None
-                problems.append(problem.to_json())
+            # Convert ObjectId to string for JSON serialization
+            if '_id' in problem_data:
+                problem_data['_id'] = str(problem_data['_id'])
+            problems.append(problem_data)
             
         return problems, total
     except Exception as e:

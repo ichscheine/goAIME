@@ -10,6 +10,7 @@ from utils.logging_utils import log_exception
 import random  # For random.choice()
 import uuid
 from datetime import datetime, timedelta # Add datetime for TTL
+import logging
 
 def register_problem_routes(app):
     """Register routes for problem management"""
@@ -32,16 +33,28 @@ def register_problem_routes(app):
             per_page = int(request.args.get('per_page', 20))
             difficulty = request.args.get('difficulty')
             category = request.args.get('category')
+            contest_id = request.args.get('contest_id')
+            problem_number = request.args.get('problem_number')
             
             filters = {}
             if difficulty:
                 filters['difficulty'] = difficulty
             if category:
                 filters['category'] = category
+            if contest_id:
+                filters['contest_id'] = contest_id
+            if problem_number:
+                # Handle both string and integer values
+                try:
+                    problem_number_int = int(problem_number)
+                    filters['problem_number'] = problem_number_int
+                except ValueError:
+                    filters['problem_number'] = problem_number
                 
+            logging.info(f"Filters constructed: {filters}")
+            
             # Get paginated problems from problems_regularized
             problems, total = get_all_problems(
-                collection_name="problems_regularized",  # Specify the new collection
                 filters=filters,
                 page=page,
                 per_page=per_page

@@ -53,22 +53,36 @@ const SessionSummary = () => {
     
     try {
       // Use the proper API service to fetch solution data
+      console.log(`Fetching solution for contest ${selectedContest}, year ${selectedYear}, problem ${problemNumber}`);
       const response = await api.getProblemByParams({
         contest: selectedContest,
         year: selectedYear,
         problem_number: problemNumber
       });
+
+      console.log("Full API response:", response);
       
       if (response && response.data) {
-        // Store the solution text
+        // Store the solution text - check multiple possible field names
+        const solutionText = response.data.solution || 
+                            response.data.formattedSolution || 
+                            response.data.solution_text ||
+                            response.data.detailed_solution ||
+                            "No solution available.";
+                            
+        // Get similar problems from any possible field name
+        const similarProblems = response.data.similar_problems || 
+                              response.data.similar_questions || 
+                              [];
+                              
         setSolutionData(prev => ({
           ...prev,
           [problemNumber]: {
-            solution: response.data.solution || response.data.formattedSolution || response.data.solution_text || "No solution available.",
-            similarProblems: response.data.similar_problems || response.data.similar_questions || []
+            solution: solutionText,
+            similarProblems: similarProblems
           }
         }));
-        console.log(`Solution loaded for problem ${problemNumber}:`, response.data);
+        console.log(`Solution loaded for problem ${problemNumber}:`, solutionText);
       } else {
         console.error("Empty response when fetching solution");
         setSolutionData(prev => ({
@@ -81,6 +95,8 @@ const SessionSummary = () => {
       }
     } catch (error) {
       console.error(`Error fetching solution for problem ${problemNumber}:`, error);
+      console.error("Error response status:", error.response?.status);
+      console.error("Error response data:", error.response?.data);
       setSolutionData(prev => ({
         ...prev,
         [problemNumber]: {

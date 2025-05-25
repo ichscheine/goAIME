@@ -49,7 +49,7 @@ const api = {
       const url = `${API_BASE_URL}/api/problems`;
       console.log('Request URL:', url);
       
-      const response = await apiClient.get('/problems', { params });
+      const response = await apiClient.get('/api/problems', { params });
       
       console.log('API Response:', response);
       
@@ -377,45 +377,48 @@ const api = {
       const contestId = `${params.contest.replace(/\s+/g, '')}_${params.year}`;
       console.log('Constructed contest_id:', contestId);
       
-      // For AMC 10A 2022 Problem 1, try direct fetch with the specific ID format
+      // Always use the query parameter approach since it's more reliable
       let response;
       
-      // First try direct problem fetch by ID if possible
-      if (params.problem_number && contestId) {
-        try {
-          const problemId = `${contestId}-${params.problem_number}`;
-          console.log(`Trying direct fetch with ID: ${problemId}`);
-          response = await apiClient.get(`/api/problems/${problemId}`);
-          console.log('Direct problem fetch succeeded:', response.data);
-        } catch (err) {
-          console.log('Direct fetch failed, falling back to query params');
-          // Continue with the query parameters approach
-          response = await apiClient.get('/api/problems', { 
-            params: {
-              contest_id: contestId,
-              problem_number: params.problem_number
-            }
-          });
+      // Always use the /api prefix for backend routes
+      console.log(`Fetching problem with contest_id=${contestId} and problem_number=${params.problem_number}`);
+      response = await apiClient.get('/api/problems', { 
+        params: {
+          contest_id: contestId,
+          problem_number: params.problem_number
         }
-      } else {
-        // Use the regular query approach if we don't have all params
-        response = await apiClient.get('/api/problems', { 
-          params: {
-            contest_id: contestId,
-            problem_number: params.problem_number
-          }
-        });
-      }
+      });
       
+      console.log('Problem query succeeded with status:', response.status);
+      
+      console.log('Problem query succeeded with status:', response.status);
       console.log('Raw API response:', response);
-      console.log('Problem data from API:', response.data);
       
       // Extract the actual problem data from the response structure
-      let problemData = response.data;
-      if (response.data && response.data.data && Array.isArray(response.data.data) && response.data.data.length > 0) {
-        // Unwrap from Flask's success_response format and get the first matching problem
+      let problemData = null;
+      
+      // Handle paginated response format (standard from backend)
+      if (response.data && response.data.data && response.data.data.items && response.data.data.items.length > 0) {
+        problemData = response.data.data.items[0];
+        console.log('Found problem in paginated response:', problemData);
+      }
+      // Handle array response format
+      else if (response.data && response.data.data && Array.isArray(response.data.data) && response.data.data.length > 0) {
         problemData = response.data.data[0];
-        console.log('Unwrapped problem data:', problemData);
+        console.log('Found problem in array response:', problemData);
+      }
+      // Handle direct object response
+      else if (response.data && response.data.data && !Array.isArray(response.data.data)) {
+        problemData = response.data.data;
+        console.log('Found problem in direct object response:', problemData);
+      }
+      // Fall back to raw response data
+      else if (response.data) {
+        problemData = response.data;
+        console.log('Using raw response data:', problemData);
+      }
+      else {
+        console.log('No problem data found in the response');
       }
       
       // Process the response to ensure consistent field names
@@ -454,6 +457,10 @@ const api = {
       };
     } catch (error) {
       console.error('API Error in getProblemByParams:', error);
+      console.error('Response status:', error.response?.status);
+      console.error('Response data:', error.response?.data);
+      console.error('Request URL:', error.config?.url);
+      console.error('Request params:', error.config?.params);
       throw error;
     }
   },
