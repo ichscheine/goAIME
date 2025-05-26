@@ -39,16 +39,14 @@ apiClient.interceptors.response.use(
   }
 );
 
+
+
 // Keep your existing API methods but use the apiClient instance
 const api = {
   getProblem: async (params) => {
     try {
-      
-      // Log the full URL being requested
-      const url = `${API_BASE_URL}/api/problems`;
-      
+      // Make request to the problems endpoint
       const response = await apiClient.get('/api/problems', { params });
-      
       
       if (!response.data) {
         throw new Error('No data received from API');
@@ -208,26 +206,6 @@ const api = {
         }
         
         // Check for image_url
-        if (problemData.image_url) {
-        }
-        
-        // Check for similar_problems
-        if (Array.isArray(problemData.similar_problems) && problemData.similar_problems.length > 0) {
-        }
-        
-        // Ensure difficulty is available
-        if (problemData.difficulty) {
-        }
-        
-        // Check for topics
-        if (Array.isArray(problemData.topics) && problemData.topics.length > 0) {
-        }
-        
-        // Check for session progress info
-        if (problemData.session_progress) {
-          // Session progress available
-        }
-        
       }
       
       return {
@@ -250,24 +228,38 @@ const api = {
   },
   
   saveSession: async (username, sessionData) => {
-    const response = await apiClient.post(
-      `/api/sessions/${username}`,
-      sessionData
-    );
-    return response;
+    try {
+      // Send session data to the backend for storage
+      const response = await apiClient.post(
+        `/api/sessions/update`,
+        {
+          username,
+          sessionData
+        }
+      );
+      return response;
+    } catch (error) {
+      console.error("Error saving session:", error);
+      throw error;
+    }
   },
   
   uploadAsset: async (username, formData) => {
-    const response = await apiClient.post(
-      `/api/assets/upload/${username}`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
+    try {
+      const response = await apiClient.post(
+        `/api/assets/upload/${username}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
         }
-      }
-    );
-    return response;
+      );
+      return response;
+    } catch (error) {
+      console.error("Error uploading asset:", error);
+      throw error;
+    }
   },
 
   // Add methods for the new backend endpoints

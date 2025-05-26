@@ -3,7 +3,7 @@ import { useProblem } from '../contexts/ProblemContext';
 
 const CONTEST_OPTIONS = ['AMC 8', 'AMC 10A', 'AMC 10B', 'AMC 12A', 'AMC 12B', 'AIME I', 'AIME II'];
 const YEAR_OPTIONS = [2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015];
-const SKIN_OPTIONS = ['Minecraft', 'Pokemon', 'Classic'];
+const SKIN_OPTIONS = ['EndMiner', 'Jupyter', 'Classic'];
 
 const Sidebar = ({ user }) => {
   const [collapsed, setCollapsed] = useState(false);
@@ -22,8 +22,6 @@ const Sidebar = ({ user }) => {
     setSelectedSkin,
     mode,
     setMode,
-    shuffle,
-    setShuffle,
     sessionStarted,
     sessionComplete,
     startSession,
@@ -89,11 +87,6 @@ const Sidebar = ({ user }) => {
     setMode(newMode);
   };
 
-  const toggleShuffle = () => {
-    setShuffle(prev => !prev);
-    resetContestProblems();
-  };
-
   const handleStartClick = () => {
     startSession();
     // Automatically collapse sidebar when starting a session
@@ -112,7 +105,7 @@ const Sidebar = ({ user }) => {
       
       <div className="sidebar-content">
         <div className="sidebar-section">
-          <h2>Contest Settings</h2>
+          <h2>Competition Settings</h2>
           
           <div className="setting-group">
             <label htmlFor="contest-select">Contest:</label>
@@ -141,33 +134,6 @@ const Sidebar = ({ user }) => {
               ))}
             </select>
           </div>
-          
-          {mode === 'practice' && (
-            <div className="setting-group">
-              <label htmlFor="skin-select">Theme:</label>
-              <select
-                id="skin-select"
-                value={selectedSkin}
-                onChange={handleSkinChange}
-                disabled={sessionStarted && !sessionComplete}
-              >
-                {SKIN_OPTIONS.map(skin => (
-                  <option key={skin} value={skin}>{skin}</option>
-                ))}
-              </select>
-            </div>
-          )}
-          
-          <div className="setting-group checkbox">
-            <input
-              type="checkbox"
-              id="shuffle-toggle"
-              checked={shuffle}
-              onChange={toggleShuffle}
-              disabled={sessionStarted && !sessionComplete}
-            />
-            <label htmlFor="shuffle-toggle">Shuffle Problems?</label>
-          </div>
         </div>
         
         <div className="sidebar-section">
@@ -187,9 +153,25 @@ const Sidebar = ({ user }) => {
               onClick={() => handleModeChange('contest')}
               disabled={sessionStarted && !sessionComplete}
             >
-              Contest
+              Competition
             </button>
           </div>
+          
+          {mode === 'practice' && (
+            <div className="setting-group">
+              <label htmlFor="skin-select">Theme:</label>
+              <select
+                id="skin-select"
+                value={selectedSkin}
+                onChange={handleSkinChange}
+                disabled={sessionStarted && !sessionComplete}
+              >
+                {SKIN_OPTIONS.map(skin => (
+                  <option key={skin} value={skin}>{skin}</option>
+                ))}
+              </select>
+            </div>
+          )}
           
           <div className="start-button-container">
             <button

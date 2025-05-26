@@ -5,24 +5,47 @@ import './LandingPage.css';
 const LandingPage = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
+  const [mode, setMode] = useState('guest'); // 'guest' or 'registered'
 
   // Simple direct function to handle login
   function handleLogin() {
     if (!username.trim()) return;
-    
     setIsLoading(true);
-    
-    // Store user in localStorage - this is the key step!
-    localStorage.setItem('user', JSON.stringify({ 
-      username, 
-      email,
-      loginTime: new Date().toISOString() 
+    setLoginError('');
+
+    if (mode === 'guest') {
+      // Guest mode: just store username
+      localStorage.setItem('user', JSON.stringify({
+        username,
+        email: '',
+        guest: true,
+        loginTime: new Date().toISOString()
+      }));
+      window.location.href = '/dashboard';
+      return;
+    }
+
+    // Registered user mode
+    if (!password) {
+      setIsLoading(false);
+      setLoginError('Password required.');
+      return;
+    }
+    const storedUser = JSON.parse(localStorage.getItem(`user_${username}`));
+    if (!storedUser || storedUser.password !== password) {
+      setIsLoading(false);
+      setLoginError('Invalid username or password.');
+      return;
+    }
+    localStorage.setItem('user', JSON.stringify({
+      username,
+      email: storedUser.email || '',
+      guest: false,
+      loginTime: new Date().toISOString()
     }));
-    
-    // Force page reload to trigger the useEffect in App.js
-    // This is more reliable than navigate() in some cases
     window.location.href = '/dashboard';
   }
 
@@ -47,6 +70,21 @@ const LandingPage = () => {
             <p>Track your progress and improve your math skills.</p>
           </div>
 
+          <div className="login-mode-toggle">
+            <button
+              className={mode === 'guest' ? 'active' : ''}
+              onClick={() => setMode('guest')}
+            >
+              Guest
+            </button>
+            <button
+              className={mode === 'registered' ? 'active' : ''}
+              onClick={() => setMode('registered')}
+            >
+              Registered User
+            </button>
+          </div>
+
           {/* Simple form without onSubmit to avoid form submission issues */}
           <div className="login-form">
             <div className="form-field">
@@ -64,30 +102,42 @@ const LandingPage = () => {
               </div>
             </div>
 
-            <div className="form-field">
-              <label htmlFor="email">Email <span className="optional">(optional)</span></label>
-              <div className="input-container">
-                <span className="input-icon">✉️</span>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  placeholder="Enter your email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+            {mode === 'registered' && (
+              <div className="form-field">
+                <label htmlFor="password">Password <span className="required">*</span></label>
+                <div className="input-container">
+                  <span className="input-icon">🔒</span>
+                  <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
+            )}
+
+            {loginError && (
+              <div className="form-error">
+                <p>{loginError}</p>
+              </div>
+            )}
 
             <div className="form-note">
-              <p>This simple registration helps track your progress. No password required.</p>
+              <p>
+                {mode === 'guest'
+                  ? 'No password required. Your progress will be saved for this session.'
+                  : 'Registered users can log in with username and password.'}
+              </p>
             </div>
 
             {/* Direct click handler without form submission */}
-            <button 
-              type="button" 
+            <button
+              type="button"
               className={`login-button ${isLoading ? 'loading' : ''}`}
-              disabled={isLoading || !username.trim()}
+              disabled={isLoading || !username.trim() || (mode === 'registered' && !password)}
               onClick={handleLogin}
             >
               {isLoading ? (
@@ -96,7 +146,7 @@ const LandingPage = () => {
                   <span>Signing In...</span>
                 </>
               ) : (
-                <span>Start Practicing</span>
+                <span>{mode === 'guest' ? 'Continue as Guest' : 'Sign In'}</span>
               )}
             </button>
           </div>

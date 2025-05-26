@@ -131,7 +131,7 @@ const ProblemView = () => {
       
       // Use nextProblem for ordered problem navigation
       if (nextProblem) {
-        const result = await nextProblem();
+        await nextProblem();
       }
     } catch (error) {
       

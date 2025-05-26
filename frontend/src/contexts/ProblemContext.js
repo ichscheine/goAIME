@@ -1,10 +1,13 @@
 import React, { createContext, useState, useRef, useCallback, useContext } from 'react';
 import api from '../services/api';
+import { useUser } from '../contexts/UserContext';
 
 const ProblemContext = createContext();
 
 export const ProblemProvider = ({ children }) => {
-  // Problem and session state
+  const { saveSessionResults } = useUser();
+
+  // Problem state
   const [sessionStartTime, setSessionStartTime] = useState(null);
   const [problem, setProblem] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -30,6 +33,7 @@ export const ProblemProvider = ({ children }) => {
   const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
   const [totalProblems, setTotalProblems] = useState(25); // Update this based on your actual count
   const [unattempted, setUnattempted] = useState(25);
+  const [sessionResultsSaved, setSessionResultsSaved] = useState(false); // Track if session results have been saved
   
   // Update totalProblems when student completes or skips a problem
   const handleProblemCompleted = (problem) => {
@@ -191,6 +195,7 @@ export const ProblemProvider = ({ children }) => {
     setCurrentIndex(1);
     setAnswered(false);
     setSessionComplete(false);
+    setSessionResultsSaved(false); // Reset session results saved flag
   }, []);
   
   const startSession = useCallback(async () => {
@@ -325,11 +330,47 @@ export const ProblemProvider = ({ children }) => {
       // If we get a 404, this means we've reached the end of the session
       if (error.response && error.response.status === 404) {
         setSessionComplete(true);
+
+        // Only save session results if they haven't been saved already
+        if (!sessionResultsSaved) {
+          const sessionData = {
+            session_id: sessionId || `session_${Date.now()}`,
+            score,
+            attempted,
+            totalTime: cumulativeTime,
+            year: selectedYear,
+            contest: selectedContest,
+            mode: mode,
+            completed_at: new Date().toISOString(),
+            problems_attempted: attemptRecords.map(record => ({
+              problem_number: record.problemNumber,
+              problem_id: record.problem_id,
+              correct: record.isCorrect || record.correct,
+              selected_answer: record.selectedAnswer || record.choice,
+              correct_answer: record.correctAnswer,
+              time_spent: record.timeSpent,
+              timestamp: record.timestamp,
+              difficulty: record.difficulty,
+              topics: record.topics || []
+            }))
+          };
+          
+          console.log("Session complete, saving results:", sessionData);
+          try {
+            await saveSessionResults(sessionData);
+            setSessionResultsSaved(true); // Mark as saved
+            console.log("Session results saved successfully");
+          } catch (err) {
+            console.error("Error saving session results:", err);
+          }
+        } else {
+          console.log("Session results already saved, skipping duplicate save");
+        }
       }
       
       throw error; // Re-throw to let the component handle it
     }
-  }, [sessionId, setProblem, setProblemStartTime, setAnswered, setSelectedOption, setProblemStatementWithMeta, setSessionComplete]);
+  }, [sessionId, setProblem, setProblemStartTime, setAnswered, setSelectedOption, setProblemStatementWithMeta, setSessionComplete, score, attempted, cumulativeTime, attemptRecords, saveSessionResults, sessionResultsSaved]);
   
   const handleOptionSelect = useCallback((option) => {
     if (answersDisabled) return;
@@ -367,13 +408,20 @@ export const ProblemProvider = ({ children }) => {
   
     const attemptRecord = {
       problemNumber: currentIndex, // Use the actual problem number
+      problem_id: problem._id || problem.id, // Add problem ID
       attempted: true,                // Explicitly marks as attempted
       isCorrect: isCorrect,           // Boolean for correctness
       correct: isCorrect,             // Add for compatibility with ProblemView records
       selectedAnswer: option,         // User's selected answer
+      correctAnswer: problem.answer || problem.correct_answer, // Store correct answer
       timeSpent: timeSpentMs,         // Store in milliseconds for consistent access
       time: timeSpentMs / 1000,       // Also include seconds for backward compatibility
-      timestamp: new Date().toISOString() // Timestamp of the attempt
+      timestamp: new Date().toISOString(), // Timestamp of the attempt
+      difficulty: problem.difficulty, // Add difficulty if available
+      topics: problem.topics || [],   // Add topics if available
+      contest: problem.contest || selectedContest, // Add contest info
+      year: problem.year || selectedYear,         // Add year info
+      problem_type: problem.type || problem.problem_type // Add problem type if available
     };
   
   
@@ -465,7 +513,13 @@ export const ProblemProvider = ({ children }) => {
   
   const setPauseTimeRef = useRef(null);
 
-  const completeSession = useCallback(() => {
+  const completeSession = useCallback(async () => {
+    // Check if session results have already been saved
+    if (sessionResultsSaved) {
+      console.log("Session results already saved, skipping duplicate save in completeSession");
+      return;
+    }
+    
     try {
       // Try to get the user from localStorage
       const userData = localStorage.getItem('user');
@@ -511,21 +565,46 @@ export const ProblemProvider = ({ children }) => {
       // Save back to localStorage
       localStorage.setItem(storageKey, JSON.stringify(userStats));
       
-      
-      // If API exists for backend storage, use it
-      if (api && api.updateUserStats) {
-        api.updateUserStats({
-          userId: user.id,
+      // Use the saveSessionResults function to save to the backend
+      if (saveSessionResults) {
+        const sessionData = {
+          session_id: sessionId || `local_${Date.now()}`,
           score,
           attempted,
-          timeSpent: cumulativeTime,
-          sessionDate
-        }).catch(err => console.error("Failed to update stats on server:", err));
+          totalTime: cumulativeTime,
+          // Add more context to help with debugging
+          year: selectedYear,
+          contest: selectedContest,
+          mode: mode,
+          completed_at: new Date().toISOString(),
+          problems_attempted: attemptRecords.map(record => ({
+            problem_number: record.problemNumber,
+            problem_id: record.problem_id,
+            correct: record.isCorrect || record.correct,
+            selected_answer: record.selectedAnswer || record.choice,
+            correct_answer: record.correctAnswer,
+            time_spent: record.timeSpent,
+            timestamp: record.timestamp,
+            difficulty: record.difficulty,
+            topics: record.topics || []
+          }))
+        };
+        
+        console.log("CompleteSession called, saving session:", sessionData);
+        try {
+          await saveSessionResults(sessionData);
+          setSessionResultsSaved(true); // Mark as saved
+          console.log("Session results saved successfully from completeSession");
+        } catch (err) {
+          console.error("Failed to save session results from completeSession:", err);
+        }
+      } else {
+        console.warn("saveSessionResults function not available");
       }
     } catch (error) {
       console.error("Error saving session stats:", error);
     }
-  }, [score, attempted, cumulativeTime, selectedContest, selectedYear, mode]);
+  }, [score, attempted, cumulativeTime, selectedContest, selectedYear, mode, sessionId, saveSessionResults, sessionResultsSaved]);
 
   // Solution viewing functionality
   const [solutionProblem, setSolutionProblem] = useState(null);
@@ -646,11 +725,13 @@ return (
     solutionProblem,
     solutionError,
     showSolution,
-    hideSolution
+    hideSolution,
+    sessionResultsSaved,
+    setSessionResultsSaved
   }}>
     {children}
   </ProblemContext.Provider>
 );
-};
+}; // Closing brace for the ProblemProvider component
 
 export const useProblem = () => useContext(ProblemContext);

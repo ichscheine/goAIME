@@ -68,26 +68,63 @@ export const UserProvider = ({ children }) => {
   
   // Function to save session results
   const saveSessionResults = async (sessionData) => {
-    if (!user) return;
-    
+    if (!user) {
+      console.log("Cannot save session: No user is logged in");
+      return false;
+    }
+
     try {
-      // In a real app, send to backend
-      // await api.saveSession(user.username, sessionData);
+      console.log("Saving session for user:", user.username);
+      console.log("Session data:", sessionData);
       
-      // Update local stats
-      const newStats = {
-        totalSessions: userStats.totalSessions + 1,
-        totalProblems: userStats.totalProblems + sessionData.attempted,
-        correctAnswers: userStats.correctAnswers + sessionData.score,
-        averageTime: (userStats.averageTime * userStats.totalProblems + sessionData.totalTime) / 
-                     (userStats.totalProblems + sessionData.attempted),
-        lastSessionDate: new Date().toISOString()
-      };
+      const response = await api.saveSession(user.username, {
+        session_id: sessionData.session_id,
+        score: sessionData.score,
+        attempted: sessionData.attempted,
+        totalTime: sessionData.totalTime,
+        // Remove solvedProblems as it's redundant with score
+        // solvedProblems: sessionData.solvedProblems
+        year: sessionData.year,
+        contest: sessionData.contest,
+        mode: sessionData.mode,
+        completed_at: sessionData.completed_at,
+        problems_attempted: sessionData.problems_attempted || []
+      });
       
-      setUserStats(newStats);
+      // Check for success in the response
+      // The backend returns a structure with success field or status field
+      if (response.data && (response.data.success || response.status === 200)) {
+        // Update local stats
+        const newStats = {
+          totalSessions: userStats.totalSessions + 1,
+          totalProblems: userStats.totalProblems + sessionData.attempted,
+          correctAnswers: userStats.correctAnswers + sessionData.score,
+          averageTime: (userStats.averageTime * userStats.totalProblems + sessionData.totalTime) / 
+                      (userStats.totalProblems + sessionData.attempted),
+          lastSessionDate: new Date().toISOString()
+        };
+        setUserStats(newStats);
+      }
+      // Return true if we got a successful response (either by success field or HTTP status)
+      console.log("Session save response:", response);
       
-      return true;
+      // Handle different response formats
+      const isSuccess = (
+        // Check response.data.success
+        (response.data && response.data.success === true) ||
+        // Or check response.data.data.success (for nested Flask responses)
+        (response.data && response.data.data && response.data.data.success === true) ||
+        // Or just accept 200 status
+        response.status === 200
+      );
+      
+      return isSuccess;
     } catch (err) {
+      console.error("Error saving session results:", err);
+      if (err.response) {
+        console.error("Error response status:", err.response.status);
+        console.error("Error response data:", err.response.data);
+      }
       return false;
     }
   };

@@ -62,7 +62,7 @@ const Timer = () => {
     }, 1000);
     
     return () => clearInterval(timerInterval);
-  }, [sessionStartTime, sessionComplete, isPaused, pausedElapsedTime]);
+  }, [sessionStartTime, sessionComplete, isPaused, pausedElapsedTime, CONTEST_DURATION_SECONDS]);
   
   // Display values when paused
   const displayElapsed = isPaused && pausedElapsedTime !== null

@@ -169,9 +169,15 @@ const SessionSummary = () => {
     setProcessedRecords(processed);
   }, [attemptRecords, totalProblems]);
   
+  const [sessionCompleted, setSessionCompleted] = useState(false);
+
   useEffect(() => {
-    completeSession();
-  }, [completeSession]);
+    // Only complete session once
+    if (!sessionCompleted) {
+      completeSession();
+      setSessionCompleted(true);
+    }
+  }, []); // Empty dependency array to run only once
   
   // Format time as MM:SS with proper handling for edge cases
   const formatTime = (seconds) => {
@@ -240,11 +246,11 @@ const SessionSummary = () => {
     return () => {
       document.head.removeChild(styleElement);
     };
-  }, []);
+  }, [printStyles]);
 
   return (
     <div className="session-summary">
-      <h1 className="summary-title">{mode === "contest" ? "Contest" : "Practice"} Complete!</h1>
+      <h1 className="summary-title">{mode === "contest" ? "Competition" : "Practice"} Complete!</h1>
       
       <div className="summary-stats">
         <div className="stat-block">
