@@ -55,8 +55,8 @@ function App() {
 
 // Main app content when user is logged in
 const AppContent = ({ user }) => {
-  const [sessionCount, setSessionCount] = useState(user.sessions ? user.sessions.length : 0);
-  const [bestScore, setBestScore] = useState(user.bestScore || '--');
+  const [sessionCount, setSessionCount] = useState(0); // Initialize to 0, will be updated from API
+  const [bestScore, setBestScore] = useState('--'); // Initialize to '--', will be updated from API
   
   const {
     sessionStarted,
