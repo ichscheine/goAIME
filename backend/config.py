@@ -7,8 +7,11 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from root directory
+import os.path
+env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
+load_dotenv(dotenv_path=env_path)
+print(f"Loading environment variables from: {env_path}")
 
 # MongoDB connection (moved from db_service)
 _client = None

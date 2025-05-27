@@ -40,6 +40,7 @@ def create_app(testing=False):
         from routes.problems import register_problem_routes
         from routes.contests import register_contest_routes
         from routes.sessions import register_session_routes
+        from routes.user_stats import register_user_stats_routes
     
         # Initialize database
         try:
@@ -56,6 +57,7 @@ def create_app(testing=False):
         register_problem_routes(app)
         register_contest_routes(app)
         register_session_routes(app)
+        register_user_stats_routes(app)
     
     @app.route('/api/data')
     @cache.cached(timeout=300)

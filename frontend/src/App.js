@@ -5,6 +5,7 @@ import './components/DashboardStyles.css';
 import './components/SharedBackground.css';
 import { ProblemProvider, useProblem } from './contexts/ProblemContext';
 import { UserProvider } from './contexts/UserContext';
+import { syncUserStatsWithDatabase } from './utils/syncUserStats';
 
 import LandingPage from './components/LandingPage';
 import Registration from './components/Registration';
@@ -54,6 +55,9 @@ function App() {
 
 // Main app content when user is logged in
 const AppContent = ({ user }) => {
+  const [sessionCount, setSessionCount] = useState(user.sessions ? user.sessions.length : 0);
+  const [bestScore, setBestScore] = useState(user.bestScore || '--');
+  
   const {
     sessionStarted,
     loading,
@@ -82,6 +86,29 @@ const AppContent = ({ user }) => {
   } = useProblem();
   
   const cumulativeTimeSeconds = (cumulativeTime / 1000).toFixed(2);
+  
+  // Fetch session count from backend when component mounts
+  useEffect(() => {
+    async function fetchSessionCount() {
+      if (user && user.username) {
+        try {
+          const stats = await syncUserStatsWithDatabase(user.username);
+          if (stats) {
+            if (stats.sessionCount !== undefined) {
+              setSessionCount(stats.sessionCount);
+            }
+            if (stats.bestScore !== undefined) {
+              setBestScore(stats.bestScore);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching session count:", error);
+        }
+      }
+    }
+    
+    fetchSessionCount();
+  }, [user]);
   
   return (
     <div className="app-container">
@@ -272,14 +299,14 @@ const AppContent = ({ user }) => {
                             <div className="stat-icon">📝</div>
                             <div className="stat-details">
                               <div className="stat-label">Total Sessions</div>
-                              <div className="stat-value">{user.sessions ? user.sessions.length : 0}</div>
+                              <div className="stat-value">{sessionCount}</div>
                             </div>
                           </div>
                           <div className="stat-card">
                             <div className="stat-icon">🌟</div>
                             <div className="stat-details">
                               <div className="stat-label">Best Score</div>
-                              <div className="stat-value">{user.bestScore || '--'}</div>
+                              <div className="stat-value">{bestScore}</div>
                             </div>
                           </div>
                           <div className="stat-card">
