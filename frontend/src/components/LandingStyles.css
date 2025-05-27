@@ -1,0 +1,106 @@
+/* Feature cards styling for instruction message */
+.instruction-message {
+  background-color: var(--surface-light);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+  text-align: center;
+  margin: var(--spacing-lg) 0;
+  border: 1px solid var(--primary-light);
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.instruction-message h2 {
+  color: var(--primary-dark);
+  font-size: 2rem;
+  margin-bottom: var(--spacing-sm);
+  position: relative;
+  padding-bottom: var(--spacing-sm);
+}
+
+.instruction-message h2::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background-color: var(--primary-color);
+  border-radius: var(--radius-rounded);
+}
+
+.instruction-message p {
+  color: var(--text-secondary-light);
+  font-size: 1.1rem;
+  max-width: 800px;
+  margin: 0 auto var(--spacing-lg);
+}
+
+/* Feature cards styling */
+.feature-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-xl);
+}
+
+.feature-card {
+  background: white;
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(67, 97, 238, 0.1);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal) ease;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-light);
+}
+
+.feature-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--primary-color);
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.feature-icon {
+  font-size: 2rem;
+  margin-bottom: var(--spacing-sm);
+  background: rgba(67, 97, 238, 0.05);
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.feature-card h3 {
+  color: var(--primary-dark);
+  font-size: 1.3rem;
+  margin: var(--spacing-sm) 0;
+}
+
+.feature-card p {
+  color: var(--text-secondary-light);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Animation keyframes */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

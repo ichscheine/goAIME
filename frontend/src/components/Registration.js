@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './LandingPage.css'; // Using the same styling
+import './RegistrationStyles.css';
 
 const Registration = ({ onRegister }) => {
   const navigate = useNavigate();
@@ -54,8 +55,23 @@ const Registration = ({ onRegister }) => {
           </div>
           
           <div className="login-welcome">
-            <h2>Create Account</h2>
-            <p>Join now to track your progress and improve.</p>
+            <h2>Join Our Math Community</h2>
+            <p>Create an account to start your journey to mathematical excellence.</p>
+          </div>
+          
+          <div className="registration-benefits">
+            <div className="benefit-item">
+              <div className="benefit-icon">🔒</div>
+              <p>Secure progress tracking across devices</p>
+            </div>
+            <div className="benefit-item">
+              <div className="benefit-icon">📊</div>
+              <p>Access personalized performance analytics</p>
+            </div>
+            <div className="benefit-item">
+              <div className="benefit-icon">🏆</div>
+              <p>Compare your results with other users</p>
+            </div>
           </div>
       
           {error && <div className="error-message">{error}</div>}

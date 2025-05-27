@@ -510,7 +510,7 @@ body {
 }
 
 .sidebar-content {
-  width: 250px;
+  width: 270px;
   padding: var(--spacing-md);
 }
 
@@ -568,7 +568,7 @@ body {
 
 .sidebar-section h2 {
   margin-top: 0;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   color: var(--primary-dark);
   margin-bottom: var(--spacing-md);
   padding-bottom: var(--spacing-xs);
@@ -599,7 +599,7 @@ body {
 
 /* Filter sidebar styling */
 .filter-sidebar {
-  width: 240px;
+  width: 300px;
   background-color: var(--surface-light);
   border-right: 1px solid var(--primary-light);
   padding: var(--spacing-md);
@@ -936,6 +936,7 @@ button, select, input[type="checkbox"] {
 .mode-buttons {
   display: flex;
   gap: var(--spacing-sm);
+  width:100%;
 }
 
 .mode-button {
@@ -948,7 +949,7 @@ button, select, input[type="checkbox"] {
   transition: all var(--transition-normal) ease;
   color: var(--text-primary-light);
   font-weight: 500;
-  min-width: 90px;
+  min-width: 110px;
   font-size: 15px;
 }
 

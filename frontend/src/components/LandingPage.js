@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import './LandingPage.css';
+import './LoginFeatures.css';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -66,8 +67,32 @@ const LandingPage = () => {
           </div>
           
           <div className="login-welcome">
-            <h2>Welcome Back</h2>
-            <p>Track your progress and improve your math skills.</p>
+            <h2>Elevate Your Math Skills</h2>
+            <p>Practice with real competition problems and track your progress over time.</p>
+          </div>
+          
+          <div className="feature-highlights">
+            <div className="feature-item">
+              <span className="feature-icon">🏆</span>
+              <div className="feature-text">
+                <h3>Competition Mode</h3>
+                <p>Simulate real test conditions</p>
+              </div>
+            </div>
+            <div className="feature-item">
+              <span className="feature-icon">📚</span>
+              <div className="feature-text">
+                <h3>Varied Problems</h3>
+                <p>Access multiple competitions</p>
+              </div>
+            </div>
+            <div className="feature-item">
+              <span className="feature-icon">📈</span>
+              <div className="feature-text">
+                <h3>Track Progress</h3>
+                <p>See improvement over time</p>
+              </div>
+            </div>
           </div>
 
           <div className="login-mode-toggle">

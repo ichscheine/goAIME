@@ -1,0 +1,91 @@
+/* Feature highlights on login page */
+.feature-highlights {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 20px 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  padding: 20px;
+  border: 1px solid rgba(67, 97, 238, 0.1);
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.7);
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+}
+
+.feature-item:hover {
+  transform: translateX(5px);
+  background: white;
+  border-color: var(--primary-light);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.feature-item .feature-icon {
+  font-size: 24px;
+  background: linear-gradient(120deg, var(--primary-color), var(--secondary-color));
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 4px 8px rgba(67, 97, 238, 0.2);
+}
+
+.feature-text {
+  flex: 1;
+}
+
+.feature-text h3 {
+  margin: 0 0 2px 0;
+  font-size: 16px;
+  color: var(--primary-dark);
+}
+
+.feature-text p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary-light);
+}
+
+/* Update login welcome section for better impact */
+.login-welcome h2 {
+  font-size: 1.8rem;
+  background: linear-gradient(120deg, var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+
+/* Add animation to feature items */
+.feature-item:nth-child(1) {
+  animation: slideIn 0.5s ease-out 0.1s both;
+}
+
+.feature-item:nth-child(2) {
+  animation: slideIn 0.5s ease-out 0.2s both;
+}
+
+.feature-item:nth-child(3) {
+  animation: slideIn 0.5s ease-out 0.3s both;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

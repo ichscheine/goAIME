@@ -520,6 +520,9 @@ export const ProblemProvider = ({ children }) => {
       return;
     }
     
+    // Set session as complete immediately to prevent duplicate calls
+    setSessionComplete(true);
+    
     try {
       // Try to get the user from localStorage
       const userData = localStorage.getItem('user');
@@ -542,17 +545,33 @@ export const ProblemProvider = ({ children }) => {
         lastSession: null
       };
       
-      // Add new session with current stats
-      userStats.sessions.push({
-        id: Date.now(),
-        score,
-        attempted,
-        timeSpent: cumulativeTime,
-        date: sessionDate,
-        contest: selectedContest,
-        year: selectedYear,
-        mode
-      });
+      // Generate a unique session ID
+      const sessionUniqueId = Date.now();
+      
+      // Check if this session already exists in the array to prevent duplicates
+      const sessionExists = userStats.sessions.some(s => 
+        s.date === sessionDate || 
+        s.id === sessionUniqueId ||
+        (s.score === score && s.attempted === attempted && 
+         s.contest === selectedContest && s.year === selectedYear)
+      );
+      
+      // Only add new session if it doesn't already exist
+      if (!sessionExists) {
+        // Add new session with current stats
+        userStats.sessions.push({
+          id: sessionUniqueId,
+          score,
+          attempted,
+          timeSpent: cumulativeTime,
+          date: sessionDate,
+          contest: selectedContest,
+          year: selectedYear,
+          mode
+        });
+      } else {
+        console.log("Session already exists in local storage, not adding duplicate");
+      }
       
       // Update best score if current score is higher
       if (score > userStats.bestScore) {

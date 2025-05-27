@@ -1,11 +1,12 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import './App.css';
+import './components/LandingStyles.css';
+import './components/DashboardStyles.css';
 import { ProblemProvider, useProblem } from './contexts/ProblemContext';
 import { UserProvider } from './contexts/UserContext';
 
 import LandingPage from './components/LandingPage';
 import Registration from './components/Registration';
-import Sidebar from './components/Sidebar';
 import ProblemView from './components/ProblemView';
 import Timer from './components/Timer';
 import SolutionModal from './components/SolutionModal';
@@ -61,13 +62,22 @@ const AppContent = ({ user }) => {
     attempted,
     cumulativeTime,
     mode,
+    setMode,
     problem,
     isPaused,
     totalProblems,
     handlePauseSession,
     handleResumeSession,
     handleRestartSession,
-    handleQuitSession
+    handleQuitSession,
+    selectedContest,
+    setSelectedContest,
+    selectedYear,
+    setSelectedYear,
+    selectedSkin,
+    setSelectedSkin,
+    resetContestProblems,
+    startSession
   } = useProblem();
   
   const cumulativeTimeSeconds = (cumulativeTime / 1000).toFixed(2);
@@ -137,14 +147,147 @@ const AppContent = ({ user }) => {
         </div>
       </header>
 
-      <div className="main-layout">
-        <Sidebar user={user} />
-        
+      <div className="main-layout full-width">
         <main className="content-panel">
           {!sessionStarted ? (
             <div className="instruction-message">
-              <h2>I am awesome and I know it</h2>
-              <p>Let's go.</p>
+              <h2>Welcome to goAIME</h2>
+              <p>Your personal math practice companion. Configure your settings and start practicing!</p>
+              
+              <div className="dashboard-container">
+                <div className="dashboard-features">
+                  <h3>Select Mode</h3>
+                  <div className="feature-cards mode-selection">
+                    <div 
+                      className={`feature-card ${mode === 'contest' ? 'active' : ''}`}
+                      onClick={() => !sessionStarted || sessionComplete ? setMode('contest') : null}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={mode === 'contest'}
+                      aria-disabled={sessionStarted && !sessionComplete}
+                    >
+                      <div className="feature-icon">🏆</div>
+                      <h3>Competition Mode</h3>
+                      <p>Challenge yourself with timed tests to simulate real math competitions</p>
+                    </div>
+                    <div 
+                      className={`feature-card ${mode === 'practice' ? 'active' : ''}`}
+                      onClick={() => !sessionStarted || sessionComplete ? setMode('practice') : null}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={mode === 'practice'}
+                      aria-disabled={sessionStarted && !sessionComplete}
+                    >
+                      <div className="feature-icon">📚</div>
+                      <h3>Practice Mode</h3>
+                      <p>Build your skills at your own pace with unlimited time</p>
+                    </div>
+                  </div>
+                  
+                  {/* Only show configuration after mode selection */}
+                  {mode && (
+                    <div className={`mode-config ${mode}`}>
+                      <h3>{mode === 'contest' ? 'Competition' : 'Practice'} Settings</h3>
+                      <div className="setting-group">
+                        <label htmlFor="contest-select">Contest:</label>
+                        <select
+                          id="contest-select"
+                          value={selectedContest}
+                          onChange={(e) => {
+                            setSelectedContest(e.target.value);
+                            resetContestProblems();
+                          }}
+                          disabled={sessionStarted && !sessionComplete}
+                        >
+                          {['AMC 8', 'AMC 10A', 'AMC 10B', 'AMC 12A', 'AMC 12B', 'AIME I', 'AIME II'].map(contest => (
+                            <option key={contest} value={contest}>{contest}</option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <div className="setting-group">
+                        <label htmlFor="year-select">Year:</label>
+                        <select
+                          id="year-select"
+                          value={selectedYear}
+                          onChange={(e) => {
+                            setSelectedYear(e.target.value);
+                            resetContestProblems();
+                          }}
+                          disabled={sessionStarted && !sessionComplete}
+                        >
+                          {[2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015].map(year => (
+                            <option key={year} value={year}>{year}</option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      {mode === 'practice' && (
+                        <div className="setting-group">
+                          <label htmlFor="skin-select">Theme:</label>
+                          <select
+                            id="skin-select"
+                            value={selectedSkin}
+                            onChange={(e) => setSelectedSkin(e.target.value)}
+                            disabled={sessionStarted && !sessionComplete}
+                          >
+                            {['EndMiner', 'Jupyter', 'Classic'].map(skin => (
+                              <option key={skin} value={skin}>{skin}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      
+                      <button
+                        className="start-button"
+                        onClick={startSession}
+                        disabled={(sessionStarted && !sessionComplete)}
+                      >
+                        {sessionComplete ? 'New Session' : 'Start'}
+                      </button>
+                    </div>
+                  )}
+                  
+                  <div className="analytics-section">
+                    <div className="progress-section">
+                      <div className="feature-card info-card">
+                        <div className="feature-icon">📊</div>
+                        <h3>Track Progress</h3>
+                        <p>Monitor your improvement with detailed performance analytics</p>
+                      </div>
+                    </div>
+                    
+                    {user && (
+                      <div className="user-stats-section">
+                        <h3>Your Statistics</h3>
+                        <div className="stats-grid">
+                          <div className="stat-card">
+                            <div className="stat-icon">📝</div>
+                            <div className="stat-details">
+                              <div className="stat-label">Total Sessions</div>
+                              <div className="stat-value">{user.sessions ? user.sessions.length : 0}</div>
+                            </div>
+                          </div>
+                          <div className="stat-card">
+                            <div className="stat-icon">🌟</div>
+                            <div className="stat-details">
+                              <div className="stat-label">Best Score</div>
+                              <div className="stat-value">{user.bestScore || '--'}</div>
+                            </div>
+                          </div>
+                          <div className="stat-card">
+                            <div className="stat-icon">🕒</div>
+                            <div className="stat-details">
+                              <div className="stat-label">Last Session</div>
+                              <div className="stat-value">{user.lastSession || 'Never'}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
             <>

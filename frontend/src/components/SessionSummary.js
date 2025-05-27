@@ -172,12 +172,15 @@ const SessionSummary = () => {
   const [sessionCompleted, setSessionCompleted] = useState(false);
 
   useEffect(() => {
-    // Only complete session once
+    // Only complete session if it hasn't been completed already
+    // Add proper dependency on completeSession to ensure it's called when the component mounts
+    // but only if the session isn't already complete
     if (!sessionCompleted) {
+      console.log("SessionSummary: Completing session");
       completeSession();
       setSessionCompleted(true);
     }
-  }, []); // Empty dependency array to run only once
+  }, [completeSession, sessionCompleted]); // Include dependencies
   
   // Format time as MM:SS with proper handling for edge cases
   const formatTime = (seconds) => {
