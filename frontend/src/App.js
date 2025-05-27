@@ -2,6 +2,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import './App.css';
 import './components/LandingStyles.css';
 import './components/DashboardStyles.css';
+import './components/SharedBackground.css';
 import { ProblemProvider, useProblem } from './contexts/ProblemContext';
 import { UserProvider } from './contexts/UserContext';
 
@@ -84,6 +85,12 @@ const AppContent = ({ user }) => {
   
   return (
     <div className="app-container">
+      <div className="app-background">
+        <div className="shape shape-1"></div>
+        <div className="shape shape-2"></div>
+        <div className="shape shape-3"></div>
+        <div className="pattern"></div>
+      </div>
       <header className="app-header">
         <div className="logo">goAIME</div>
         <Timer />
