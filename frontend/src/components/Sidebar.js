@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'; // Add useEffect import
 import { useProblem } from '../contexts/ProblemContext';
+import { Link } from 'react-router-dom';
 
 const CONTEST_OPTIONS = ['AMC 8', 'AMC 10A', 'AMC 10B', 'AMC 12A', 'AMC 12B', 'AIME I', 'AIME II'];
 const YEAR_OPTIONS = [2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015];
@@ -204,6 +205,14 @@ const Sidebar = ({ user }) => {
                 <span className="stat-label">Last Session:</span>
                 <span className="stat-value">{formatLastSession()}</span>
               </div>
+            </div>
+            
+            {/* Add Track Progress Link */}
+            <div className="progress-link-container">
+              <Link to="/progress" className="progress-link">
+                <span className="progress-icon">📊</span>
+                <span>Track Progress</span>
+              </Link>
             </div>
           </div>
         )}

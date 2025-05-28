@@ -416,6 +416,70 @@
   color: #4f46e5;
 }
 
+/* Enhanced Progress Card */
+.enhanced-progress-card {
+  position: relative;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  border-left: 4px solid #4f46e5 !important;
+}
+
+.enhanced-progress-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(79, 70, 229, 0.2) !important;
+}
+
+.progress-dashboard-icon {
+  font-size: 2.2rem !important;
+  color: #4f46e5;
+  margin-bottom: 15px;
+  background: rgba(99, 102, 241, 0.15) !important;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.progress-card-footer {
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(148, 163, 184, 0.3);
+  text-align: right;
+}
+
+.view-details {
+  color: #4f46e5;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.enhanced-progress-card:hover .view-details {
+  text-decoration: underline;
+}
+
+/* Progress Link Styling */
+.progress-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.progress-link:hover {
+  text-decoration: none;
+  color: inherit;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.progress-link:focus {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
 /* Improve the appearance of the mode selection cards */
 .mode-selection {
   display: grid;
@@ -468,6 +532,34 @@
   color: #334155;
   margin-bottom: 15px;
   padding-bottom: 8px;
+}
+
+/* Sidebar progress link styles */
+.progress-link-container {
+  margin-top: 20px;
+}
+
+.progress-link {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+}
+
+.progress-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(79, 70, 229, 0.3);
+}
+
+.progress-icon {
+  font-size: 1.2rem;
+  margin-right: 10px;
 }
 
 /* Responsive improvements for all screen sizes */

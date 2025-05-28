@@ -12,7 +12,8 @@ import Registration from './components/Registration';
 import ProblemView from './components/ProblemView';
 import Timer from './components/Timer';
 import SolutionModal from './components/SolutionModal';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import ProgressTracking from './components/ProgressTracking';
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 
 // Lazy load components
 const SessionSummary = React.lazy(() => import('./components/SessionSummary'));
@@ -45,6 +46,7 @@ function App() {
             <Route path="/dashboard" element={user ? <AppContent user={user} /> : <Navigate to="/login" />} />
             <Route path="/problems/:id" element={user ? <ProblemView /> : <Navigate to="/login" />} />
             <Route path="/summary" element={user ? <SessionSummary /> : <Navigate to="/login" />} />
+            <Route path="/progress" element={user ? <ProgressTracking username={user.username} /> : <Navigate to="/login" />} />
             <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
           </Routes>
         </BrowserRouter>
@@ -284,11 +286,14 @@ const AppContent = ({ user }) => {
                   
                   <div className="analytics-section">
                     <div className="progress-section">
-                      <div className="feature-card info-card">
-                        <div className="feature-icon">📊</div>
+                      <Link to="/progress" className="feature-card info-card progress-link enhanced-progress-card">
+                        <div className="feature-icon progress-dashboard-icon">📊</div>
                         <h3>Track Progress</h3>
                         <p>Monitor your improvement with detailed performance analytics</p>
-                      </div>
+                        <div className="progress-card-footer">
+                          <span className="view-details">View detailed stats →</span>
+                        </div>
+                      </Link>
                     </div>
                     
                     {user && (
