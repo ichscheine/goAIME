@@ -243,9 +243,16 @@
   cursor: not-allowed;
 }
 
+/* Modify info-card to ensure it's clickable */
 .info-card {
-  opacity: 0.8;
-  cursor: default;
+  opacity: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.info-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
 /* Make the feature selection more visible */

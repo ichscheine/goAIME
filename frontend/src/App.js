@@ -12,10 +12,11 @@ import Registration from './components/Registration';
 import ProblemView from './components/ProblemView';
 import Timer from './components/Timer';
 import SolutionModal from './components/SolutionModal';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 
 // Lazy load components
 const SessionSummary = React.lazy(() => import('./components/SessionSummary'));
+const ProgressTracking = React.lazy(() => import('./components/ProgressTracking'));
 
 function App() {
   // User authentication state
@@ -45,6 +46,7 @@ function App() {
             <Route path="/dashboard" element={user ? <AppContent user={user} /> : <Navigate to="/login" />} />
             <Route path="/problems/:id" element={user ? <ProblemView /> : <Navigate to="/login" />} />
             <Route path="/summary" element={user ? <SessionSummary /> : <Navigate to="/login" />} />
+            <Route path="/progress" element={user ? <Suspense fallback={<div>Loading...</div>}><ProgressTracking username={user.username} /></Suspense> : <Navigate to="/login" />} />
             <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
           </Routes>
         </BrowserRouter>
@@ -193,11 +195,11 @@ const AppContent = ({ user }) => {
                   <h3>Select Mode</h3>
                   <div className="feature-cards mode-selection">
                     <div 
-                      className={`feature-card ${mode === 'contest' ? 'active' : ''}`}
-                      onClick={() => !sessionStarted || sessionComplete ? setMode('contest') : null}
+                      className={`feature-card ${mode === 'competition' ? 'active' : ''}`}
+                      onClick={() => !sessionStarted || sessionComplete ? setMode('competition') : null}
                       role="button"
                       tabIndex={0}
-                      aria-pressed={mode === 'contest'}
+                      aria-pressed={mode === 'competition'}
                       aria-disabled={sessionStarted && !sessionComplete}
                     >
                       <div className="feature-icon">🏆</div>
@@ -221,7 +223,7 @@ const AppContent = ({ user }) => {
                   {/* Only show configuration after mode selection */}
                   {mode && (
                     <div className={`mode-config ${mode}`}>
-                      <h3>{mode === 'contest' ? 'Competition' : 'Practice'} Settings</h3>
+                      <h3>{mode === 'competition' ? 'Competition' : 'Practice'} Settings</h3>
                       <div className="setting-group">
                         <label htmlFor="contest-select">Contest:</label>
                         <select
@@ -284,11 +286,22 @@ const AppContent = ({ user }) => {
                   
                   <div className="analytics-section">
                     <div className="progress-section">
-                      <div className="feature-card info-card">
+                      <Link 
+                        to="/progress"
+                        className="feature-card info-card"
+                        role="button"
+                        tabIndex={0}
+                        style={{ 
+                          cursor: 'pointer',
+                          textDecoration: 'none', 
+                          color: 'inherit',
+                          display: 'block'
+                        }}
+                      >
                         <div className="feature-icon">📊</div>
                         <h3>Track Progress</h3>
                         <p>Monitor your improvement with detailed performance analytics</p>
-                      </div>
+                      </Link>
                     </div>
                     
                     {user && (
