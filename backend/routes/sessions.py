@@ -11,7 +11,7 @@ import time
 
 # Rate limiting storage (in production, use Redis or database)
 session_save_timestamps = {}
-RATE_LIMIT_SECONDS = 5  # Minimum 5 seconds between session saves per user
+RATE_LIMIT_SECONDS = 1  # Reduced from 5 seconds to 1 second between session saves per user
 
 def register_session_routes(app):
     """Register routes for user authentication and session management"""

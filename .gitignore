@@ -29,3 +29,4 @@ logs/
 # 8) Testing only
 test.py
 problem_images/
+experimental_backups/

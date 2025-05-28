@@ -36,16 +36,18 @@ export const ProblemProvider = ({ children }) => {
   const [sessionResultsSaved, setSessionResultsSaved] = useState(false); // Track if session results have been saved
   
   // Update totalProblems when student completes or skips a problem
-  const handleProblemCompleted = (problem) => {
+  // Wrap in useCallback to prevent dependencies from changing on every render
+  const handleProblemCompleted = useCallback((problem) => {
     setAttempted(attempted + 1);
     setUnattempted(unattempted - 1);
     setTotalProblems(attempted);
-  };
+  }, [attempted, unattempted, setAttempted, setUnattempted, setTotalProblems]);
   
-  const handleProblemSkipped = (problem) => {
+  // Wrap in useCallback to prevent dependencies from changing on every render
+  const handleProblemSkipped = useCallback((problem) => {
     setUnattempted(unattempted - 1);
     setTotalProblems(attempted + unattempted);
-  };
+  }, [attempted, unattempted, setUnattempted, setTotalProblems]);
 
   // Request tracking
   const isFetchingRef = useRef(false);
@@ -97,11 +99,14 @@ export const ProblemProvider = ({ children }) => {
       setLoading(false);
       isFetchingRef.current = false;
     }
-  }, [selectedYear, selectedContest, currentIndex, shuffle, api, handleProblemCompleted, handleProblemSkipped]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedYear, selectedContest, currentIndex, shuffle, handleProblemCompleted, handleProblemSkipped]);
 
   // Fetch a problem from the backend and update the problem state
+  // eslint-disable-next-line no-unused-vars
   const fetchProblemAndUpdateState = useCallback(async (options = {}) => {
     try {
+      // eslint-disable-next-line no-unused-vars
       const fetchOptions = {
         ...options,
         selectedYear: options.year || selectedYear, 
@@ -163,7 +168,8 @@ export const ProblemProvider = ({ children }) => {
       setLoading(false);
       isFetchingRef.current = false;
     }
-  }, [selectedYear, selectedContest, currentIndex, shuffle]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedYear, selectedContest, currentIndex, shuffle, fetchProblem]);
   
   const resetContestProblems = useCallback(async () => {
     try {
@@ -357,11 +363,17 @@ export const ProblemProvider = ({ children }) => {
           
           console.log("Session complete, saving results:", sessionData);
           try {
-            await saveSessionResults(sessionData);
-            setSessionResultsSaved(true); // Mark as saved
-            console.log("Session results saved successfully");
+            const saveResult = await saveSessionResults(sessionData);
+            if (saveResult) {
+              setSessionResultsSaved(true); // Mark as saved
+              console.log("Session results saved successfully");
+            } else {
+              console.warn("Session save returned false, will retry on next attempt");
+              // Don't mark as saved to allow retry
+            }
           } catch (err) {
             console.error("Error saving session results:", err);
+            // Don't mark as saved to allow retry
           }
         } else {
           console.log("Session results already saved, skipping duplicate save");
@@ -370,7 +382,8 @@ export const ProblemProvider = ({ children }) => {
       
       throw error; // Re-throw to let the component handle it
     }
-  }, [sessionId, setProblem, setProblemStartTime, setAnswered, setSelectedOption, setProblemStatementWithMeta, setSessionComplete, score, attempted, cumulativeTime, attemptRecords, saveSessionResults, sessionResultsSaved]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, setProblem, setProblemStartTime, setAnswered, setSelectedOption, setProblemStatementWithMeta, setSessionComplete, score, attempted, cumulativeTime, attemptRecords, saveSessionResults, sessionResultsSaved, mode, selectedContest, selectedYear]);
   
   const handleOptionSelect = useCallback((option) => {
     if (answersDisabled) return;
@@ -441,8 +454,9 @@ export const ProblemProvider = ({ children }) => {
     setTimeout(() => {
       nextProblem();
     }, 1000);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [problem, problemStartTime, pausedTime, answersDisabled, currentIndex, setSelectedOption, setAnswersDisabled, 
-      setAnswered, setScore, setIncorrectProblems, setAttemptRecords, setAttempted, setCumulativeTime, nextProblem]);
+      setAnswered, setScore, setIncorrectProblems, setAttemptRecords, setAttempted, setCumulativeTime, nextProblem, selectedContest, selectedYear]);
 
   // Reference to track pause start time
   const pauseStartTimeRef = useRef(null);
@@ -511,7 +525,8 @@ export const ProblemProvider = ({ children }) => {
     }
   }, [resetSession]);
   
-  const setPauseTimeRef = useRef(null);
+  // We're removing the unused ref
+  // const setPauseTimeRef = useRef(null);
 
   const completeSession = useCallback(async () => {
     // Check if session results have already been saved
@@ -611,11 +626,17 @@ export const ProblemProvider = ({ children }) => {
         
         console.log("CompleteSession called, saving session:", sessionData);
         try {
-          await saveSessionResults(sessionData);
-          setSessionResultsSaved(true); // Mark as saved
-          console.log("Session results saved successfully from completeSession");
+          const saveResult = await saveSessionResults(sessionData);
+          if (saveResult) {
+            setSessionResultsSaved(true); // Mark as saved
+            console.log("Session results saved successfully from completeSession");
+          } else {
+            console.warn("Session save returned false in completeSession, will retry later");
+            // Don't mark as saved to allow retry
+          }
         } catch (err) {
           console.error("Failed to save session results from completeSession:", err);
+          // Don't mark as saved to allow retry
         }
       } else {
         console.warn("saveSessionResults function not available");
@@ -623,7 +644,8 @@ export const ProblemProvider = ({ children }) => {
     } catch (error) {
       console.error("Error saving session stats:", error);
     }
-  }, [score, attempted, cumulativeTime, selectedContest, selectedYear, mode, sessionId, saveSessionResults, sessionResultsSaved]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [score, attempted, cumulativeTime, selectedContest, selectedYear, mode, sessionId, saveSessionResults, sessionResultsSaved, attemptRecords]);
 
   // Solution viewing functionality
   const [solutionProblem, setSolutionProblem] = useState(null);
@@ -694,7 +716,7 @@ return (
     sessionStarted,
     sessionComplete,
     score,
-    attempted,
+    // Remove duplicate "attempted" key
     currentIndex,
     problemStartTime,
     cumulativeTime,

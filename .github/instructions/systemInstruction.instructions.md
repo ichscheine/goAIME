@@ -3,6 +3,12 @@ applyTo: '**'
 ---
 Coding standards, domain knowledge, and preferences that AI should follow.
 
+- never update the .env file automatically!!!
+- conda activate goAIME
+- use python instead of python3
+- minimize the file and code changes
+- follow my prompts closely, do not change anything else 
+
 - Follow best practices for code organization and structure.
 - Use meaningful variable and function names.
 - Write modular, reusable code components.
@@ -14,6 +20,4 @@ Coding standards, domain knowledge, and preferences that AI should follow.
 - Write unit tests to verify code functionality.
 - Keep dependencies up to date and manage them effectively.
 
-- conda activate goAIME
-- use python instead of python3
-- follow my prompts closely, do not change anything else 
+
