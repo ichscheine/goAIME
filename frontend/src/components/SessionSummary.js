@@ -253,7 +253,7 @@ const SessionSummary = () => {
 
   return (
     <div className="session-summary">
-      <h1 className="summary-title">{mode === "contest" ? "Competition" : "Practice"} Complete!</h1>
+      <h1 className="summary-title">{mode === "competition" ? "Competition" : "Practice"} Complete!</h1>
       
       <div className="summary-stats">
         <div className="stat-block">

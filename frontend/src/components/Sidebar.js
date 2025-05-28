@@ -150,8 +150,8 @@ const Sidebar = ({ user }) => {
             </button>
             
             <button
-              className={`mode-button ${mode === 'contest' ? 'active' : ''}`}
-              onClick={() => handleModeChange('contest')}
+              className={`mode-button ${mode === 'competition' ? 'active' : ''}`}
+              onClick={() => handleModeChange('competition')}
               disabled={sessionStarted && !sessionComplete}
             >
               Competition

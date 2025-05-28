@@ -171,7 +171,7 @@ const ProblemView = () => {
     
     // Mark as answered
     setAnswered(true);
-    if (mode === 'contest') {
+    if (mode === 'competition') {
       setAnswersDisabled(true);
     }
     
@@ -219,7 +219,7 @@ const ProblemView = () => {
     setIsCorrect(isAnswerCorrect);
     
     // If in contest mode, immediately advance to the next problem without delay
-    if (mode === "contest") {
+    if (mode === "competition") {
 
       // Check if this was the last problem (25th)
       if (currentIndex >= 25 || attempted >= 25) {

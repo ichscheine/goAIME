@@ -58,7 +58,14 @@ export const ProblemProvider = ({ children }) => {
   const [selectedContest, setSelectedContest] = useState('AMC 10A');
   const [selectedYear, setSelectedYear] = useState(2022);
   const [selectedSkin, setSelectedSkin] = useState('Minecraft');
+  // Mode state
   const [mode, setMode] = useState('');
+  
+  // Wrapper for setMode to ensure consistent mode values
+  const handleSetMode = useCallback((newMode) => {
+    // Convert 'contest' to 'competition' for consistency
+    setMode(newMode === 'contest' ? 'competition' : newMode);
+  }, []);
   const [shuffle, setShuffle] = useState(false);
   
   // Fetch a problem from the backend
@@ -731,7 +738,7 @@ return (
     selectedSkin,
     setSelectedSkin,
     mode,
-    setMode,
+    setMode: handleSetMode,
     shuffle,
     setShuffle,
     fetchProblem,

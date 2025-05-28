@@ -53,12 +53,11 @@ function App() {
       </ProblemProvider>
     </UserProvider>
   );
-}
-
-// Main app content when user is logged in
+}  // Main app content when user is logged in
 const AppContent = ({ user }) => {
   const [sessionCount, setSessionCount] = useState(0); // Initialize to 0, will be updated from API
   const [bestScore, setBestScore] = useState('--'); // Initialize to '--', will be updated from API
+  const [lastSession, setLastSession] = useState('Never'); // Initialize to 'Never', will be updated from API
   
   const {
     sessionStarted,
@@ -69,7 +68,7 @@ const AppContent = ({ user }) => {
     attempted,
     cumulativeTime,
     mode,
-    setMode,
+    setMode: handleSetMode,
     problem,
     isPaused,
     totalProblems,
@@ -89,6 +88,27 @@ const AppContent = ({ user }) => {
   
   const cumulativeTimeSeconds = (cumulativeTime / 1000).toFixed(2);
   
+  // Format the last session date
+  const formatLastSession = (dateString) => {
+    if (!dateString || dateString === 'Never') return 'Never';
+    
+    try {
+      // Simple formatting
+      const lastSession = new Date(dateString);
+      const now = new Date();
+      const diffTime = Math.abs(now - lastSession);
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return 'Yesterday';
+      if (diffDays < 7) return `${diffDays} days ago`;
+      
+      return lastSession.toLocaleDateString();
+    } catch (e) {
+      return 'Unknown';
+    }
+  };
+  
   // Fetch session count from backend when component mounts
   useEffect(() => {
     async function fetchSessionCount() {
@@ -101,6 +121,9 @@ const AppContent = ({ user }) => {
             }
             if (stats.bestScore !== undefined) {
               setBestScore(stats.bestScore);
+            }
+            if (stats.lastSession !== undefined) {
+              setLastSession(stats.lastSession);
             }
           }
         } catch (error) {
@@ -196,7 +219,7 @@ const AppContent = ({ user }) => {
                   <div className="feature-cards mode-selection">
                     <div 
                       className={`feature-card ${mode === 'competition' ? 'active' : ''}`}
-                      onClick={() => !sessionStarted || sessionComplete ? setMode('competition') : null}
+                      onClick={() => !sessionStarted || sessionComplete ? handleSetMode('competition') : null}
                       role="button"
                       tabIndex={0}
                       aria-pressed={mode === 'competition'}
@@ -208,7 +231,7 @@ const AppContent = ({ user }) => {
                     </div>
                     <div 
                       className={`feature-card ${mode === 'practice' ? 'active' : ''}`}
-                      onClick={() => !sessionStarted || sessionComplete ? setMode('practice') : null}
+                      onClick={() => !sessionStarted || sessionComplete ? handleSetMode('practice') : null}
                       role="button"
                       tabIndex={0}
                       aria-pressed={mode === 'practice'}
@@ -318,7 +341,7 @@ const AppContent = ({ user }) => {
                             <div className="stat-icon">🕒</div>
                             <div className="stat-details">
                               <div className="stat-label">Last Session</div>
-                              <div className="stat-value">{user.lastSession || 'Never'}</div>
+                              <div className="stat-value">{formatLastSession(lastSession)}</div>
                             </div>
                           </div>
                         </div>

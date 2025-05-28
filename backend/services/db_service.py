@@ -312,7 +312,7 @@ def enhance_session_data(session_data, username=None):
         'user_id': user_id,
         'year': session_data.get('year'),
         'contest': session_data.get('contest'),
-        'mode': session_data.get('mode'),
+        'mode': 'competition' if session_data.get('mode') == 'contest' else session_data.get('mode'),
         'shuffle': session_data.get('shuffle', False),
         'score': session_data.get('score', 0),
         'total_attempted': session_data.get('total_attempted', session_data.get('attempted', len(enhanced_problems))),

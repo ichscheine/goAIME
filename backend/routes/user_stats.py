@@ -27,11 +27,19 @@ def register_user_stats_routes(app):
             # Get session count
             session_count = db.sessions.count_documents({"username": username})
             
-            # Find best score
+            # Find best score and last session date
             best_score = 0
-            cursor = db.sessions.find({"username": username})
+            last_session = None
             
-            for session in cursor:
+            # Sort by completed_at in descending order to get the most recent session first
+            cursor = db.sessions.find({"username": username}).sort("completed_at", -1)
+            
+            for i, session in enumerate(cursor):
+                # Get the most recent session date (first in the sorted cursor)
+                if i == 0 and session.get('completed_at'):
+                    last_session = session.get('completed_at')
+                
+                # Find best score across all sessions
                 score = session.get('score', 0)
                 if score and isinstance(score, (int, float)) and score > best_score:
                     best_score = score
@@ -39,13 +47,15 @@ def register_user_stats_routes(app):
             log_event('user.stats.retrieved', {
                 'username': username,
                 'session_count': session_count,
-                'best_score': best_score
+                'best_score': best_score,
+                'last_session': last_session
             })
             
             return success_response(
                 data={
                     'sessionCount': session_count,
-                    'bestScore': best_score
+                    'bestScore': best_score,
+                    'lastSession': last_session
                 },
                 message='User stats retrieved successfully'
             )

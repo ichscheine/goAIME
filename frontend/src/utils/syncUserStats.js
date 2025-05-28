@@ -52,6 +52,12 @@ export const syncUserStatsWithDatabase = async (username) => {
       updated = true;
     }
     
+    if (parsedStats.lastSession !== response.data.data.lastSession && response.data.data.lastSession !== null) {
+      console.log(`Updating last session from ${parsedStats.lastSession} to ${response.data.data.lastSession}`);
+      parsedStats.lastSession = response.data.data.lastSession;
+      updated = true;
+    }
+    
     if (updated) {
       // Save back to localStorage
       localStorage.setItem(storageKey, JSON.stringify(parsedStats));
@@ -64,7 +70,8 @@ export const syncUserStatsWithDatabase = async (username) => {
     return {
       ...parsedStats,
       sessionCount: response.data.data.sessionCount,
-      bestScore: response.data.data.bestScore
+      bestScore: response.data.data.bestScore,
+      lastSession: response.data.data.lastSession
     };
     
   } catch (error) {
