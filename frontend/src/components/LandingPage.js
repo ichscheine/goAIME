@@ -67,8 +67,8 @@ const LandingPage = () => {
           </div>
           
           <div className="login-welcome">
-            <h2>Elevate Your Math Skills</h2>
-            <p>Practice with real competition problems and track your progress over time.</p>
+            <h2>Ace your Math Competition!</h2>
+            <p>Practice with real math competition problems and track your progress over time.</p>
           </div>
           
           <div className="feature-highlights">

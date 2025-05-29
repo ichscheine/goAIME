@@ -154,67 +154,14 @@ const ProgressTracking = ({ username }) => {
                 <div className="stat-label">Problems Attempted</div>
               </div>
               <div className="overview-stat">
+                <div className="stat-value">{progressData.overallPerformance.averageScore.toFixed(1)}</div>
+                <div className="stat-label">Avg. Score</div>
+              </div>              
+              <div className="overview-stat">
                 <div className="stat-value">{formatAccuracy(progressData.overallPerformance.accuracyPercentage)}</div>
                 <div className="stat-label">Accuracy</div>
               </div>
-              <div className="overview-stat">
-                <div className="stat-value">{progressData.overallPerformance.averageScore.toFixed(1)}</div>
-                <div className="stat-label">Avg. Score</div>
-              </div>
             </div>
-          </div>
-
-          {/* Difficulty Performance Section */}
-          <div className="performance-section">
-            <h3>Performance by Difficulty</h3>
-            <div className="difficulty-chart">
-              {Object.entries(progressData.difficultyPerformance).map(([difficulty, data]) => (
-                <div key={difficulty} className={`difficulty-bar difficulty-${difficulty.toLowerCase()}`}>
-                  <div className="difficulty-label">{difficulty}</div>
-                  <div className="bar-container">
-                    <div 
-                      className="bar-fill" 
-                      style={{ width: `${data.accuracy}%` }}
-                    ></div>
-                    <div className="bar-text">{formatAccuracy(data.accuracy)}</div>
-                  </div>
-                  <div className="attempt-info">
-                    {data.correct}/{data.attempted} correct
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Topic Performance Section */}
-          <div className="performance-section">
-            <h3>Performance by Topic</h3>
-            <div className="topic-chart">
-              {Object.entries(progressData.topicPerformance)
-                .sort((a, b) => b[1].attempted - a[1].attempted) // Sort by most attempted
-                .slice(0, 6) // Show top 6 most attempted topics
-                .map(([topic, data]) => (
-                  <div key={topic} className="topic-row">
-                    <div className="topic-name">{topic}</div>
-                    <div className="bar-container">
-                      <div 
-                        className="bar-fill" 
-                        style={{ width: `${data.accuracy}%` }}
-                      ></div>
-                      <div className="bar-text">{formatAccuracy(data.accuracy)}</div>
-                    </div>
-                    <div className="attempt-info">
-                      {data.correct}/{data.attempted}
-                    </div>
-                  </div>
-                ))
-              }
-            </div>
-            {Object.keys(progressData.topicPerformance).length > 6 && (
-              <div className="more-topics-info">
-                + {Object.keys(progressData.topicPerformance).length - 6} more topics
-              </div>
-            )}
           </div>
 
           {/* Performance Trend Section */}
@@ -228,31 +175,62 @@ const ProgressTracking = ({ username }) => {
                   <p>This chart shows your performance trend over your recent sessions.</p>
                 </div>
                 <div className="time-series-chart">
-                  <svg width="100%" height="300" viewBox="0 0 700 300" preserveAspectRatio="xMidYMid meet">
+                  <svg width="100%" height="500" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet">
                     {/* Chart background */}
-                    <rect x="50" y="30" width="620" height="220" fill="#f8fafc" rx="5" ry="5" />
+                    <rect x="70" y="40" width="860" height="380" fill="#f8fafc" rx="6" ry="6" />
                     
                     {/* X and Y axes */}
-                    <line x1="50" y1="250" x2="670" y2="250" stroke="#cbd5e1" strokeWidth="2" />
-                    <line x1="50" y1="30" x2="50" y2="250" stroke="#cbd5e1" strokeWidth="2" />
+                    <line x1="70" y1="420" x2="930" y2="420" stroke="#cbd5e1" strokeWidth="2" />
+                    <line x1="70" y1="40" x2="70" y2="420" stroke="#cbd5e1" strokeWidth="2" />
+                    <line x1="930" y1="40" x2="930" y2="420" stroke="#cbd5e1" strokeWidth="2" /> {/* Right y-axis for accuracy */}
                     
-                    {/* Y-axis labels */}
+                    {/* Left Y-axis labels (Score) */}
+                    {progressData.trendData && progressData.trendData.score && progressData.trendData.score.length > 0 && (() => {
+                      const maxScore = Math.max(...progressData.trendData.score);
+                      const scoreStep = Math.ceil(maxScore / 4);
+                      const scoreLabels = [0, scoreStep, scoreStep * 2, scoreStep * 3, scoreStep * 4];
+                      
+                      return scoreLabels.map((tick, i) => (
+                        <g key={`score-tick-${i}`}>
+                          <line 
+                            x1="65" 
+                            y1={420 - (tick * (380 / (scoreLabels[4] || 1)))} 
+                            x2="70" 
+                            y2={420 - (tick * (380 / (scoreLabels[4] || 1)))} 
+                            stroke="#cbd5e1" 
+                            strokeWidth="2" 
+                          />
+                          <text 
+                            x="62" 
+                            y={420 - (tick * (380 / (scoreLabels[4] || 1)))} 
+                            textAnchor="end" 
+                            alignmentBaseline="middle" 
+                            fontSize="14"
+                            fill="#64748b"
+                          >
+                            {tick}
+                          </text>
+                        </g>
+                      ));
+                    })()}
+
+                    {/* Right Y-axis labels (Accuracy) */}
                     {[0, 25, 50, 75, 100].map((tick, i) => (
                       <g key={`y-tick-${i}`}>
                         <line 
-                          x1="47" 
-                          y1={250 - (tick * 2.2)} 
-                          x2="50" 
-                          y2={250 - (tick * 2.2)} 
+                          x1="930" 
+                          y1={420 - (tick * 3.8)} 
+                          x2="935" 
+                          y2={420 - (tick * 3.8)} 
                           stroke="#cbd5e1" 
                           strokeWidth="2" 
                         />
                         <text 
-                          x="45" 
-                          y={250 - (tick * 2.2)} 
-                          textAnchor="end" 
+                          x="938" 
+                          y={420 - (tick * 3.8)} 
+                          textAnchor="start" 
                           alignmentBaseline="middle" 
-                          fontSize="12"
+                          fontSize="14"
                           fill="#64748b"
                         >
                           {tick}%
@@ -264,25 +242,29 @@ const ProgressTracking = ({ username }) => {
                     {[0, 25, 50, 75, 100].map((tick, i) => (
                       <line 
                         key={`grid-${i}`}
-                        x1="50" 
-                        y1={250 - (tick * 2.2)} 
-                        x2="670" 
-                        y2={250 - (tick * 2.2)} 
+                        x1="70" 
+                        y1={420 - (tick * 3.8)} 
+                        x2="930" 
+                        y2={420 - (tick * 3.8)} 
                         stroke="#e2e8f0" 
                         strokeWidth="1" 
                         strokeDasharray="5,5"
                       />
                     ))}
                     
-                    {/* Generate line path for accuracy */}
+                    {/* Generate line paths for accuracy and score */}
                     {progressData.trendData && progressData.trendData.accuracy && progressData.trendData.accuracy.length > 0 && (
                       <>
+                        {/* Score line (primary metric) */}
                         <path 
-                          d={progressData.trendData.accuracy.reduce((path, accuracy, i) => {
-                            const dataLength = progressData.trendData.accuracy.length;
-                            const xStep = 620 / (dataLength - 1 || 1);
-                            const x = 50 + (i * xStep);
-                            const y = 250 - (accuracy * 2.2);
+                          d={progressData.trendData.score.reduce((path, score, i, arr) => {
+                            const dataLength = progressData.trendData.score.length;
+                            const xStep = 860 / (dataLength - 1 || 1);
+                            // Reverse the index to make dates ascend from left to right
+                            const revIndex = dataLength - 1 - i;
+                            const x = 70 + (revIndex * xStep);
+                            const maxScore = Math.max(...progressData.trendData.score);
+                            const y = 420 - (score * (380 / (maxScore || 1)));
                             return `${path} ${i === 0 ? 'M' : 'L'} ${x},${y}`;
                           }, '')}
                           fill="none" 
@@ -291,20 +273,70 @@ const ProgressTracking = ({ username }) => {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         />
+
+                        {/* Accuracy line (secondary metric) */}
+                        <path 
+                          d={progressData.trendData.accuracy.reduce((path, accuracy, i) => {
+                            const dataLength = progressData.trendData.accuracy.length;
+                            const xStep = 860 / (dataLength - 1 || 1);
+                            // Reverse the index to make dates ascend from left to right
+                            const revIndex = dataLength - 1 - i;
+                            const x = 70 + (revIndex * xStep);
+                            const y = 420 - (accuracy * 3.8);
+                            return `${path} ${i === 0 ? 'M' : 'L'} ${x},${y}`;
+                          }, '')}
+                          fill="none" 
+                          stroke="#ffa500" 
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
                         
-                        {/* Data points */}
-                        {progressData.trendData.accuracy.map((accuracy, i) => {
-                          const dataLength = progressData.trendData.accuracy.length;
-                          const xStep = 620 / (dataLength - 1 || 1);
-                          const x = 50 + (i * xStep);
-                          const y = 250 - (accuracy * 2.2);
+                        {/* Score data points */}
+                        {progressData.trendData.score.map((score, i) => {
+                          const dataLength = progressData.trendData.score.length;
+                          const xStep = 860 / (dataLength - 1 || 1);
+                          // Reverse the index to make dates ascend from left to right
+                          const revIndex = dataLength - 1 - i;
+                          const x = 70 + (revIndex * xStep);
+                          const maxScore = Math.max(...progressData.trendData.score);
+                          const y = 420 - (score * (380 / (maxScore || 1)));
                           return (
-                            <g key={`point-${i}`}>
+                            <g key={`score-point-${i}`}>
                               <circle 
                                 cx={x}
                                 cy={y}
                                 r="6" 
                                 fill="#4f46e5" 
+                              />
+                              <circle 
+                                cx={x}
+                                cy={y}
+                                r="4" 
+                                fill="#fff" 
+                              />
+                              <title>
+                                {`Date: ${formatDate(progressData.trendData.dates[i])}\nAccuracy: ${progressData.trendData.accuracy[i]}%\nScore: ${score}`}
+                              </title>
+                            </g>
+                          );
+                        })}
+                        
+                        {/* Accuracy data points */}
+                        {progressData.trendData.accuracy.map((accuracy, i) => {
+                          const dataLength = progressData.trendData.accuracy.length;
+                          const xStep = 860 / (dataLength - 1 || 1);
+                          // Reverse the index to make dates ascend from left to right
+                          const revIndex = dataLength - 1 - i;
+                          const x = 70 + (revIndex * xStep);
+                          const y = 420 - (accuracy * 3.8);
+                          return (
+                            <g key={`accuracy-point-${i}`}>
+                              <circle 
+                                cx={x}
+                                cy={y}
+                                r="6" 
+                                fill="#ffa500" 
                               />
                               <circle 
                                 cx={x}
@@ -319,11 +351,13 @@ const ProgressTracking = ({ username }) => {
                           );
                         })}
                         
-                        {/* X-axis labels (dates) */}
+                        {/* X-axis labels (dates) - fixed positioning */}
                         {progressData.trendData.dates.map((date, i) => {
                           const dataLength = progressData.trendData.dates.length;
-                          const xStep = 620 / (dataLength - 1 || 1);
-                          const x = 50 + (i * xStep);
+                          const xStep = 860 / (dataLength - 1 || 1);
+                          // Reverse the index to make dates ascend from left to right
+                          const revIndex = dataLength - 1 - i;
+                          const x = 70 + (revIndex * xStep);
                           
                           // Only show labels for the first, middle, and last date if there are more than 3
                           const showLabel = dataLength <= 5 || i === 0 || i === dataLength - 1 || i === Math.floor(dataLength / 2);
@@ -332,16 +366,40 @@ const ProgressTracking = ({ username }) => {
                             <text 
                               key={`x-label-${i}`}
                               x={x} 
-                              y="270" 
+                              y="460" 
                               textAnchor="middle" 
-                              fontSize="11"
+                              fontSize="14"
                               fill="#64748b"
-                              transform={`rotate(45 ${x}, 270)`}
+                              transform={`rotate(45 ${x}, 460)`}
                             >
                               {formatDate(date)}
                             </text>
                           ) : null;
                         })}
+
+                        {/* Y-axis titles */}
+                        <text 
+                          x="25" 
+                          y="230" 
+                          textAnchor="middle" 
+                          fontSize="15"
+                          fontWeight="600"
+                          fill="#64748b"
+                          transform="rotate(-90 25, 230)"
+                        >
+                          Score
+                        </text>
+                        <text 
+                          x="975" 
+                          y="230" 
+                          textAnchor="middle" 
+                          fontSize="15"
+                          fontWeight="600"
+                          fill="#64748b"
+                          transform="rotate(90 975, 230)"
+                        >
+                          Accuracy (%)
+                        </text>
                       </>
                     )}
                   </svg>
@@ -349,6 +407,10 @@ const ProgressTracking = ({ username }) => {
                   <div className="chart-legend">
                     <div className="legend-item">
                       <div className="legend-color" style={{ backgroundColor: "#4f46e5" }}></div>
+                      <div className="legend-label">Score</div>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ backgroundColor: "#ffa500" }}></div>
                       <div className="legend-label">Accuracy (%)</div>
                     </div>
                   </div>
@@ -414,6 +476,59 @@ const ProgressTracking = ({ username }) => {
                     ></div>
                   </div>
                 </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Difficulty Performance Section */}
+          <div className="performance-section">
+            <h3>Performance by Difficulty</h3>
+            <div className="difficulty-chart">
+              {Object.entries(progressData.difficultyPerformance).map(([difficulty, data]) => (
+                <div key={difficulty} className={`difficulty-bar difficulty-${difficulty.toLowerCase()}`}>
+                  <div className="difficulty-label">{difficulty}</div>
+                  <div className="bar-container">
+                    <div 
+                      className="bar-fill" 
+                      style={{ width: `${data.accuracy}%` }}
+                    ></div>
+                    <div className="bar-text">{formatAccuracy(data.accuracy)}</div>
+                  </div>
+                  <div className="attempt-info">
+                    {data.correct}/{data.attempted} correct
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Topic Performance Section */}
+          <div className="performance-section">
+            <h3>Performance by Topic</h3>
+            <div className="topic-chart">
+              {Object.entries(progressData.topicPerformance)
+                .sort((a, b) => b[1].attempted - a[1].attempted) // Sort by most attempted
+                .slice(0, 6) // Show top 6 most attempted topics
+                .map(([topic, data]) => (
+                  <div key={topic} className="topic-row">
+                    <div className="topic-name">{topic}</div>
+                    <div className="bar-container">
+                      <div 
+                        className="bar-fill" 
+                        style={{ width: `${data.accuracy}%` }}
+                      ></div>
+                      <div className="bar-text">{formatAccuracy(data.accuracy)}</div>
+                    </div>
+                    <div className="attempt-info">
+                      {data.correct}/{data.attempted}
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+            {Object.keys(progressData.topicPerformance).length > 6 && (
+              <div className="more-topics-info">
+                + {Object.keys(progressData.topicPerformance).length - 6} more topics
               </div>
             )}
           </div>

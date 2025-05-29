@@ -137,6 +137,7 @@
   font-size: 2rem;
   font-weight: 700;
   background: linear-gradient(120deg, var(--primary-color), var(--secondary-color));
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin: 0;
@@ -196,7 +197,7 @@
 
 .input-icon {
   position: absolute;
-  left: 1rem;
+  left: 0rem;
   color: var(--text-secondary-light);
   font-size: 1rem;
 }
