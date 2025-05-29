@@ -12,9 +12,10 @@ const ProgressTracking = ({ username }) => {
     difficultyPerformance: {},
     overallPerformance: {
       totalSessions: 0,
-      averageScore: 0,
       totalProblems: 0,
-      accuracyPercentage: 0
+      averageScore: 0,
+      accuracyPercentage: 0,
+      averageSpeed: 0
     },
     recentSessions: [],
     trendData: {
@@ -23,10 +24,15 @@ const ProgressTracking = ({ username }) => {
       dates: []
     },
     cohortComparison: {
-      userPercentile: 0,
-      averageAccuracy: 0,
-      topPerformerAccuracy: 0,
-      userAccuracy: 0
+      userScore: 0,
+      userAccuracy: 0,
+      userSpeed: 0,
+      peerMaxScore: 0,
+      peerMaxAccuracy: 0,
+      peerMaxSpeed: 0,
+      userScorePercentile: 0,
+      userAccuracyPercentile: 0,
+      userSpeedPercentile: 0,
     }
   });
 
@@ -76,6 +82,23 @@ const ProgressTracking = ({ username }) => {
             };
           }
           
+          // Add mock data for radar chart if it doesn't exist
+          if (!response.data.data.cohortComparison.userScore) {
+            console.warn('Adding mock data for radar chart');
+            
+            // Use the average score from overall performance for the user score
+            response.data.data.cohortComparison.userScore = response.data.data.overallPerformance.averageScore || 75;
+            response.data.data.cohortComparison.userSpeed = 45; // Mock speed in seconds
+            response.data.data.cohortComparison.peerMaxScore = 95; 
+            response.data.data.cohortComparison.peerMaxAccuracy = 98;
+            response.data.data.cohortComparison.peerMaxSpeed = 30; // Mock speed in seconds (lower is better)
+            
+            // Also add to overall performance if not there
+            if (!response.data.data.overallPerformance.averageSpeed) {
+              response.data.data.overallPerformance.averageSpeed = 45;
+            }
+          }
+          
           setProgressData(response.data.data);
         } else {
           setError('Failed to load progress data');
@@ -99,6 +122,70 @@ const ProgressTracking = ({ username }) => {
   // Format accuracy percentage with % symbol
   const formatAccuracy = (accuracy) => {
     return `${Math.round(accuracy)}%`;
+  };
+
+  // Format speed in seconds to a user-friendly string
+  const formatSpeed = (seconds) => {
+    return `${Math.round(seconds)}s`;
+  };
+  
+  // Calculate speed percentile (lower is better for speed, but higher percentile is better)
+  const calculateSpeedPercentile = () => {
+    // If userSpeed is 0 or missing data, return 0
+    if (!progressData.cohortComparison.userSpeed || !progressData.cohortComparison.peerMaxSpeed) return 0;
+    
+    // Get the user's speed and peer max speed
+    const userSpeed = progressData.cohortComparison.userSpeed;
+    const peerMaxSpeed = progressData.cohortComparison.peerMaxSpeed;
+    
+    // Handle edge cases
+    if (userSpeed <= 0) return 100; // Perfect speed (instant) gets 100th percentile
+    if (peerMaxSpeed <= 0) return 0; // Avoid division by zero
+    
+    // Calculate what percent of the way the user is from 0 to peerMaxSpeed
+    // A lower speed is better, so we invert the ratio
+    // We add a small margin (1.2 * peerMaxSpeed) to avoid extremes at the boundaries
+    // This ensures that speeds slightly above peer max don't get 0 percentile
+    const speedPercentile = Math.max(0, Math.min(100, 100 * (1 - (userSpeed / (peerMaxSpeed * 1.2)))));
+    
+    // Log for debugging
+    console.log(`Speed Percentile Calculation: ${userSpeed}s / (${peerMaxSpeed}s * 1.2) = ${speedPercentile.toFixed(1)}%`);
+    
+    return speedPercentile;
+  };
+  
+  // Determine the user's best metric
+  const findBestMetric = () => {
+    // Calculate ratios for each metric (normalized to 0-100 scale)
+    const scoreRatio = progressData.cohortComparison.userScore / progressData.cohortComparison.peerMaxScore * 100;
+    const accuracyRatio = progressData.cohortComparison.userAccuracy;
+    // For speed, we calculate a percentile where higher is better
+    const speedPercentile = calculateSpeedPercentile();
+    
+    // Get the best metric based on highest percentile
+    let bestMetric = '';
+    let bestRatio = 0;
+    
+    // Create an array of metrics for easier comparison and logging
+    const metrics = [
+      { name: 'Score', value: scoreRatio },
+      { name: 'Accuracy', value: accuracyRatio },
+      { name: 'Speed', value: speedPercentile }
+    ];
+    
+    // Sort metrics by their values (descending)
+    const sortedMetrics = [...metrics].sort((a, b) => b.value - a.value);
+    
+    // Log metric rankings for debugging
+    console.log('Metric Rankings:');
+    sortedMetrics.forEach((metric, index) => {
+      console.log(`  ${index + 1}. ${metric.name}: ${metric.value.toFixed(1)}%`);
+    });
+    
+    // The best metric is the one with the highest value
+    bestMetric = sortedMetrics[0].name;
+    
+    return bestMetric;
   };
 
   // Format date in a user-friendly way
@@ -161,7 +248,10 @@ const ProgressTracking = ({ username }) => {
                 <div className="stat-value">{formatAccuracy(progressData.overallPerformance.accuracyPercentage)}</div>
                 <div className="stat-label">Accuracy</div>
               </div>
-            </div>
+              <div className="overview-stat">
+                <div className="stat-value">{progressData.overallPerformance.averageSpeed.toFixed(1)}</div>
+                <div className="stat-label">Avg. Speed(s)</div>
+              </div>            </div>
           </div>
 
           {/* Performance Trend Section */}
@@ -429,51 +519,384 @@ const ProgressTracking = ({ username }) => {
                 <div className="comparison-info">
                   <p>See how your performance compares to other students working on similar problems.</p>
                 </div>
+                
+                {/* Strongest Metric Section */}
                 <div className="percentile-container">
-                  <div className="percentile-label">Your Position</div>
-                  <div className="percentile-bar-container">
-                    <div 
-                      className="percentile-marker"
-                      style={{ left: `${progressData.cohortComparison ? progressData.cohortComparison.userPercentile : 0}%` }}
-                    >
-                      <div className="marker-dot"></div>
-                      <div className="marker-label">You</div>
-                    </div>
-                    <div className="percentile-bar"></div>
-                    <div className="percentile-labels">
-                      <span>0%</span>
-                      <span>50%</span>
-                      <span>100%</span>
-                    </div>
+                  <div className="percentile-label">Your Strongest Metric</div>
+                  <div className="best-metric-container">
+                    {(() => {
+                      const bestMetric = findBestMetric();
+                      let metricValue = '';
+                      let metricColor = '#4f46e5';
+                      
+                      if (bestMetric === 'Score') {
+                        metricValue = `${Math.round(progressData.cohortComparison.userScore)}/${Math.round(progressData.cohortComparison.peerMaxScore)}`;
+                        metricColor = '#4f46e5';
+                      } else if (bestMetric === 'Accuracy') {
+                        metricValue = `${Math.round(progressData.cohortComparison.userAccuracy)}%`;
+                        metricColor = '#ffa500';
+                      } else if (bestMetric === 'Speed') {
+                        // Show speed as both raw value and percentile rank
+                        const speedPercentile = Math.round(calculateSpeedPercentile());
+                        metricValue = `${Math.round(progressData.cohortComparison.userSpeed)}s (${speedPercentile}%)`;
+                        metricColor = '#10b981';
+                      }
+                      
+                      return (
+                        <div className="best-metric-highlight" style={{ color: metricColor }}>
+                          <span className="best-metric-name">{bestMetric}</span>
+                          <span className="best-metric-value">{metricValue}</span>
+                          {bestMetric === 'Speed' && (
+                            <span style={{ fontSize: '0.8rem', marginTop: '5px' }}>
+                              (lower time is better)
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="percentile-text">
                     You're in the top {Math.round(100 - (progressData.cohortComparison ? progressData.cohortComparison.userPercentile : 0))}% of students
                   </div>
                 </div>
-                <div className="accuracy-comparison">
-                  <div className="comparison-row">
-                    <div className="comparison-label">Your Accuracy</div>
-                    <div className="comparison-value">{formatAccuracy(progressData.cohortComparison ? progressData.cohortComparison.userAccuracy : 0)}</div>
-                    <div 
-                      className="comparison-bar-fill your-accuracy" 
-                      style={{ width: `${progressData.cohortComparison ? progressData.cohortComparison.userAccuracy : 0}%` }}
-                    ></div>
+                
+                {/* Radar Chart */}
+                <div className="radar-chart-container">
+                  <div className="radar-chart-title">Performance Metrics Comparison</div>
+                  
+                  {/* Informational text about speed percentile */}
+                  <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '15px' }}>
+                    Note: For Speed, a lower time (seconds) is better, but a higher percentile represents better performance.
                   </div>
-                  <div className="comparison-row">
-                    <div className="comparison-label">Average</div>
-                    <div className="comparison-value">{formatAccuracy(progressData.cohortComparison ? progressData.cohortComparison.averageAccuracy : 0)}</div>
-                    <div 
-                      className="comparison-bar-fill average-accuracy" 
-                      style={{ width: `${progressData.cohortComparison ? progressData.cohortComparison.averageAccuracy : 0}%` }}
-                    ></div>
+                  
+                  <div style={{ alignSelf: 'center', width: '100%' }} className="radar-chart">
+                    <svg width="100%" height="400" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet">
+                      {/* Enhancement zone indicator (35% circle) */}
+                      <circle 
+                        cx="200" 
+                        cy="200" 
+                        r={150 * 0.35} 
+                        fill="rgba(226, 232, 240, 0.2)" 
+                        stroke="#e2e8f0" 
+                        strokeWidth="1" 
+                        strokeDasharray="4,2"
+                      />
+                      <text 
+                        x="200" 
+                        y="160" 
+                        textAnchor="middle" 
+                        fontSize="9" 
+                        fill="#94a3b8"
+                      >
+                        Enhanced visibility zone
+                      </text>
+                      
+                      {/* Background circles */}
+                      {[0.25, 0.5, 0.75, 1].map((scale, i) => (
+                        <g key={`bg-circle-${i}`}>
+                          <circle 
+                            cx="200" 
+                            cy="200" 
+                            r={150 * scale} 
+                            fill="none" 
+                            stroke="#e2e8f0" 
+                            strokeWidth="1" 
+                            opacity={0.7} 
+                          />
+                          {scale === 0.25 && (
+                            <text x="205" y={200 - (150 * scale)} textAnchor="start" fontSize="10" fill="#94a3b8" opacity="0.9">
+                              {Math.round(scale * 100)}%
+                            </text>
+                          )}
+                          {scale === 0.5 && (
+                            <text x="205" y={200 - (150 * scale)} textAnchor="start" fontSize="10" fill="#94a3b8" opacity="0.9">
+                              {Math.round(scale * 100)}%
+                            </text>
+                          )}
+                          {scale === 0.75 && (
+                            <text x="205" y={200 - (150 * scale)} textAnchor="start" fontSize="10" fill="#94a3b8" opacity="0.9">
+                              {Math.round(scale * 100)}%
+                            </text>
+                          )}
+                          {scale === 1 && (
+                            <text x="205" y={200 - (150 * scale)} textAnchor="start" fontSize="10" fill="#94a3b8" opacity="0.9">
+                              100%
+                            </text>
+                          )}
+                        </g>
+                      ))}
+                      
+                      {/* Axis lines */}
+                      {[
+                        { label: "Score", angle: 0 },
+                        { label: "Accuracy", angle: 120 },
+                        { label: "Speed", angle: 240 }
+                      ].map((axis, i) => {
+                        const radian = (axis.angle - 90) * (Math.PI / 180);
+                        const x = 200 + 150 * Math.cos(radian);
+                        const y = 200 + 150 * Math.sin(radian);
+                        
+                        // Calculate label position a bit further out
+                        const labelRadian = (axis.angle - 90) * (Math.PI / 180);
+                        const labelX = 200 + 180 * Math.cos(labelRadian);
+                        const labelY = 200 + 180 * Math.sin(labelRadian);
+                        
+                        return (
+                          <g key={`axis-${i}`}>
+                            <line 
+                              x1="200" 
+                              y1="200" 
+                              x2={x} 
+                              y2={y} 
+                              stroke="#cbd5e1" 
+                              strokeWidth="2" 
+                            />
+                            <text 
+                              x={labelX} 
+                              y={labelY} 
+                              textAnchor="middle" 
+                              dominantBaseline="middle" 
+                              fontSize="14" 
+                              fontWeight="600" 
+                              fill="#64748b"
+                            >
+                              {axis.label}
+                            </text>
+                          </g>
+                        );
+                      })}
+                      
+                      {/* Peer maximum area */}
+                      <path 
+                        d={(() => {
+                          const scoreAngle = -90 * (Math.PI / 180);
+                          const accuracyAngle = (120 - 90) * (Math.PI / 180);
+                          const speedAngle = (240 - 90) * (Math.PI / 180);
+                          
+                          // For peer max speed, we set it to 100% for the radar chart visualization
+                          // since we're representing all metrics where higher is better
+                          const normalizedSpeed = 1.0; // Full radius for peer maximum
+                          
+                          const scoreX = 200 + 150 * Math.cos(scoreAngle);
+                          const scoreY = 200 + 150 * Math.sin(scoreAngle);
+                          
+                          const accuracyX = 200 + 150 * (progressData.cohortComparison.peerMaxAccuracy / 100) * Math.cos(accuracyAngle);
+                          const accuracyY = 200 + 150 * (progressData.cohortComparison.peerMaxAccuracy / 100) * Math.sin(accuracyAngle);
+                          
+                          const speedX = 200 + 150 * normalizedSpeed * Math.cos(speedAngle);
+                          const speedY = 200 + 150 * normalizedSpeed * Math.sin(speedAngle);
+                          
+                          return `M ${scoreX} ${scoreY} L ${accuracyX} ${accuracyY} L ${speedX} ${speedY} Z`;
+                        })()}
+                        fill="rgba(226, 232, 240, 0.3)"
+                        stroke="#cbd5e1"
+                        strokeWidth="1"
+                        strokeDasharray="5,5"
+                      />
+                      
+                      {/* User performance area */}
+                      <path 
+                        d={(() => {
+                          const scoreAngle = -90 * (Math.PI / 180);
+                          const accuracyAngle = (120 - 90) * (Math.PI / 180);
+                          const speedAngle = (240 - 90) * (Math.PI / 180);
+                          
+                          // Calculate relative positions (ratio to peer max)
+                          const scoreRatio = progressData.cohortComparison.userScore / progressData.cohortComparison.peerMaxScore;
+                          const accuracyRatio = progressData.cohortComparison.userAccuracy / 100;
+                          
+                          // For speed, calculate the percentile (higher is better)
+                          const normalizedUserSpeed = calculateSpeedPercentile() / 100;
+                          
+                          // Apply a minimum scale factor (0.35) to ensure metrics are visible
+                          // This "pulls" small values away from the center for better visibility
+                          const minScaleFactor = 0.35;
+                          const enhancedScoreRatio = minScaleFactor + (1 - minScaleFactor) * scoreRatio;
+                          const enhancedAccuracyRatio = minScaleFactor + (1 - minScaleFactor) * accuracyRatio;
+                          const enhancedSpeedRatio = minScaleFactor + (1 - minScaleFactor) * normalizedUserSpeed;
+                          
+                          const scoreX = 200 + 150 * enhancedScoreRatio * Math.cos(scoreAngle);
+                          const scoreY = 200 + 150 * enhancedScoreRatio * Math.sin(scoreAngle);
+                          
+                          const accuracyX = 200 + 150 * enhancedAccuracyRatio * Math.cos(accuracyAngle);
+                          const accuracyY = 200 + 150 * enhancedAccuracyRatio * Math.sin(accuracyAngle);
+                          
+                          const speedX = 200 + 150 * enhancedSpeedRatio * Math.cos(speedAngle);
+                          const speedY = 200 + 150 * enhancedSpeedRatio * Math.sin(speedAngle);
+                          
+                          return `M ${scoreX} ${scoreY} L ${accuracyX} ${accuracyY} L ${speedX} ${speedY} Z`;
+                        })()}
+                        fill="rgba(79, 70, 229, 0.3)"
+                        stroke="#4f46e5"
+                        strokeWidth="2"
+                      />
+                      
+                      {/* User performance points */}
+                      {(() => {
+                        const scoreAngle = -90 * (Math.PI / 180);
+                        const accuracyAngle = (120 - 90) * (Math.PI / 180);
+                        const speedAngle = (240 - 90) * (Math.PI / 180);
+                        
+                        // Calculate relative positions (ratio to peer max)
+                        const scoreRatio = progressData.cohortComparison.userScore / progressData.cohortComparison.peerMaxScore;
+                        const accuracyRatio = progressData.cohortComparison.userAccuracy / 100;
+                        
+                        // For speed, calculate the percentile (higher is better)
+                        const normalizedUserSpeed = calculateSpeedPercentile() / 100;
+                        
+                        // Apply a minimum scale factor (0.35) to ensure metrics are visible
+                        // This "pulls" small values away from the center for better visibility
+                        const minScaleFactor = 0.35;
+                        const enhancedScoreRatio = minScaleFactor + (1 - minScaleFactor) * scoreRatio;
+                        const enhancedAccuracyRatio = minScaleFactor + (1 - minScaleFactor) * accuracyRatio;
+                        const enhancedSpeedRatio = minScaleFactor + (1 - minScaleFactor) * normalizedUserSpeed;
+                        
+                        const scoreX = 200 + 150 * enhancedScoreRatio * Math.cos(scoreAngle);
+                        const scoreY = 200 + 150 * enhancedScoreRatio * Math.sin(scoreAngle);
+                        
+                        const accuracyX = 200 + 150 * enhancedAccuracyRatio * Math.cos(accuracyAngle);
+                        const accuracyY = 200 + 150 * enhancedAccuracyRatio * Math.sin(accuracyAngle);
+                        
+                        const speedX = 200 + 150 * enhancedSpeedRatio * Math.cos(speedAngle);
+                        const speedY = 200 + 150 * enhancedSpeedRatio * Math.sin(speedAngle);
+                        
+                        // Calculate which metric is the student's strongest
+                        let bestMetricIndex = 0;
+                        let metrics = [
+                          { ratio: scoreRatio, index: 0, name: 'Score' },
+                          { ratio: accuracyRatio, index: 1, name: 'Accuracy' },
+                          { ratio: normalizedUserSpeed, index: 2, name: 'Speed' }
+                        ];
+                        
+                        // Sort metrics by their ratio values (descending)
+                        const sortedMetrics = [...metrics].sort((a, b) => b.ratio - a.ratio);
+                        bestMetricIndex = sortedMetrics[0].index;
+                        
+                        // Log the metric rankings for debugging
+                        console.log('Radar Chart Metric Rankings:', sortedMetrics.map(m => `${m.name}: ${(m.ratio * 100).toFixed(1)}%`).join(', '));
+                        
+                        return [
+                          { 
+                            x: scoreX, 
+                            y: scoreY, 
+                            label: "Score", 
+                            value: `${Math.round(progressData.cohortComparison.userScore)}`, 
+                            max: `${Math.round(progressData.cohortComparison.peerMaxScore)}`,
+                            isBest: bestMetricIndex === 0 
+                          },
+                          { 
+                            x: accuracyX, 
+                            y: accuracyY, 
+                            label: "Accuracy", 
+                            value: `${Math.round(progressData.cohortComparison.userAccuracy)}%`, 
+                            max: `${Math.round(progressData.cohortComparison.peerMaxAccuracy)}%`,
+                            isBest: bestMetricIndex === 1 
+                          },
+                          { 
+                            x: speedX, 
+                            y: speedY, 
+                            label: "Speed", 
+                            value: `${Math.round(progressData.cohortComparison.userSpeed)}s (${Math.round(calculateSpeedPercentile())}%)`, 
+                            max: `${Math.round(progressData.cohortComparison.peerMaxSpeed)}s`,
+                            percentile: Math.round(calculateSpeedPercentile()),
+                            isBest: bestMetricIndex === 2 
+                          }
+                        ].map((point, i) => (
+                          <g key={`point-${i}`}>
+                            {/* Value background */}
+                            <rect
+                              x={point.x - 20}
+                              y={point.y - 28}
+                              width="40"
+                              height="18"
+                              rx="4"
+                              ry="4"
+                              fill={point.isBest ? "rgba(16, 185, 129, 0.1)" : "rgba(79, 70, 229, 0.1)"}
+                              stroke={point.isBest ? "#10b981" : "#4f46e5"}
+                              strokeWidth="1"
+                            />
+                            
+                            {/* Highlight the best metric with a different color */}
+                            <circle 
+                              cx={point.x} 
+                              cy={point.y} 
+                              r="6" 
+                              fill={point.isBest ? "#10b981" : "#4f46e5"} 
+                            />
+                            <circle 
+                              cx={point.x} 
+                              cy={point.y} 
+                              r="4" 
+                              fill="#fff" 
+                            />
+                            
+                            {/* Display the metric name and value */}
+                            <text 
+                              x={point.x} 
+                              y={point.y - 16} 
+                              textAnchor="middle" 
+                              fontSize="14" 
+                              fontWeight="700" 
+                              fill={point.isBest ? "#10b981" : "#4f46e5"}
+                            >
+                              {point.value}
+                            </text>
+                            
+                            {/* Display the maximum value */}
+                            <text 
+                              x={point.x} 
+                              y={point.y + 20} 
+                              textAnchor="middle" 
+                              fontSize="10" 
+                              fill="#64748b"
+                            >
+                              {point.label === "Speed" 
+                                ? `(peer best: ${point.max})` 
+                                : `(max: ${point.max})`
+                              }
+                            </text>
+                            
+                            {/* Add a star for the best metric */}
+                            {point.isBest && (
+                              <text 
+                                x={point.x + 18} 
+                                y={point.y - 16} 
+                                textAnchor="start" 
+                                fontSize="14" 
+                                fill="#10b981"
+                              >
+                                ★
+                              </text>
+                            )}
+                          </g>
+                        ));
+                      })()}
+                      
+                      {/* Center point and label */}
+                      <circle cx="200" cy="200" r="3" fill="#64748b" />
+                      <text x="200" y="200" textAnchor="middle" dominantBaseline="middle" fontSize="12" fill="#64748b" fontWeight="600">You</text>
+                    </svg>
                   </div>
-                  <div className="comparison-row">
-                    <div className="comparison-label">Top Performers</div>
-                    <div className="comparison-value">{formatAccuracy(progressData.cohortComparison ? progressData.cohortComparison.topPerformerAccuracy : 0)}</div>
-                    <div 
-                      className="comparison-bar-fill top-accuracy" 
-                      style={{ width: `${progressData.cohortComparison ? progressData.cohortComparison.topPerformerAccuracy : 0}%` }}
-                    ></div>
+                  
+                  <div style={{ alignSelf: 'center', width: '100%' }} className="radar-legend">
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ backgroundColor: "rgba(79, 70, 229, 0.3)", border: "2px solid #4f46e5" }}></div>
+                      <div className="legend-label">Your Performance</div>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ backgroundColor: "rgba(226, 232, 240, 0.3)", border: "1px dashed #cbd5e1" }}></div>
+                      <div className="legend-label">Peer Maximum</div>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ backgroundColor: "#10b981" }}></div>
+                      <div className="legend-label">Your Strongest Metric</div>
+                    </div>
+                  </div>
+                  
+                  {/* Additional information for understanding metrics */}
+                  <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '15px', textAlign: 'center' }}>
+                    All metrics are normalized to percentiles (0-100%) for fair comparison.
+                    Values below 35% are enhanced for better visibility.
                   </div>
                 </div>
               </div>

@@ -379,52 +379,86 @@
   margin-bottom: 15px;
 }
 
-.percentile-bar-container {
-  position: relative;
-  margin-bottom: 30px;
-}
-
-.percentile-bar {
-  height: 8px;
-  background: linear-gradient(90deg, #f87171, #f59e0b, #10b981);
-  border-radius: 4px;
-  margin-bottom: 10px;
-}
-
-.percentile-marker {
-  position: absolute;
-  top: -20px;
-  transform: translateX(-50%);
-}
-
-.marker-dot {
-  width: 12px;
-  height: 12px;
-  background-color: #4f46e5;
-  border-radius: 50%;
-  margin: 0 auto 5px;
-}
-
-.marker-label {
-  font-weight: 600;
-  color: #4f46e5;
-  font-size: 0.9rem;
-}
-
-.percentile-labels {
+.best-metric-container {
   display: flex;
-  justify-content: space-between;
-  color: #64748b;
-  font-size: 0.8rem;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.best-metric-highlight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.best-metric-highlight:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.best-metric-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.best-metric-value {
+  font-size: 2rem;
+  font-weight: 800;
 }
 
 .percentile-text {
   text-align: center;
   font-weight: 600;
   color: #334155;
-  margin-top: 10px;
+  margin-top: 15px;
 }
 
+/* Radar Chart Styles */
+.radar-chart-container {
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 25px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.radar-chart-title {
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 15px;
+  text-align: left;
+  font-size: 1.1rem;
+}
+
+.radar-chart {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.radar-legend {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+  gap: 25px;
+}
+
+.radar-legend .legend-color {
+  width: 20px;
+  height: 12px;
+  border-radius: 4px;
+  margin-right: 8px;
+}
+
+/* Existing accuracy comparison styles */
 .accuracy-comparison {
   display: flex;
   flex-direction: column;
@@ -550,5 +584,16 @@
   .trend-score {
     grid-column: span 2;
     text-align: left;
+  }
+  
+  /* Radar chart responsive styles */
+  .radar-legend {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .radar-chart {
+    max-width: 300px;
   }
 }
