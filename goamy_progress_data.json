@@ -1,0 +1,103 @@
+{
+  "data": {
+    "cohortComparison": {
+      "averageAccuracy": 60,
+      "topPerformerAccuracy": 85,
+      "userAccuracy": 16.444444444444446,
+      "userPercentile": 13.155555555555559
+    },
+    "difficultyPerformance": {},
+    "overallPerformance": {
+      "accuracyPercentage": 16.444444444444446,
+      "averageScore": 4.111111111111111,
+      "totalCorrect": 37,
+      "totalProblems": 225,
+      "totalSessions": 9
+    },
+    "recentSessions": [
+      {
+        "accuracy": 16.0,
+        "completedAt": "2025-05-29T21:45:07.207Z",
+        "contest": "AMC 10A",
+        "mode": "practice",
+        "score": 4,
+        "totalAttempted": 25,
+        "year": 2022
+      },
+      {
+        "accuracy": 16.0,
+        "completedAt": "2025-05-28T11:59:24.577Z",
+        "contest": "AMC 10A",
+        "mode": "competition",
+        "score": 4,
+        "totalAttempted": 25,
+        "year": 2022
+      },
+      {
+        "accuracy": 16.0,
+        "completedAt": "2025-05-27T22:08:46.576Z",
+        "contest": "AMC 10A",
+        "mode": "competition",
+        "score": 4,
+        "totalAttempted": 25,
+        "year": 2022
+      },
+      {
+        "accuracy": 20.0,
+        "completedAt": "2025-05-27T21:29:06.855Z",
+        "contest": "AMC 10A",
+        "mode": "competition",
+        "score": 5,
+        "totalAttempted": 25,
+        "year": 2022
+      },
+      {
+        "accuracy": 20.0,
+        "completedAt": "2025-05-27T21:24:44.784Z",
+        "contest": "AMC 10A",
+        "mode": "competition",
+        "score": 5,
+        "totalAttempted": 25,
+        "year": 2022
+      }
+    ],
+    "topicPerformance": {},
+    "trendData": {
+      "accuracy": [
+        16.0,
+        16.0,
+        16.0,
+        20.0,
+        20.0,
+        24.0,
+        8.0,
+        12.0,
+        16.0
+      ],
+      "dates": [
+        "2025-05-29T21:45:07.207Z",
+        "2025-05-28T11:59:24.577Z",
+        "2025-05-27T22:08:46.576Z",
+        "2025-05-27T21:29:06.855Z",
+        "2025-05-27T21:24:44.784Z",
+        "2025-05-27T13:38:02.285Z",
+        "2025-05-26T22:10:31.165Z",
+        "2025-05-26T20:29:51.923Z",
+        "2025-05-26T19:23:35.881Z"
+      ],
+      "score": [
+        4,
+        4,
+        4,
+        5,
+        5,
+        6,
+        2,
+        3,
+        4
+      ]
+    }
+  },
+  "message": "User progress data retrieved successfully",
+  "success": true
+}
