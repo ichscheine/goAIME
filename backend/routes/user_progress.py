@@ -318,25 +318,16 @@ def register_user_progress_routes(app):
                 )
                 print(f"Speed percentile calculation: {len([speed for speed in cohort_speeds if speed > user_metrics['average_speed']])} out of {len(cohort_speeds)} are slower than {user_metrics['average_speed']} seconds")
             
-            # Step 5: Calculate peer max values (95th percentile)
-            peer_max_score = (
-                cohort_scores[int(len(cohort_scores) * 0.95)] 
-                if cohort_scores and len(cohort_scores) >= 20 
-                else (max(cohort_scores) if cohort_scores else 100)
-            )
+            # Step 5: Calculate peer max values (absolute values)
+            peer_max_score = max(cohort_scores) if cohort_scores else 100
+            peer_max_accuracy = max(cohort_accuracies) if cohort_accuracies else 100
+            # For speed, lower is better, so we use the minimum value
+            peer_max_speed = min(cohort_speeds) if cohort_speeds else 5
             
-            peer_max_accuracy = (
-                cohort_accuracies[int(len(cohort_accuracies) * 0.95)] 
-                if cohort_accuracies and len(cohort_accuracies) >= 20 
-                else (max(cohort_accuracies) if cohort_accuracies else 100)
-            )
-            
-            # For speed, lower is better, so we use the 5th percentile
-            peer_max_speed = (
-                cohort_speeds[int(len(cohort_speeds) * 0.05)] 
-                if cohort_speeds and len(cohort_speeds) >= 20 
-                else (min(cohort_speeds) if cohort_speeds else 5)
-            )
+            print(f"DEBUG: Cohort accuracy values length: {len(cohort_accuracies)}")
+            print(f"DEBUG: Cohort accuracy values: {cohort_accuracies[:10]}...") # Print just the first 10 values
+            print(f"DEBUG: Peer max accuracy: {peer_max_accuracy}")
+            print(f"DEBUG: Is peer max accuracy default value? {peer_max_accuracy == 100 and not cohort_accuracies}")
             
             # Step 6: Prepare response data
             cohort_metrics = {

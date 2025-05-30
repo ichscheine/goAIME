@@ -93,82 +93,39 @@ const ProgressTracking = ({ username }) => {
             };
           }
           
-          // Always try to fetch the cohort metrics for complete data
-          try {
-            const cohortResponse = await axios.get(`/api/cohort/metrics/${username}`);
-            console.log('Cohort metrics response:', cohortResponse.data);
+          // Add mock data for radar chart if it doesn't exist
+          if (!response.data.data.cohortComparison.userScore) {
+            console.warn('Adding mock data for radar chart');
             
-            if (cohortResponse.data && cohortResponse.data.success) {
-              // Merge cohort data with progress data
-              response.data.data.cohortComparison = {
-                ...response.data.data.cohortComparison,
-                ...cohortResponse.data.data
-              };
-              
-              console.log('Combined data with cohort metrics:', response.data.data.cohortComparison);
+            // Use the average score from overall performance for the user score
+            response.data.data.cohortComparison.userScore = response.data.data.overallPerformance.averageScore || 75;
+            
+            // Log if we have cohort metrics data available for debugging
+            console.log('Checking for speed data from API:', response.data.data.cohortComparison);
+            
+            // Get speed directly from the cohort metrics response if available, otherwise use default
+            if (response.data.data.cohortComparison.userSpeed) {
+              console.log('Using actual speed data from API:', response.data.data.cohortComparison.userSpeed);
+            } else {
+              console.warn('No speed data found, using default value');
+              response.data.data.cohortComparison.userSpeed = 45; // Mock speed in seconds
             }
-          } catch (cohortError) {
-            console.warn('Failed to fetch cohort metrics, will use basic data:', cohortError);
-          }            // Log cohort comparison data from the API
-            console.log('Cohort comparison data from API:', response.data.data.cohortComparison);
             
-            // Add missing cohort data with real values if possible
-            if (!response.data.data.cohortComparison.userScore || !response.data.data.cohortComparison.peerMaxScore) {
-              console.warn('Adding or completing cohort data');
-              
-              // Use the average score from overall performance for the user score if it doesn't exist
-              if (!response.data.data.cohortComparison.userScore) {
-                response.data.data.cohortComparison.userScore = response.data.data.overallPerformance.averageScore || 75;
-                console.log('Setting userScore from overallPerformance:', response.data.data.cohortComparison.userScore);
-              }
-              
-              // Use user accuracy from overall performance if it doesn't exist
-              if (!response.data.data.cohortComparison.userAccuracy) {
-                response.data.data.cohortComparison.userAccuracy = response.data.data.overallPerformance.accuracyPercentage || 70;
-                console.log('Setting userAccuracy from overallPerformance:', response.data.data.cohortComparison.userAccuracy);
-              }
-              
-              // Log if we have cohort metrics data available for debugging
-              console.log('Checking for speed data from API:', response.data.data.cohortComparison);
-              
-              // Get speed directly from the cohort metrics response if available, otherwise use default
-              if (!response.data.data.cohortComparison.userSpeed) {
-                if (response.data.data.overallPerformance.averageSpeed) {
-                  response.data.data.cohortComparison.userSpeed = response.data.data.overallPerformance.averageSpeed;
-                  console.log('Setting userSpeed from overallPerformance:', response.data.data.cohortComparison.userSpeed);
-                } else {
-                  console.warn('No speed data found, using default value');
-                  response.data.data.cohortComparison.userSpeed = 45; // Mock speed in seconds
-                }
-              }
-              
-              // Only use mock peer data if real data is not available
-              if (!response.data.data.cohortComparison.peerMaxScore) {
-                console.warn('Using mock peer max score');
-                response.data.data.cohortComparison.peerMaxScore = 45; // Using a more realistic value
-              }
-              
-              if (!response.data.data.cohortComparison.peerMaxAccuracy) {
-                console.warn('Using mock peer max accuracy');
-                response.data.data.cohortComparison.peerMaxAccuracy = 24; // Using a more realistic value that matches screenshot
-              }
-              
-              if (!response.data.data.cohortComparison.peerMaxSpeed) {
-                console.warn('Using mock peer max speed');
-                response.data.data.cohortComparison.peerMaxSpeed = 30; // Mock speed in seconds (lower is better)
-              }
-              
-              // Also add to overall performance if not there
-              if (!response.data.data.overallPerformance.averageSpeed) {
-                // Use the cohort metrics speed value if it exists
-                if (response.data.data.cohortComparison.userSpeed) {
-                  response.data.data.overallPerformance.averageSpeed = response.data.data.cohortComparison.userSpeed;
-                  console.log('Setting averageSpeed from cohort metrics:', response.data.data.overallPerformance.averageSpeed);
-                } else {
-                  response.data.data.overallPerformance.averageSpeed = 45;
-                }
+            response.data.data.cohortComparison.peerMaxScore = 95; 
+            response.data.data.cohortComparison.peerMaxAccuracy = 98;
+            response.data.data.cohortComparison.peerMaxSpeed = 30; // Mock speed in seconds (lower is better)
+            
+            // Also add to overall performance if not there
+            if (!response.data.data.overallPerformance.averageSpeed) {
+              // Use the cohort metrics speed value if it exists
+              if (response.data.data.cohortComparison.userSpeed) {
+                response.data.data.overallPerformance.averageSpeed = response.data.data.cohortComparison.userSpeed;
+                console.log('Setting averageSpeed from cohort metrics:', response.data.data.overallPerformance.averageSpeed);
+              } else {
+                response.data.data.overallPerformance.averageSpeed = 45;
               }
             }
+          }
           
           setProgressData(response.data.data);
         } else {
@@ -206,36 +163,31 @@ const ProgressTracking = ({ username }) => {
   
   // Calculate speed percentile (lower is better for speed, but higher percentile is better)
   const calculateSpeedPercentile = () => {
-    // If userSpeed is 0 or missing data, return a base percentile of 10
+    // If userSpeed is 0 or missing data, return 0
     if (!progressData.cohortComparison.userSpeed || !progressData.cohortComparison.peerMaxSpeed) {
       console.warn('Missing speed data for percentile calculation:', {
         userSpeed: progressData.cohortComparison.userSpeed,
         peerMaxSpeed: progressData.cohortComparison.peerMaxSpeed
       });
-      return 10; // Return a default low percentile instead of 0
+      return 0;
     }
     
     // Get the user's speed and peer max speed
-    const userSpeed = Number(progressData.cohortComparison.userSpeed);
-    const peerMaxSpeed = Number(progressData.cohortComparison.peerMaxSpeed);
+    const userSpeed = progressData.cohortComparison.userSpeed;
+    const peerMaxSpeed = progressData.cohortComparison.peerMaxSpeed;
     
     // Handle edge cases
     if (userSpeed <= 0) return 100; // Perfect speed (instant) gets 100th percentile
-    if (peerMaxSpeed <= 0) return 20; // Return a modest percentile for edge case
+    if (peerMaxSpeed <= 0) return 0; // Avoid division by zero
     
-    // If user speed is greater than peer max speed (slower), cap at 20th percentile
-    if (userSpeed > peerMaxSpeed) {
-      // Calculate a sliding scale from 5-20% based on how much slower
-      const slowFactor = Math.min(3, userSpeed / peerMaxSpeed);
-      return Math.max(5, Math.round(20 - ((slowFactor - 1) * 5)));
-    }
-    
-    // For users faster than peer max, calculate the percentile normally
+    // Calculate what percent of the way the user is from 0 to peerMaxSpeed
     // A lower speed is better, so we invert the ratio
-    const speedPercentile = Math.max(20, Math.min(95, 100 * (1 - (userSpeed / peerMaxSpeed))));
+    // We add a small margin (1.2 * peerMaxSpeed) to avoid extremes at the boundaries
+    // This ensures that speeds slightly above peer max don't get 0 percentile
+    const speedPercentile = Math.max(0, Math.min(100, 100 * (1 - (userSpeed / (peerMaxSpeed * 1.2)))));
     
     // Log for debugging
-    console.log(`Speed Percentile Calculation: userSpeed=${userSpeed}s, peerMaxSpeed=${peerMaxSpeed}s, percentile=${speedPercentile.toFixed(2)}%`);
+    console.log(`Speed Percentile Calculation: userSpeed=${userSpeed}s, peerMaxSpeed=${peerMaxSpeed}s, percentile=${speedPercentile.toFixed(1)}%`);
     
     return speedPercentile;
   };
@@ -266,7 +218,7 @@ const ProgressTracking = ({ username }) => {
     // Log metric rankings for debugging
     console.log('Metric Rankings:');
     sortedMetrics.forEach((metric, index) => {
-      console.log(`  ${index + 1}. ${metric.name}: ${metric.value.toFixed(2)}%`);
+      console.log(`  ${index + 1}. ${metric.name}: ${metric.value.toFixed(1)}%`);
     });
     
     // The best metric is the one with the highest value
@@ -328,20 +280,16 @@ const ProgressTracking = ({ username }) => {
                 <div className="stat-label">Problems Attempted</div>
               </div>
               <div className="overview-stat">
-                <div className="stat-value">{progressData.overallPerformance.averageScore.toFixed(2)}</div>
-                <div className="stat-label">Avg. Score / Session</div>
+                <div className="stat-value">{progressData.overallPerformance.averageScore.toFixed(1)}</div>
+                <div className="stat-label">Avg. Score</div>
               </div>              
               <div className="overview-stat">
-                <div className="stat-value">{progressData.overallPerformance.accuracyPercentage.toFixed(2)}%</div>
-                <div className="stat-label">Avg. Accuracy / Session</div>
+                <div className="stat-value">{formatAccuracy(progressData.overallPerformance.accuracyPercentage)}</div>
+                <div className="stat-label">Accuracy</div>
               </div>
               <div className="overview-stat">
-                <div className="stat-value">
-                  {isNaN(progressData.overallPerformance.averageSpeed) ? 
-                    "0s" : 
-                    `${Number(progressData.overallPerformance.averageSpeed).toFixed(0)}s`}
-                </div>
-                <div className="stat-label">Avg. Speed / Problem</div>
+                <div className="stat-value">{Number(progressData.overallPerformance.averageSpeed).toFixed(2)}</div>
+                <div className="stat-label">Avg. Speed(s)</div>
               </div>            </div>
           </div>
 
@@ -623,14 +571,15 @@ const ProgressTracking = ({ username }) => {
                         let metricColor = '#4f46e5';
                         
                         if (bestMetric === 'Score') {
-                          metricValue = `${Number(progressData.cohortComparison.userScore).toFixed(2)}/${Number(progressData.cohortComparison.peerMaxScore).toFixed(1)}`;
+                          metricValue = `${Number(progressData.cohortComparison.userScore).toFixed(1)}/${Number(progressData.cohortComparison.peerMaxScore).toFixed(1)}`;
                           metricColor = '#4f46e5';
                         } else if (bestMetric === 'Accuracy') {
-                          metricValue = `${Number(progressData.cohortComparison.userAccuracy).toFixed(2)}%`;
+                          metricValue = `${Number(progressData.cohortComparison.userAccuracy).toFixed(1)}%`;
                           metricColor = '#ffa500';
                         } else if (bestMetric === 'Speed') {
-                          // Show only the raw speed value (without percentile)
-                          metricValue = `${Number(progressData.cohortComparison.userSpeed).toFixed(0)}s`;
+                          // Show speed as both raw value and percentile rank
+                          const speedPercentile = Math.round(calculateSpeedPercentile());
+                          metricValue = `${Number(progressData.cohortComparison.userSpeed).toFixed(2)}s (${speedPercentile}%)`;
                           metricColor = '#10b981';
                         }
                         
@@ -648,21 +597,26 @@ const ProgressTracking = ({ username }) => {
                       })()}
                     </div>
                     <div className="percentile-text">
-                      You're in the top {Math.round(100 - (progressData.cohortComparison ? progressData.cohortComparison.userPercentile : 0))}% of peers
+                      You're in the top {Math.round(100 - (progressData.cohortComparison ? progressData.cohortComparison.userPercentile : 0))}% of students
                     </div>
                   </div>
                   
                   {/* Right side: Performance Metrics Comparison */}
                   <div className="radar-chart-section">
                     <div className="section-title">Performance Metrics Comparison</div>
+                    
+                    {/* Informational text about speed percentile */}
+                    <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '18px', textAlign: 'left', padding: '0 5px' }}>
+                      Note: For Speed, a lower time (seconds) is better, but a higher percentile represents better performance.
+                    </div>
                   
                   <div style={{ alignSelf: 'center', width: '100%', display: 'flex', justifyContent: 'center' }} className="radar-chart">
                     <svg width="100%" height="480" viewBox="0 0 480 480" preserveAspectRatio="xMidYMid meet">
-                      {/* Enhancement zone indicator (35% circle) */}
+                      {/* Enhancement zone indicator (65% circle) - minimum scale factor */}
                       <circle 
                         cx="240" 
                         cy="240" 
-                        r={180 * 0.35} 
+                        r={180 * 0.65} 
                         fill="rgba(226, 232, 240, 0.25)" 
                         stroke="#e2e8f0" 
                         strokeWidth="1.5" 
@@ -760,7 +714,7 @@ const ProgressTracking = ({ username }) => {
                             {/* Add max value labels below the axis labels, outside the circle */}
                             <text 
                               x={maxLabelX} 
-                              y={maxLabelY + 8} 
+                              y={maxLabelY + 16} 
                               textAnchor="middle" 
                               fontSize="10" 
                               fill="#64748b"
@@ -771,70 +725,33 @@ const ProgressTracking = ({ username }) => {
                               }}
                             >
                               {axis.label === "Speed" 
-                                ? `(peer best: ${Number(progressData.cohortComparison.peerMaxSpeed).toFixed(0)}s)` 
+                                ? `(peer best: ${Number(progressData.cohortComparison.peerMaxSpeed).toFixed(2)}s)` 
                                 : axis.label === "Accuracy" 
-                                  ? `(max: ${Number(progressData.cohortComparison.peerMaxAccuracy).toFixed(2)}%)`
-                                  : `(max: ${Number(progressData.cohortComparison.peerMaxScore).toFixed(2)})`
+                                  ? `(max: ${Number(progressData.cohortComparison.peerMaxAccuracy).toFixed(1)}%)`
+                                  : `(max: ${Number(progressData.cohortComparison.peerMaxScore).toFixed(1)})`
                               }
                             </text>
                           </g>
                         );
                       })}
                       
-                      {/* 
-                        Peer maximum area - actual peer values
-                        This area visualizes the best performance among peers at their absolute scale.
-                        Important: These values should be displayed at their actual percentages, not scaled to 100%.
-                        For example:
-                        - If the peer best accuracy is 24%, it should appear at 24% of the chart radius
-                        - If the peer best score is 45/100, it should appear at 45% of the chart radius
-                        
-                        The calculation below:
-                        1. Takes the peer max values directly from the API response
-                        2. Calculates the ratio relative to the theoretical maximum (100%)
-                        3. Uses these absolute ratios to position the triangle vertices
-                      */}
+                      {/* Peer maximum area */}
                       <path 
                         d={(() => {
                           const scoreAngle = -90 * (Math.PI / 180);
                           const accuracyAngle = (120 - 90) * (Math.PI / 180);
                           const speedAngle = (240 - 90) * (Math.PI / 180);
                           
-                          // Calculate peer maximum values as actual percentage values (not scaled to 100%)
-                          // This shows the absolute values rather than relative ones
+                          // Calculate peer maximum values as a percentage of theoretical maximum
                           const peerScoreRatio = progressData.cohortComparison.peerMaxScore / 100;
                           const peerAccuracyRatio = progressData.cohortComparison.peerMaxAccuracy / 100;
                           
-                          // For speed, calculate based on the backend-provided peer max speed
-                          // Speed is in seconds, lower is better, so we need to convert it to a ratio
-                          const peerSpeedRatio = (() => {
-                            // Get reference values for speed
-                            const bestPossibleSpeed = 5; // Theoretical best (5 seconds per problem)
-                            const worstConsideredSpeed = 60; // Theoretical worst (60 seconds per problem)
-                            const speedRange = worstConsideredSpeed - bestPossibleSpeed;
-                            
-                            // Get the peer's best speed value
-                            const peerSpeed = Number(progressData.cohortComparison.peerMaxSpeed);
-                            
-                            // Clamp the speed value to our considered range
-                            const clampedSpeed = Math.max(bestPossibleSpeed, Math.min(worstConsideredSpeed, peerSpeed));
-                            
-                            // Invert and normalize: 
-                            // - A speed of 5s (very fast) should become ~0.9-1.0 (close to max on chart)
-                            // - A speed of 60s (slow) should become ~0.1-0.2 (close to center on chart)
-                            const ratio = (worstConsideredSpeed - clampedSpeed) / speedRange;
-                            console.log(`Peer speed: ${peerSpeed}s, normalized ratio: ${ratio.toFixed(2)}`);
-                            return ratio;
-                          })();
+                          // For speed, we invert the ratio since lower is better
+                          // We'll use a normalized value (0.85) to ensure the peer maximum
+                          // is visibly distinct from the theoretical maximum
+                          const peerSpeedRatio = 0.85;
                           
-                          // Log the actual percentages used for drawing the peer triangle
-                          console.log('Peer triangle values (absolute percentages):', {
-                            score: `${(peerScoreRatio * 100).toFixed(1)}% (${progressData.cohortComparison.peerMaxScore} / 100)`,
-                            accuracy: `${(peerAccuracyRatio * 100).toFixed(1)}% (${progressData.cohortComparison.peerMaxAccuracy}%)`,
-                            speed: `${(peerSpeedRatio * 100).toFixed(1)}% (${progressData.cohortComparison.peerMaxSpeed}s)`
-                          });
-                          
-                          // Use actual ratio values directly for absolute scaling
+                          // Calculate the coordinates for peer maximum values
                           const scoreX = 240 + 180 * peerScoreRatio * Math.cos(scoreAngle);
                           const scoreY = 240 + 180 * peerScoreRatio * Math.sin(scoreAngle);
                           
@@ -911,60 +828,58 @@ const ProgressTracking = ({ username }) => {
                         });
                       })()}
                       
-                      {/* User performance area */}
-                      <path 
-                        d={(() => {
-                          const scoreAngle = -90 * (Math.PI / 180);
-                          const accuracyAngle = (120 - 90) * (Math.PI / 180);
-                          const speedAngle = (240 - 90) * (Math.PI / 180);
-                          
-                          // Calculate relative positions for Option 1 (all axes extend to 100%)
-                          // For score and accuracy, we compare to 100 as the theoretical maximum
-                          // For speed, we use the percentile which is already on a 0-100 scale
-                          const scoreRatio = progressData.cohortComparison.userScore / 100; // Compare to theoretical maximum of 100
-                          const accuracyRatio = progressData.cohortComparison.userAccuracy / 100; // Already on 0-100 scale
-                          
-                          // For speed, calculate the percentile (higher is better)
-                          const normalizedUserSpeed = calculateSpeedPercentile() / 100;
-                          
-                          // Log calculated ratios for debugging
-                          console.log('User Radar Chart Ratios (before scaling):', {
-                            score: `${(scoreRatio * 100).toFixed(1)}% (${progressData.cohortComparison.userScore} / 100)`,
-                            accuracy: `${(accuracyRatio * 100).toFixed(1)}% (${progressData.cohortComparison.userAccuracy}%)`,
-                            speed: `${(normalizedUserSpeed * 100).toFixed(1)}% (${progressData.cohortComparison.userSpeed}s, ${calculateSpeedPercentile().toFixed(1)} percentile)`
-                          });
-                          
-                          // Apply a minimum scale factor to ensure metrics are visible
-                          // This "pulls" small values away from the center for better visibility
-                          // Reduced from 0.35 to 0.05 to show more accurate percentages
-                          const minScaleFactor = 0.05;
-                          const enhancedScoreRatio = minScaleFactor + (1 - minScaleFactor) * scoreRatio;
-                          const enhancedAccuracyRatio = minScaleFactor + (1 - minScaleFactor) * accuracyRatio;
-                          const enhancedSpeedRatio = minScaleFactor + (1 - minScaleFactor) * normalizedUserSpeed;
-                          
-                          const scoreX = 240 + 180 * enhancedScoreRatio * Math.cos(scoreAngle);
-                          const scoreY = 240 + 180 * enhancedScoreRatio * Math.sin(scoreAngle);
-                          
-                          const accuracyX = 240 + 180 * enhancedAccuracyRatio * Math.cos(accuracyAngle);
-                          const accuracyY = 240 + 180 * enhancedAccuracyRatio * Math.sin(accuracyAngle);
-                          
-                          const speedX = 240 + 180 * enhancedSpeedRatio * Math.cos(speedAngle);
-                          const speedY = 240 + 180 * enhancedSpeedRatio * Math.sin(speedAngle);
-                          
-                          return `M ${scoreX} ${scoreY} L ${accuracyX} ${accuracyY} L ${speedX} ${speedY} Z`;
-                        })()}
-                        fill="rgba(79, 70, 229, 0.45)" // Increased opacity for better visibility
-                        stroke="#4f46e5"
-                        strokeWidth="2.5" // Slightly thicker stroke
-                      />
-                      
-                      {/* User performance points */}
+                      {/* Peer best value points */}
                       {(() => {
                         const scoreAngle = -90 * (Math.PI / 180);
                         const accuracyAngle = (120 - 90) * (Math.PI / 180);
                         const speedAngle = (240 - 90) * (Math.PI / 180);
                         
-                        // For Option 1, calculate relative positions based on theoretical maximums
+                        // Calculate peer maximum values as a percentage of theoretical maximum
+                        const peerScoreRatio = progressData.cohortComparison.peerMaxScore / 100;
+                        const peerAccuracyRatio = progressData.cohortComparison.peerMaxAccuracy / 100;
+                        
+                        // For speed, we use a normalized value for visualization
+                        const peerSpeedRatio = 0.85;
+                        
+                        // Calculate the coordinates for peer maximum values
+                        const scoreX = 240 + 180 * peerScoreRatio * Math.cos(scoreAngle);
+                        const scoreY = 240 + 180 * peerScoreRatio * Math.sin(scoreAngle);
+                        
+                        const accuracyX = 240 + 180 * peerAccuracyRatio * Math.cos(accuracyAngle);
+                        const accuracyY = 240 + 180 * peerAccuracyRatio * Math.sin(accuracyAngle);
+                        
+                        const speedX = 240 + 180 * peerSpeedRatio * Math.cos(speedAngle);
+                        const speedY = 240 + 180 * peerSpeedRatio * Math.sin(speedAngle);
+                        
+                        return [
+                          { x: scoreX, y: scoreY, label: "Score" },
+                          { x: accuracyX, y: accuracyY, label: "Accuracy" },
+                          { x: speedX, y: speedY, label: "Speed" }
+                        ].map((point, i) => (
+                          <g key={`peer-point-${i}`}>
+                            <circle 
+                              cx={point.x} 
+                              cy={point.y} 
+                              r="5" 
+                              fill="#94a3b8" 
+                            />
+                            <circle 
+                              cx={point.x} 
+                              cy={point.y} 
+                              r="3" 
+                              fill="#fff" 
+                            />
+                          </g>
+                        ));
+                      })()}
+                      
+                      {/* User performance area and points */}
+                      {(() => {
+                        const scoreAngle = -90 * (Math.PI / 180);
+                        const accuracyAngle = (120 - 90) * (Math.PI / 180);
+                        const speedAngle = (240 - 90) * (Math.PI / 180);
+                        
+                        // Calculate relative positions based on theoretical maximums
                         // Score - compare to max possible score of 100
                         // Accuracy - already on a 0-100 scale
                         // Speed - use percentile which is already normalized to 0-100
@@ -972,9 +887,16 @@ const ProgressTracking = ({ username }) => {
                         const accuracyRatio = progressData.cohortComparison.userAccuracy / 100;
                         const normalizedUserSpeed = calculateSpeedPercentile() / 100;
                         
-                        // Apply minimum scale factor for better visibility
-                        // Reduced from 0.35 to 0.05 to show more accurate percentages
-                        const minScaleFactor = 0.05;
+                        // Log calculated ratios for debugging
+                        console.log('Radar Chart Ratios:', {
+                          scoreRatio: scoreRatio.toFixed(3),
+                          accuracyRatio: accuracyRatio.toFixed(3),
+                          speedRatio: normalizedUserSpeed.toFixed(3)
+                        });
+                        
+                        // Apply a minimum scale factor (0.65) to ensure metrics are visible
+                        // This "pulls" small values away from the center for better visibility
+                        const minScaleFactor = 0.65;
                         const enhancedScoreRatio = minScaleFactor + (1 - minScaleFactor) * scoreRatio;
                         const enhancedAccuracyRatio = minScaleFactor + (1 - minScaleFactor) * accuracyRatio;
                         const enhancedSpeedRatio = minScaleFactor + (1 - minScaleFactor) * normalizedUserSpeed;
@@ -987,6 +909,9 @@ const ProgressTracking = ({ username }) => {
                         
                         const speedX = 240 + 180 * enhancedSpeedRatio * Math.cos(speedAngle);
                         const speedY = 240 + 180 * enhancedSpeedRatio * Math.sin(speedAngle);
+                        
+                        // First, render the triangle area
+                        const areaPath = `M ${scoreX} ${scoreY} L ${accuracyX} ${accuracyY} L ${speedX} ${speedY} Z`;
                         
                         // Calculate which metric is the student's strongest
                         let bestMetricIndex = 0;
@@ -1001,76 +926,142 @@ const ProgressTracking = ({ username }) => {
                         bestMetricIndex = sortedMetrics[0].index;
                         
                         // Log the metric rankings for debugging
-                        console.log('Radar Chart Metric Rankings:', sortedMetrics.map(m => `${m.name}: ${(m.ratio * 100).toFixed(2)}%`).join(', '));
+                        console.log('Radar Chart Metric Rankings:', sortedMetrics.map(m => `${m.name}: ${(m.ratio * 100).toFixed(1)}%`).join(', '));
                         
-                        return [
-                          { 
-                            x: scoreX, 
-                            y: scoreY, 
-                            label: "Score", 
-                            value: `${Number(progressData.cohortComparison.userScore).toFixed(2)}`, 
-                            max: `${Number(progressData.cohortComparison.peerMaxScore).toFixed(2)}`,
-                            isBest: bestMetricIndex === 0 
-                          },
-                          { 
-                            x: accuracyX, 
-                            y: accuracyY, 
-                            label: "Accuracy", 
-                            value: `${Number(progressData.cohortComparison.userAccuracy).toFixed(2)}%`, 
-                            max: `${Number(progressData.cohortComparison.peerMaxAccuracy).toFixed(2)}%`,
-                            isBest: bestMetricIndex === 1 
-                          },
-                          { 
-                            x: speedX, 
-                            y: speedY, 
-                            label: "Speed", 
-                            value: `${Number(progressData.cohortComparison.userSpeed).toFixed(0)}s`, 
-                            max: `${Number(progressData.cohortComparison.peerMaxSpeed).toFixed(0)}s`,
-                            percentile: Math.max(0, Math.round(calculateSpeedPercentile())),
-                            isBest: bestMetricIndex === 2 
-                          }
-                        ].map((point, i) => (
-                          <g key={`point-${i}`}>
-                            {/* Value background */}
-                            <rect
-                              x={point.x - 28}
-                              y={point.y - 30}
-                              width="56" // Even wider for more space
-                              height="24" // Taller for better visibility
-                              rx="6" 
-                              ry="6"
-                              fill={point.isBest ? "rgba(16, 185, 129, 0.25)" : 
-                                   point.label === "Score" ? "rgba(79, 70, 229, 0.25)" :
-                                   point.label === "Accuracy" ? "rgba(255, 165, 0, 0.25)" :
-                                   "rgba(16, 185, 129, 0.25)"} // Color-code by metric
-                              stroke={point.isBest ? "#10b981" : 
-                                     point.label === "Score" ? "#4f46e5" :
-                                     point.label === "Accuracy" ? "#ffa500" :
-                                     "#10b981"}
-                              strokeWidth={point.isBest ? "1.5" : "1"}
-                              style={{
-                                filter: point.isBest ? "drop-shadow(0px 0px 4px rgba(16, 185, 129, 0.6))" : 
-                                        "drop-shadow(0px 0px 2px rgba(0, 0, 0, 0.1))",
-                                opacity: 0.95
-                              }}
+                        return (
+                          <>
+                            {/* User performance area */}
+                            <path 
+                              d={areaPath}
+                              fill="rgba(79, 70, 229, 0.45)" // Increased opacity for better visibility
+                              stroke="#4f46e5"
+                              strokeWidth="2.5" // Slightly thicker stroke
                             />
                             
-                            {/* Highlight the best metric with a different color */}
-                            <circle 
-                              cx={point.x} 
-                              cy={point.y} 
-                              r="8" // Larger for better visibility
-                              fill={point.isBest ? "#10b981" : 
-                                   point.label === "Score" ? "#4f46e5" :
-                                   point.label === "Accuracy" ? "#ffa500" :
-                                   "#10b981"} // Color-code by metric
-                            />
-                            <circle 
-                              cx={point.x} 
-                              cy={point.y} 
-                              r="5" // Larger for better visibility
-                              fill="#fff" 
-                            />
+                            {/* User performance points */}
+                            {[
+                              { 
+                                x: scoreX, 
+                                y: scoreY, 
+                                label: "Score", 
+                                value: `${Number(progressData.cohortComparison.userScore).toFixed(1)}`, 
+                                max: `${Number(progressData.cohortComparison.peerMaxScore).toFixed(1)}`,
+                                isBest: bestMetricIndex === 0 
+                              },
+                              { 
+                                x: accuracyX, 
+                                y: accuracyY, 
+                                label: "Accuracy", 
+                                value: `${Number(progressData.cohortComparison.userAccuracy).toFixed(1)}%`, 
+                                max: `${Number(progressData.cohortComparison.peerMaxAccuracy).toFixed(1)}%`,
+                                isBest: bestMetricIndex === 1 
+                              },
+                              { 
+                                x: speedX, 
+                                y: speedY, 
+                                label: "Speed", 
+                                value: `${Number(progressData.cohortComparison.userSpeed).toFixed(2)}s (${Math.round(calculateSpeedPercentile())}%)`, 
+                                max: `${Number(progressData.cohortComparison.peerMaxSpeed).toFixed(2)}s`,
+                                percentile: Math.round(calculateSpeedPercentile()),
+                                isBest: bestMetricIndex === 2 
+                              }
+                            ].map((point, i) => (
+                              <g key={`point-${i}`}>
+                                {/* Value background */}
+                                <rect
+                                  x={point.x - 28}
+                                  y={point.y - 30}
+                                  width="56" // Even wider for more space
+                                  height="24" // Taller for better visibility
+                                  rx="6" 
+                                  ry="6"
+                                  fill={point.isBest ? "rgba(16, 185, 129, 0.25)" : 
+                                       point.label === "Score" ? "rgba(79, 70, 229, 0.25)" :
+                                       point.label === "Accuracy" ? "rgba(255, 165, 0, 0.25)" :
+                                       "rgba(16, 185, 129, 0.25)"} // Color-code by metric
+                                  stroke={point.isBest ? "#10b981" : 
+                                         point.label === "Score" ? "#4f46e5" :
+                                         point.label === "Accuracy" ? "#ffa500" :
+                                         "#10b981"}
+                                  strokeWidth={point.isBest ? "1.5" : "1"}
+                                  style={{
+                                    filter: point.isBest ? "drop-shadow(0px 0px 4px rgba(16, 185, 129, 0.6))" : 
+                                            "drop-shadow(0px 0px 2px rgba(0, 0, 0, 0.1))",
+                                    opacity: 0.95
+                                  }}
+                                />
+                                
+                                {/* Highlight the best metric with a different color */}
+                                <circle 
+                                  cx={point.x} 
+                                  cy={point.y} 
+                                  r="8" // Larger for better visibility
+                                  fill={point.isBest ? "#10b981" : 
+                                       point.label === "Score" ? "#4f46e5" :
+                                       point.label === "Accuracy" ? "#ffa500" :
+                                       "#10b981"} // Color-code by metric
+                                />
+                                <circle 
+                                  cx={point.x} 
+                                  cy={point.y} 
+                                  r="5" // Larger for better visibility
+                                  fill="#fff" 
+                                />
+                                
+                                {/* Display the metric name and value */}
+                                <text 
+                                  x={point.x} 
+                                  y={point.y - 18} 
+                                  textAnchor="middle" 
+                                  className="radar-metric-value"
+                                  fill={point.isBest ? "#10b981" : 
+                                       point.label === "Score" ? "#4f46e5" :
+                                       point.label === "Accuracy" ? "#ffa500" :
+                                       "#10b981"} // Color-code by metric
+                                  style={{
+                                    textShadow: "0px 0px 5px #fff, 0px 0px 5px #fff",
+                                    fontWeight: "700",
+                                    letterSpacing: "0.2px"
+                                  }}
+                                >
+                                  {point.value}
+                                </text>
+                                
+                                {/* Add a star or badge for the best metric */}
+                                {point.isBest && (
+                                  <g>
+                                    <rect
+                                      x={point.x + 16}
+                                      y={point.y - 30}
+                                      width="18"
+                                      height="18"
+                                      rx="9"
+                                      ry="9"
+                                      fill="#10b981"
+                                      style={{
+                                        filter: "drop-shadow(0px 0px 3px rgba(16, 185, 129, 0.8))"
+                                      }}
+                                    />
+                                    <text
+                                      x={point.x + 25}
+                                      y={point.y - 20}
+                                      textAnchor="middle"
+                                      fontSize="12"
+                                      fontWeight="bold"
+                                      fill="white"
+                                      style={{
+                                        textShadow: "0px 0px 1px rgba(0,0,0,0.3)"
+                                      }}
+                                    >
+                                      ★
+                                    </text>
+                                  </g>
+                                )}
+                              </g>
+                            ))}
+                          </>
+                        );
+                      })()}
                             
                             {/* Display the metric name and value */}
                             <text 
@@ -1128,6 +1119,7 @@ const ProgressTracking = ({ username }) => {
                       {/* Center point and label */}
                       <circle cx="240" cy="240" r="4" fill="#64748b" />
                       <circle cx="240" cy="240" r="8" fill="rgba(100, 116, 139, 0.2)" stroke="#64748b" strokeWidth="1" />
+                      <text x="240" y="240" textAnchor="middle" dominantBaseline="middle" fontSize="12" fill="#64748b" fontWeight="600">You</text>
                     </svg>
                   </div>
                   
@@ -1156,22 +1148,18 @@ const ProgressTracking = ({ username }) => {
                   <div className="non-overlapping-chart-elements" style={{ marginTop: '15px', padding: '0 5px', width: '100%' }}>
                     <p className="radar-info-text">This radar chart displays three layers of information:</p>
                     <ul style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '5px', paddingLeft: '20px' }}>
-                      <li><strong style={{ color: '#4f46e5' }}>Your Performance</strong> (innermost triangle) - Your actual metrics as a percentage of theoretical maximum</li>
-                      <li><strong style={{ color: '#94a3b8' }}>Peer Best Values</strong> (middle triangle) - Absolute best performance among your peers shown at their exact percentage values</li>
+                      <li><strong style={{ color: '#4f46e5' }}>Your Performance</strong> (innermost triangle) - Your current metrics</li>
+                      <li><strong style={{ color: '#94a3b8' }}>Peer Best Values</strong> (middle triangle) - Top performance among your peers</li>
                       <li><strong style={{ color: '#e53e3e' }}>Theoretical Maximum</strong> (outermost triangle) - 100% on all metrics</li>
                     </ul>
                     <p className="radar-info-text" style={{ marginTop: '10px' }}>
                       For reference, peer best values are: <br/>
-                      <span className="text-with-buffer">Score: {Number(progressData.cohortComparison.peerMaxScore).toFixed(0)}/25</span>, &nbsp;
-                      <span className="text-with-buffer">Accuracy: {Number(progressData.cohortComparison.peerMaxAccuracy).toFixed(2)}%</span>, &nbsp;
+                      <span className="text-with-buffer">Score: {Number(progressData.cohortComparison.peerMaxScore).toFixed(1)}/100</span>, &nbsp;
+                      <span className="text-with-buffer">Accuracy: {Number(progressData.cohortComparison.peerMaxAccuracy).toFixed(1)}%</span>, &nbsp;
                       <span className="text-with-buffer">Speed: {Number(progressData.cohortComparison.peerMaxSpeed).toFixed(2)}s</span>
                     </p>
-                    {/* Informational text about speed percentile */}
-                    <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '18px', textAlign: 'left', padding: '0 5px' }}>
-                      Note: For Speed, a lower time (seconds) is better, but a higher percentile represents better performance.
-                      The chart shows actual values at their exact scale (e.g., 24% accuracy appears at 24% of the chart radius).
-                    </div>
-                    </div>
+                    <p className="radar-info-text">Values below 65% are enhanced for better visibility.</p>
+                  </div>
                   </div>
                 </div>
               </div>

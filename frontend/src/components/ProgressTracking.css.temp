@@ -1,0 +1,54 @@
+/* Styles to prevent overlapping in radar chart */
+.radar-axis-label {
+  font-size: 14px;
+  font-weight: 600;
+  fill: #334155;
+  text-shadow: 0px 0px 5px rgba(255, 255, 255, 1), 0px 0px 5px rgba(255, 255, 255, 1);
+}
+
+.radar-axis-value {
+  font-size: 12px;
+  font-weight: 500;
+  fill: #64748b;
+  text-shadow: 0px 0px 4px rgba(255, 255, 255, 1);
+}
+
+/* Helper classes to prevent text overlap */
+.text-with-buffer {
+  position: relative;
+  z-index: 2;
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+.spacer-between-sections {
+  height: 8px;
+}
+
+/* Enhanced text content in radar chart info */
+.radar-info-text {
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+/* Fix for overlapping elements in the radar chart */
+.non-overlapping-chart-elements > * {
+  margin: 2px 0;
+}
+
+@media (max-width: 480px) {
+  .radar-axis-label {
+    font-size: 12px;
+  }
+  
+  .radar-axis-value {
+    font-size: 10px;
+  }
+  
+  .radar-chart {
+    max-width: 280px;
+  }
+}
