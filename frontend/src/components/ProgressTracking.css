@@ -274,12 +274,17 @@
 }
 
 .trend-info {
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
 
 .trend-info p {
-  color: #64748b;
-  margin: 0;
+  font-size: 0.95rem;
+  color: #475569;
+  line-height: 1.4;
+  background-color: #f8fafc;
+  border-left: 3px solid #3b82f6;
+  padding: 10px 15px;
+  border-radius: 0 4px 4px 0;
 }
 
 .time-series-chart {
@@ -1030,23 +1035,6 @@
   border-left: 4px solid #10b981;
 }
 
-/* Session Consistency container in Performance Trend */
-.session-consistency-container {
-  margin-top: 25px;
-  background-color: #f8fafc;
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  border-left: 4px solid #3b82f6;
-}
-
-.session-consistency-container h4 {
-  margin-top: 0;
-  margin-bottom: 15px;
-  font-size: 1.2rem;
-  color: #1e293b;
-}
-
 /* Percentile Rankings card */
 .percentile-card {
   border-left: 4px solid #ffa500;
@@ -1113,80 +1101,9 @@
   color: #3b82f6;
 }
 
-/* Session Consistency card styles */
-.consistency-card {
-  border-left: 4px solid #3b82f6;
-}
+/* These styles were related to the removed Session Consistency section and have been removed */
 
-.consistency-chart {
-  width: 100%;
-  margin: 5px 0 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background-color: rgba(255, 255, 255, 0.6);
-  border-radius: 8px;
-  padding: 10px;
-  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.02);
-}
-
-.consistency-score {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 15px;
-  width: 100%;
-}
-
-.consistency-value {
-  font-size: 2.2rem;
-  font-weight: 700;
-  line-height: 1;
-  margin-bottom: 5px;
-}
-
-.consistency-label {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-bottom: 10px;
-}
-
-.consistency-meter {
-  width: 90%;
-  margin: 5px 0;
-}
-
-.meter-background {
-  width: 100%;
-  height: 10px;
-  background-color: #e2e8f0;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.meter-fill {
-  height: 100%;
-  border-radius: 10px;
-  transition: width 0.8s ease-in-out;
-}
-
-.consistency-description {
-  font-size: 0.8rem;
-  color: #64748b;
-  text-align: center;
-  margin-top: 8px;
-  margin-bottom: 10px;
-  padding: 0 5px;
-}
-
-.consistency-tips {
-  width: 90%;
-  background-color: #f8fafc;
-  border-radius: 6px;
-  padding: 10px;
-  font-size: 0.85rem;
-}
-
+/* Tip header styles - reused in other sections */
 .tip-header {
   display: flex;
   align-items: center;
@@ -1612,8 +1529,42 @@ circle[r="5"] {
   }
 }
 
-@media (max-width: 480px) {
-  .radar-chart {
-    max-width: 280px;
-  }
+/* Mean and confidence interval styles */
+.confidence-area {
+  opacity: 0.2;
+}
+
+.mean-line {
+  stroke-dasharray: 5,3;
+  stroke-width: 2;
+}
+
+.trend-statistics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-top: 15px;
+  padding: 15px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  justify-content: center;
+}
+
+.trend-stat {
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  align-items: center;
+  text-align: center;
+}
+
+.trend-stat-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.trend-stat-label {
+  font-size: 0.8rem;
+  color: #64748b;
 }

@@ -262,7 +262,7 @@ const ProgressTracking = ({ username }) => {
             ) : (
               <div className="trend-chart">
                 <div className="trend-info">
-                  <p>This chart shows your performance trend over your recent sessions.</p>
+                  <p>This chart shows your performance trend over your {progressData.trendData.dates.length} most recent sessions. Statistics calculated from these {progressData.trendData.dates.length} sessions may differ from overall lifetime averages.</p>
                 </div>
                 <div className="time-series-chart">
                   <svg width="100%" height="500" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet">
@@ -363,6 +363,59 @@ const ProgressTracking = ({ username }) => {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         />
+                        
+                        {/* Score mean line */}
+                        {(() => {
+                          const scoreValues = progressData.trendData.score;
+                          if (scoreValues.length === 0) return null;
+                          
+                          // Calculate mean score
+                          const mean = scoreValues.reduce((sum, val) => sum + val, 0) / scoreValues.length;
+                          const maxScore = Math.max(...scoreValues);
+                          const y = 420 - (mean * (380 / (maxScore || 1)));
+                          
+                          return (
+                            <line 
+                              x1="70" 
+                              y1={y} 
+                              x2="930" 
+                              y2={y} 
+                              stroke="#4f46e5" 
+                              className="mean-line" 
+                            />
+                          );
+                        })()}
+                        
+                        {/* Score confidence interval area */}
+                        {(() => {
+                          const scoreValues = progressData.trendData.score;
+                          if (scoreValues.length < 3) return null;
+                          
+                          // Calculate mean and standard deviation
+                          const mean = scoreValues.reduce((sum, val) => sum + val, 0) / scoreValues.length;
+                          const variance = scoreValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / scoreValues.length;
+                          const stdDev = Math.sqrt(variance);
+                          
+                          // 95% confidence interval = mean ± 1.96 * (stdDev / sqrt(n))
+                          const confidenceFactor = 1.96 * (stdDev / Math.sqrt(scoreValues.length));
+                          const upperCI = mean + confidenceFactor;
+                          const lowerCI = Math.max(0, mean - confidenceFactor);
+                          
+                          const maxScore = Math.max(...scoreValues);
+                          const upperY = 420 - (upperCI * (380 / (maxScore || 1)));
+                          const lowerY = 420 - (lowerCI * (380 / (maxScore || 1)));
+                          
+                          return (
+                            <rect 
+                              x="70" 
+                              y={upperY} 
+                              width="860" 
+                              height={lowerY - upperY} 
+                              fill="#4f46e5" 
+                              className="confidence-area" 
+                            />
+                          );
+                        })()}
 
                         {/* Accuracy line (secondary metric) */}
                         <path 
@@ -381,6 +434,57 @@ const ProgressTracking = ({ username }) => {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         />
+                        
+                        {/* Accuracy mean line */}
+                        {(() => {
+                          const accuracyValues = progressData.trendData.accuracy;
+                          if (accuracyValues.length === 0) return null;
+                          
+                          // Calculate mean accuracy
+                          const mean = accuracyValues.reduce((sum, val) => sum + val, 0) / accuracyValues.length;
+                          const y = 420 - (mean * 3.8);
+                          
+                          return (
+                            <line 
+                              x1="70" 
+                              y1={y} 
+                              x2="930" 
+                              y2={y} 
+                              stroke="#ffa500" 
+                              className="mean-line" 
+                            />
+                          );
+                        })()}
+                        
+                        {/* Accuracy confidence interval area */}
+                        {(() => {
+                          const accuracyValues = progressData.trendData.accuracy;
+                          if (accuracyValues.length < 3) return null;
+                          
+                          // Calculate mean and standard deviation
+                          const mean = accuracyValues.reduce((sum, val) => sum + val, 0) / accuracyValues.length;
+                          const variance = accuracyValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / accuracyValues.length;
+                          const stdDev = Math.sqrt(variance);
+                          
+                          // 95% confidence interval = mean ± 1.96 * (stdDev / sqrt(n))
+                          const confidenceFactor = 1.96 * (stdDev / Math.sqrt(accuracyValues.length));
+                          const upperCI = Math.min(100, mean + confidenceFactor);
+                          const lowerCI = Math.max(0, mean - confidenceFactor);
+                          
+                          const upperY = 420 - (upperCI * 3.8);
+                          const lowerY = 420 - (lowerCI * 3.8);
+                          
+                          return (
+                            <rect 
+                              x="70" 
+                              y={upperY} 
+                              width="860" 
+                              height={lowerY - upperY} 
+                              fill="#ffa500" 
+                              className="confidence-area" 
+                            />
+                          );
+                        })()}
                         
                         {/* Score data points */}
                         {progressData.trendData.score.map((score, i) => {
@@ -503,7 +607,64 @@ const ProgressTracking = ({ username }) => {
                       <div className="legend-color" style={{ backgroundColor: "#ffa500" }}></div>
                       <div className="legend-label">Accuracy (%)</div>
                     </div>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ backgroundColor: "#4f46e5", opacity: "0.2" }}></div>
+                      <div className="legend-label">95% Confidence Interval</div>
+                    </div>
+                    <div className="legend-item">
+                      <div style={{ width: "20px", height: "2px", backgroundColor: "#4f46e5", margin: "8px 0", backgroundImage: "linear-gradient(to right, #4f46e5 50%, transparent 50%)", backgroundSize: "8px 100%" }}></div>
+                      <div className="legend-label">Mean Value</div>
+                    </div>
                   </div>
+                  
+                  {/* User metrics statistics */}
+                  {(() => {
+                    const scoreValues = progressData.trendData.score;
+                    const accuracyValues = progressData.trendData.accuracy;
+                    
+                    if (scoreValues.length === 0 || accuracyValues.length === 0) return null;
+                    
+                    // Calculate score statistics
+                    const scoreMean = scoreValues.reduce((sum, val) => sum + val, 0) / scoreValues.length;
+                    const scoreVariance = scoreValues.reduce((sum, val) => sum + Math.pow(val - scoreMean, 2), 0) / scoreValues.length;
+                    const scoreStdDev = Math.sqrt(scoreVariance);
+                    const scoreCI = 1.96 * (scoreStdDev / Math.sqrt(scoreValues.length));
+                    
+                    // Calculate accuracy statistics
+                    const accuracyMean = accuracyValues.reduce((sum, val) => sum + val, 0) / accuracyValues.length;
+                    const accuracyVariance = accuracyValues.reduce((sum, val) => sum + Math.pow(val - accuracyMean, 2), 0) / accuracyValues.length;
+                    const accuracyStdDev = Math.sqrt(accuracyVariance);
+                    const accuracyCI = 1.96 * (accuracyStdDev / Math.sqrt(accuracyValues.length));
+                    
+                    return (
+                      <div className="trend-statistics">
+                        <div className="trend-stat">
+                          <div className="trend-stat-value">{scoreMean.toFixed(1)}</div>
+                          <div className="trend-stat-label">Mean Score</div>
+                        </div>
+                        <div className="trend-stat">
+                          <div className="trend-stat-value">±{scoreCI.toFixed(1)}</div>
+                          <div className="trend-stat-label">Score 95% CI</div>
+                        </div>
+                        <div className="trend-stat">
+                          <div className="trend-stat-value">{accuracyMean.toFixed(1)}%</div>
+                          <div className="trend-stat-label">Mean Accuracy</div>
+                        </div>
+                        <div className="trend-stat">
+                          <div className="trend-stat-value">±{accuracyCI.toFixed(1)}%</div>
+                          <div className="trend-stat-label">Accuracy 95% CI</div>
+                        </div>
+                        <div className="trend-stat">
+                          <div className="trend-stat-value">{scoreStdDev.toFixed(1)}</div>
+                          <div className="trend-stat-label">Score Std Dev</div>
+                        </div>
+                        <div className="trend-stat">
+                          <div className="trend-stat-value">{accuracyStdDev.toFixed(1)}%</div>
+                          <div className="trend-stat-label">Accuracy Std Dev</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             )}
