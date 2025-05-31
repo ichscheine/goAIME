@@ -3,7 +3,6 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { useEffect as useEffectDebug } from 'react';
 import './ProgressTracking.css';
-import './consolidated-comparison.css';
 
 const ProgressTracking = ({ username }) => {
   const [loading, setLoading] = useState(true);
@@ -784,7 +783,7 @@ const ProgressTracking = ({ username }) => {
                     
                     {/* Percentile Ranking card - NEW SECTION */}
                     <div className="metric-card percentile-card">
-                      <div className="section-title">Your Percentile Rankings</div>
+                      <div className="section-title">Your Current Rankings</div>
                       
                       <div className="percentile-rankings">
                         {(() => {
@@ -875,22 +874,26 @@ const ProgressTracking = ({ username }) => {
                             opacity={scale === 1 ? 0.9 : 0.7} 
                           />
                           {scale === 0.25 && (
-                            <text x="270" y={264 - (198 * scale)} textAnchor="start" fontSize="11" fill="#94a3b8" opacity="0.9" fontWeight="600">
+                            <text x="270" y={264 - (198 * scale)} textAnchor="start" fontSize="13" fill="#64748b" opacity="1" fontWeight="600"
+                              style={{ textShadow: "0px 0px 3px #ffffff, 0px 0px 3px #ffffff" }}>
                               {Math.round(scale * 100)}%
                             </text>
                           )}
                           {scale === 0.5 && (
-                            <text x="270" y={264 - (198 * scale)} textAnchor="start" fontSize="11" fill="#94a3b8" opacity="0.9" fontWeight="600">
+                            <text x="270" y={264 - (198 * scale)} textAnchor="start" fontSize="13" fill="#64748b" opacity="1" fontWeight="600"
+                              style={{ textShadow: "0px 0px 3px #ffffff, 0px 0px 3px #ffffff" }}>
                               {Math.round(scale * 100)}%
                             </text>
                           )}
                           {scale === 0.75 && (
-                            <text x="270" y={264 - (198 * scale)} textAnchor="start" fontSize="11" fill="#94a3b8" opacity="0.9" fontWeight="600">
+                            <text x="270" y={264 - (198 * scale)} textAnchor="start" fontSize="13" fill="#64748b" opacity="1" fontWeight="600"
+                              style={{ textShadow: "0px 0px 3px #ffffff, 0px 0px 3px #ffffff" }}>
                               {Math.round(scale * 100)}%
                             </text>
                           )}
                           {scale === 1 && (
-                            <text x="270" y={264 - (198 * scale)} textAnchor="start" fontSize="11" fill="#94a3b8" opacity="0.9" fontWeight="600">
+                            <text x="270" y={264 - (198 * scale)} textAnchor="start" fontSize="13" fill="#64748b" opacity="1" fontWeight="600"
+                              style={{ textShadow: "0px 0px 3px #ffffff, 0px 0px 3px #ffffff" }}>
                               100%
                             </text>
                           )}
@@ -952,7 +955,7 @@ const ProgressTracking = ({ username }) => {
                               x={maxLabelX} 
                               y={maxLabelY + 8} 
                               textAnchor="middle" 
-                              fontSize="10" 
+                              fontSize="11" 
                               fill="#64748b"
                               className="radar-axis-value"
                               style={{
