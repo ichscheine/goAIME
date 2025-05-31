@@ -1,0 +1,83 @@
+/* Merged comparison container styles */
+.comparison-container {
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  padding: 30px 25px;
+  margin-bottom: 30px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+  text-align: left;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 25px;
+}
+
+@media (min-width: 992px) {
+  .comparison-container {
+    grid-template-columns: 300px 1fr;
+    align-items: start;
+  }
+}
+
+.best-metric-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.best-metric-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 15px;
+  width: 100%;
+}
+
+.radar-chart-section {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.section-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.best-metric-highlight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  background-color: rgba(245, 247, 250, 0.9);
+  padding: 18px 20px;
+  border-radius: 10px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+  margin: 12px 0;
+  width: 100%;
+  border-left: 4px solid #4f46e5;
+}
+
+.percentile-text {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin-top: 5px;
+  font-weight: 500;
+  text-align: left;
+}
+
+/* Add these for better visual styling */
+.text-with-buffer {
+  position: relative;
+  z-index: 2;
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 3px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  margin: 2px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  font-weight: 500;
+}

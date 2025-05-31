@@ -1,9 +1,10 @@
 #!/bin/bash
 
-# This script tests the fix for the radar chart visualization to ensure
-# peer best values appear at their absolute positions
+# This script tests the fix for the radar chart visualization and layout issues:
+# 1. Ensures peer best values appear at their absolute positions
+# 2. Fixes the radar chart left border overlapping with left boxes
 
-echo "Testing radar chart visualization fix..."
+echo "Testing radar chart visualization and layout fixes..."
 
 # Start the backend server in a separate terminal
 echo "Starting the backend server in a new terminal window..."
@@ -29,9 +30,12 @@ echo "================================================================="
 echo "1. Open a browser and navigate to http://localhost:3000"
 echo "2. Login with username 'goAmy' (or any user with progress data)"
 echo "3. Navigate to the Progress Dashboard"
-echo "4. Check the radar chart - peer best values should appear at their actual percentages"
-echo "   - E.g., 24% accuracy should appear at 24% of the chart radius"
-echo "5. Verify through the browser console that the correct values are being logged:"
+echo "4. Verify the radar chart fixes:"
+echo "   a. Check that the radar chart's left border is not overlapping with left boxes"
+echo "   b. Verify that peer best values appear at their actual percentages"
+echo "   c. Ensure labels and points are properly positioned within the chart"
+echo "5. Test responsiveness by resizing the browser window"
+echo "6. Verify through the browser console that the correct values are being logged:"
 echo "   - Look for 'Peer triangle values (absolute percentages):' log entry"
 echo "================================================================="
 echo ""

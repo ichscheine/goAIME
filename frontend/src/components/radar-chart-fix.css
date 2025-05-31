@@ -1,0 +1,41 @@
+/* Additional fixes to prevent radar chart overlap with left boxes */
+.radar-chart-section {
+    margin-left: 10px !important;
+    padding-left: 12px !important;
+    width: calc(100% - 12px) !important;
+    box-sizing: border-box !important;
+}
+
+/* Push all SVG elements slightly to the right */
+.radar-chart svg text,
+.radar-chart svg circle,
+.radar-chart svg rect,
+.radar-chart svg path,
+.radar-chart svg line {
+    transform: translateX(10px);
+    -webkit-transform: translateX(10px); /* Safari compatibility */
+    -ms-transform: translateX(10px); /* IE compatibility */
+}
+
+/* Fix potential overflow issues */
+.radar-chart-section {
+    overflow: visible !important;
+}
+
+/* Add some additional padding to percentile card */
+.metric-card.percentile-card {
+    padding-right: 5px !important;
+}
+
+/* Adjust container spacing */
+.comparison-container {
+    column-gap: 25px !important;
+}
+
+/* Ensure the radar chart is smaller on medium screens */
+@media (max-width: 1100px) and (min-width: 992px) {
+    .radar-chart svg {
+        width: 95% !important;
+        margin-left: 15px !important;
+    }
+}

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { useEffect as useEffectDebug } from 'react';
 import './ProgressTracking.css';
+import './consolidated-comparison.css';
 
 const ProgressTracking = ({ username }) => {
   const [loading, setLoading] = useState(true);
@@ -628,6 +629,88 @@ const ProgressTracking = ({ username }) => {
                 </div>
               </div>
             )}
+            
+            {/* Session Consistency Card - Moved from Comparison section */}
+            {progressData.trendData && progressData.trendData.accuracy && progressData.trendData.accuracy.length > 1 ? (
+              <div className="session-consistency-container">
+                <h4>Session Consistency</h4>
+                <div className="consistency-chart">
+                  <div className="consistency-score">
+                    {(() => {
+                      // Calculate consistency score based on variance in performance
+                      const recentAccuracy = progressData.trendData.accuracy.slice(-5);
+                      if (recentAccuracy.length < 2) return "N/A";
+                      
+                      // Calculate the standard deviation of recent accuracy scores
+                      const mean = recentAccuracy.reduce((sum, val) => sum + val, 0) / recentAccuracy.length;
+                      const variance = recentAccuracy.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / recentAccuracy.length;
+                      const stdDev = Math.sqrt(variance);
+                      
+                      // Convert to a 0-100 consistency score (lower std dev = higher consistency)
+                      // Max std dev we'd expect is around 30 (for wildly inconsistent performance)
+                      const maxStdDev = 30;
+                      const consistencyScore = Math.max(0, Math.min(100, 100 - (stdDev / maxStdDev * 100)));
+                      
+                      // Determine consistency level
+                      let consistencyLevel = "Needs Work";
+                      let levelColor = "#ef4444";
+                      
+                      if (consistencyScore >= 85) {
+                        consistencyLevel = "Excellent";
+                        levelColor = "#10b981";
+                      } else if (consistencyScore >= 70) {
+                        consistencyLevel = "Good";
+                        levelColor = "#22c55e";
+                      } else if (consistencyScore >= 50) {
+                        consistencyLevel = "Fair";
+                        levelColor = "#f59e0b";
+                      }
+                      
+                      return (
+                        <>
+                          <div className="consistency-value" style={{ color: levelColor }}>
+                            {Math.round(consistencyScore)}%
+                          </div>
+                          <div className="consistency-label" style={{ color: levelColor }}>
+                            {consistencyLevel}
+                          </div>
+                          <div className="consistency-meter">
+                            <div className="meter-background">
+                              <div 
+                                className="meter-fill" 
+                                style={{ 
+                                  width: `${consistencyScore}%`,
+                                  backgroundColor: levelColor
+                                }}
+                              ></div>
+                            </div>
+                          </div>
+                          <div className="consistency-description">
+                            <span>Consistency measures how stable your performance is from session to session.</span>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  
+                  <div className="consistency-tips">
+                    <div className="tip-header">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                      </svg>
+                      <span>Improvement Tips</span>
+                    </div>
+                    <ul className="tip-list">
+                      <li>Maintain a regular practice schedule</li>
+                      <li>Review mistakes after each session</li>
+                      <li>Focus on understanding concepts, not just answers</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           {/* Cohort Comparison Section */}
@@ -680,168 +763,82 @@ const ProgressTracking = ({ username }) => {
                         })()}
                       </div>
                       <div className="percentile-text">
-                        You're in the top {Math.round(100 - (progressData.cohortComparison ? progressData.cohortComparison.userPercentile : 0))}% of peers
+                        {(() => {
+                          const bestMetric = findBestMetric();
+                          let percentile = 0;
+                          
+                          if (bestMetric === 'Score') {
+                            percentile = progressData.cohortComparison.userScorePercentile || 
+                              Math.round((progressData.cohortComparison.userScore / progressData.cohortComparison.peerMaxScore) * 100);
+                          } else if (bestMetric === 'Accuracy') {
+                            percentile = progressData.cohortComparison.userAccuracyPercentile || 
+                              Math.round((progressData.cohortComparison.userAccuracy / progressData.cohortComparison.peerMaxAccuracy) * 100);
+                          } else if (bestMetric === 'Speed') {
+                            percentile = progressData.cohortComparison.userSpeedPercentile || calculateSpeedPercentile();
+                          }
+                          
+                          return `Your percentile: ${Math.round(percentile)}%`;
+                        })()}
                       </div>
                     </div>
                     
-                    {/* Your Improvement Trend - NEW SECTION */}
-                    <div className="metric-card improvement-trend-card">
-                      <div className="section-title">Your Improvement Trend</div>
+                    {/* Percentile Ranking card - NEW SECTION */}
+                    <div className="metric-card percentile-card">
+                      <div className="section-title">Your Percentile Rankings</div>
                       
-                      {progressData.trendData && progressData.trendData.accuracy && progressData.trendData.accuracy.length > 1 ? (
-                        <div className="improvement-trend-chart">
-                        <svg width="100%" height="180" viewBox="0 0 280 180" preserveAspectRatio="xMidYMid meet">
-                          {/* Background */}
-                          <rect x="30" y="20" width="220" height="120" fill="#f8fafc" rx="6" ry="6" />
+                      <div className="percentile-rankings">
+                        {(() => {
+                          // Get percentiles
+                          const scorePercentile = progressData.cohortComparison.userScorePercentile || 
+                            Math.round((progressData.cohortComparison.userScore / progressData.cohortComparison.peerMaxScore) * 100);
                           
-                          {/* Axes */}
-                          <line x1="30" y1="140" x2="250" y2="140" stroke="#cbd5e1" strokeWidth="1.5" />
-                          <line x1="30" y1="20" x2="30" y2="140" stroke="#cbd5e1" strokeWidth="1.5" />
+                          const accuracyPercentile = progressData.cohortComparison.userAccuracyPercentile || 
+                            Math.round((progressData.cohortComparison.userAccuracy / progressData.cohortComparison.peerMaxAccuracy) * 100);
                           
-                          {/* Horizontal grid lines */}
-                          <line x1="30" y1="80" x2="250" y2="80" stroke="#e2e8f0" strokeWidth="0.75" strokeDasharray="3,3" />
-                          <line x1="30" y1="110" x2="250" y2="110" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="2,2" />
-                          <line x1="30" y1="50" x2="250" y2="50" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="2,2" />
+                          const speedPercentile = progressData.cohortComparison.userSpeedPercentile || 
+                            calculateSpeedPercentile();
                           
-                          {/* Calculate recent trend direction */}
-                          {(() => {
-                            const recentScores = progressData.trendData.score.slice(-5);
-                            if (recentScores.length < 2) return null;
-                            
-                            const firstScore = recentScores[0];
-                            const lastScore = recentScores[recentScores.length - 1];
-                            const trendDirection = lastScore > firstScore ? "up" : lastScore < firstScore ? "down" : "stable";
-                            const trendColor = trendDirection === "up" ? "#10b981" : 
-                                             trendDirection === "down" ? "#ef4444" : "#4f46e5";
-                            
-                            // Add trend indicator
-                            return (
-                              <g>
-                                {trendDirection !== "stable" && (
-                                  <path 
-                                    d={trendDirection === "up" 
-                                      ? "M 240,40 L 247,47 L 233,47 Z" // Up triangle
-                                      : "M 240,47 L 247,40 L 233,40 Z" // Down triangle
-                                    }
-                                    fill={trendColor}
-                                  />
-                                )}
-                                <text
-                                  x="240"
-                                  y="30"
-                                  textAnchor="middle"
-                                  fontSize="10"
-                                  fontWeight="bold"
-                                  fill={trendColor}
-                                >
-                                  {trendDirection === "up" ? "IMPROVING" : 
-                                   trendDirection === "down" ? "DECLINING" : "STABLE"}
-                                </text>
-                              </g>
-                            );
-                          })()}
-                          
-                          {/* Area under the curve */}
-                          <path 
-                            d={(() => {
-                              const recentScores = progressData.trendData.score.slice(-5);
-                              if (recentScores.length < 2) return "";
+                          return (
+                            <>
+                              {/* Score percentile */}
+                              <div className="percentile-item">
+                                <div className="percentile-label">Score</div>
+                                <div className="percentile-bar-container">
+                                  <div className="percentile-bar" style={{ width: `${scorePercentile}%`, backgroundColor: "#4f46e5" }}></div>
+                                </div>
+                                <div className="percentile-value">{Math.round(scorePercentile)}%</div>
+                              </div>
                               
-                              const dataLength = recentScores.length;
-                              const xStep = 220 / (dataLength - 1 || 1);
-                              const maxScore = Math.max(...recentScores);
+                              {/* Accuracy percentile */}
+                              <div className="percentile-item">
+                                <div className="percentile-label">Accuracy</div>
+                                <div className="percentile-bar-container">
+                                  <div className="percentile-bar" style={{ width: `${accuracyPercentile}%`, backgroundColor: "#ffa500" }}></div>
+                                </div>
+                                <div className="percentile-value">{Math.round(accuracyPercentile)}%</div>
+                              </div>
                               
-                              let path = "";
+                              {/* Speed percentile */}
+                              <div className="percentile-item">
+                                <div className="percentile-label">Speed</div>
+                                <div className="percentile-bar-container">
+                                  <div className="percentile-bar" style={{ width: `${speedPercentile}%`, backgroundColor: "#10b981" }}></div>
+                                </div>
+                                <div className="percentile-value">{Math.round(speedPercentile)}%</div>
+                              </div>
                               
-                              // Start at the bottom left
-                              path += `M 30,140 `;
-                              
-                              // Add points along the curve
-                              recentScores.forEach((score, i) => {
-                                const x = 30 + (i * xStep);
-                                const y = 140 - (score * (120 / (maxScore || 1)));
-                                path += `L ${x},${y} `;
-                              });
-                              
-                              // Complete the path back to bottom right
-                              path += `L ${30 + (dataLength - 1) * xStep},140 Z`;
-                              
-                              return path;
-                            })()}
-                            fill="rgba(79, 70, 229, 0.1)"
-                          />
-                          
-                          {/* Score line (primary metric) */}
-                          <path 
-                            d={progressData.trendData.score.slice(-5).reduce((path, score, i) => {
-                              const dataLength = Math.min(progressData.trendData.score.length, 5);
-                              const xStep = 220 / (dataLength - 1 || 1);
-                              const x = 30 + (i * xStep);
-                              const maxScore = Math.max(...progressData.trendData.score.slice(-5));
-                              const y = 140 - (score * (120 / (maxScore || 1)));
-                              return `${path} ${i === 0 ? 'M' : 'L'} ${x},${y}`;
-                            }, '')}
-                            fill="none" 
-                            stroke="#4f46e5" 
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          
-                          {/* Score data points - only last 5 sessions */}
-                          {progressData.trendData.score.slice(-5).map((score, i) => {
-                            const dataLength = Math.min(progressData.trendData.score.length, 5);
-                            const xStep = 220 / (dataLength - 1 || 1);
-                            const x = 30 + (i * xStep);
-                            const maxScore = Math.max(...progressData.trendData.score.slice(-5));
-                            const y = 140 - (score * (120 / (maxScore || 1)));
-                            
-                            // Calculate the session number
-                            const sessionIndex = progressData.trendData.dates.length - dataLength + i;
-                            
-                            return (
-                              <g key={`mini-score-point-${i}`}>
-                                <circle 
-                                  cx={x}
-                                  cy={y}
-                                  r="4" 
-                                  fill="#4f46e5" 
-                                />
-                                <circle 
-                                  cx={x}
-                                  cy={y}
-                                  r="2" 
-                                  fill="#fff" 
-                                />
-                                {/* Small session number below x-axis */}
-                                <text
-                                  x={x}
-                                  y="155"
-                                  textAnchor="middle"
-                                  fontSize="9"
-                                  fill="#64748b"
-                                >
-                                  {i+1}
-                                </text>
-                                <title>
-                                  {`Session ${i+1}\nDate: ${formatDate(progressData.trendData.dates[sessionIndex])}\nScore: ${score}`}
-                                </title>
-                              </g>
-                            );
-                          })}
-                        </svg>
-                        <div className="trend-legend">
-                          <div className="legend-item">
-                            <div className="legend-color" style={{ backgroundColor: "#4f46e5" }}></div>
-                            <div className="legend-label">Recent Score Trend</div>
-                          </div>
-                        </div>
+                              <div className="percentile-explanation">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <circle cx="12" cy="12" r="10"></circle>
+                                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                </svg>
+                                <span>Percentiles show how you rank compared to peers. Higher is better.</span>
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
-                    ) : (
-                      <div className="no-data-mini">
-                        Complete more sessions to see your improvement trend.
-                      </div>
-                    )}
                     </div>
                   </div>
                   
@@ -850,7 +847,7 @@ const ProgressTracking = ({ username }) => {
                     <div className="section-title">Performance Metrics Comparison</div>
                   
                   <div style={{ alignSelf: 'center', width: '100%', display: 'flex', justifyContent: 'center' }} className="radar-chart">
-                    <svg width="100%" height="528" viewBox="0 0 528 528" preserveAspectRatio="xMidYMid meet">
+                    <svg width="100%" height="430" viewBox="-45 0 528 528" preserveAspectRatio="xMidYMid meet">
                       {/* Enhancement zone indicator (35% circle) */}
                       <circle 
                         cx="264" 
@@ -1319,8 +1316,8 @@ const ProgressTracking = ({ username }) => {
                       })()}
                       
                       {/* Center point and label */}
-                      <circle cx="240" cy="240" r="4" fill="#64748b" />
-                      <circle cx="240" cy="240" r="8" fill="rgba(100, 116, 139, 0.2)" stroke="#64748b" strokeWidth="1" />
+                      <circle cx="264" cy="264" r="4" fill="#64748b" />
+                      <circle cx="264" cy="264" r="8" fill="rgba(100, 116, 139, 0.2)" stroke="#64748b" strokeWidth="1" />
                     </svg>
                   </div>
                   
@@ -1342,32 +1339,12 @@ const ProgressTracking = ({ username }) => {
                       <div className="legend-label">Your Best Metric</div>
                     </div>
                   </div>
-                  
+
                   <div className="spacer-between-sections"></div>
                   
 
                   </div>
                 </div>
-                  {/* Additional information for understanding metrics */}
-                  <div className="non-overlapping-chart-elements" style={{ marginTop: '15px', padding: '0 5px', width: '100%' }}>
-                    <p className="radar-info-text">This radar chart displays three layers of information:</p>
-                    <ul style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '5px', paddingLeft: '20px' }}>
-                      <li><strong style={{ color: '#4f46e5' }}>Your Performance</strong> (innermost triangle) - Your actual metrics as a percentage of theoretical maximum</li>
-                      <li><strong style={{ color: '#94a3b8' }}>Peer Best Values</strong> (middle triangle) - Absolute best performance among your peers shown at their exact percentage values</li>
-                      <li><strong style={{ color: '#e53e3e' }}>Theoretical Maximum</strong> (outermost triangle) - 100% on all metrics</li>
-                    </ul>
-                    <p className="radar-info-text" style={{ marginTop: '10px' }}>
-                      For reference, peer best values are: <br/>
-                      <span className="text-with-buffer">Score: {Number(progressData.cohortComparison.peerMaxScore).toFixed()}/25</span>, &nbsp;
-                      <span className="text-with-buffer">Accuracy: {Number(progressData.cohortComparison.peerMaxAccuracy).toFixed(2)}%</span>, &nbsp;
-                      <span className="text-with-buffer">Speed: {Number(progressData.cohortComparison.peerMaxSpeed).toFixed(2)}s</span>
-                    </p>
-                    {/* Informational text about speed percentile */}
-                    <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '18px', textAlign: 'left', padding: '0 5px' }}>
-                      Note: For Speed, a lower time (seconds) is better, but a higher percentile represents better performance.
-                      The chart shows actual values at their exact scale (e.g., 24% accuracy appears at 24% of the chart radius).
-                    </div>
-                    </div>
               </div>
             )}
           </div>

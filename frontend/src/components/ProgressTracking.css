@@ -450,16 +450,16 @@
 
 .metric-card {
   background-color: rgba(255, 255, 255, 0.7);
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 10px;
+  padding: 15px;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
   border: 1px solid #e2e8f0;
 }
 
 .metric-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
 }
 
 .metric-card-best {
@@ -597,7 +597,7 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-start;
-  margin-top: 25px;
+  margin-top: -25px;
   gap: 18px;
   padding: 5px 0 0 5px;
   width: 100%;
@@ -785,7 +785,7 @@
   .radar-chart {
     max-width: 320px;
   }
-  
+
   .legend-item {
     min-width: 120px;
     margin: 2px 0;
@@ -955,14 +955,14 @@
 .comparison-container {
   background-color: rgba(255, 255, 255, 0.9);
   border-radius: 14px;
-  padding: 30px 25px;
-  margin-bottom: 30px;
+  padding: 25px 20px;
+  margin-bottom: 25px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
   text-align: left;
   border: 1px solid rgba(226, 232, 240, 0.8);
   display: grid;
   grid-template-columns: 1fr;
-  gap: 25px;
+  gap: 20px;
   position: relative;
   overflow: hidden;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -979,16 +979,16 @@
   top: 0;
   left: 0;
   width: 100%;
-  height: 6px;
+  height: 4px;
   background: linear-gradient(90deg, #4f46e5, #10b981, #ffa500);
   border-radius: 14px 14px 0 0;
 }
 
 @media (min-width: 992px) {
   .comparison-container {
-    grid-template-columns: 260px 1fr;
+    grid-template-columns: 240px 1fr;
     align-items: start;
-    gap: 30px; /* Increased gap for better separation */
+    gap: 20px;
   }
 }
 
@@ -1028,6 +1028,184 @@
 
 .improvement-trend-card {
   border-left: 4px solid #10b981;
+}
+
+/* Session Consistency container in Performance Trend */
+.session-consistency-container {
+  margin-top: 25px;
+  background-color: #f8fafc;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-left: 4px solid #3b82f6;
+}
+
+.session-consistency-container h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.2rem;
+  color: #1e293b;
+}
+
+/* Percentile Rankings card */
+.percentile-card {
+  border-left: 4px solid #ffa500;
+}
+
+.percentile-rankings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 0 2px;
+}
+
+.percentile-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.percentile-label {
+  width: 60px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.percentile-bar-container {
+  flex: 1;
+  height: 8px;
+  background-color: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.percentile-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.8s ease-in-out;
+}
+
+.percentile-value {
+  width: 35px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.percentile-explanation {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 10px;
+}
+
+.percentile-explanation svg {
+  flex-shrink: 0;
+  color: #3b82f6;
+}
+
+/* Session Consistency card styles */
+.consistency-card {
+  border-left: 4px solid #3b82f6;
+}
+
+.consistency-chart {
+  width: 100%;
+  margin: 5px 0 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.02);
+}
+
+.consistency-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 15px;
+  width: 100%;
+}
+
+.consistency-value {
+  font-size: 2.2rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 5px;
+}
+
+.consistency-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.consistency-meter {
+  width: 90%;
+  margin: 5px 0;
+}
+
+.meter-background {
+  width: 100%;
+  height: 10px;
+  background-color: #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.8s ease-in-out;
+}
+
+.consistency-description {
+  font-size: 0.8rem;
+  color: #64748b;
+  text-align: center;
+  margin-top: 8px;
+  margin-bottom: 10px;
+  padding: 0 5px;
+}
+
+.consistency-tips {
+  width: 90%;
+  background-color: #f8fafc;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 0.85rem;
+}
+
+.tip-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #4b5563;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.tip-header svg {
+  width: 14px;
+  height: 14px;
+  color: #3b82f6;
+}
+
+.tip-list {
+  margin: 0;
+  padding-left: 20px;
+  color: #4b5563;
+}
+
+.tip-list li {
+  margin-bottom: 4px;
+  font-size: 0.8rem;
 }
 
 .best-metric-container {
@@ -1128,6 +1306,11 @@
   }
   
   .improvement-trend-chart {
+    max-width: 100%;
+    padding: 8px;
+  }
+  
+  .consistency-chart {
     max-width: 100%;
     padding: 8px;
   }

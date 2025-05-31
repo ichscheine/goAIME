@@ -1,0 +1,288 @@
+/* Consolidating all the comparison and radar chart style fixes into one file */
+
+/* ===== Basic comparison container structure ===== */
+.comparison-container {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 14px;
+  padding: 25px 20px; 
+  margin-bottom: 25px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+  text-align: left;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 25px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  min-height: 480px; /* Added minimum height to prevent layout shifts */
+}
+
+.comparison-container:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.08);
+}
+
+.comparison-container:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #4f46e5, #10b981, #ffa500);
+  border-radius: 14px 14px 0 0;
+}
+
+/* ===== Best metric highlight styles ===== */
+.best-metric-highlight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  width: 100%;
+  transition: all 0.3s ease;
+  padding: 8px 0; 
+}
+
+.best-metric-name {
+  font-size: 0.9rem; 
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.best-metric-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.percentile-text {
+  font-size: 0.8rem;
+  color: #334155;
+  font-weight: 500;
+  margin-top: 2px;
+  text-align: center;
+  width: 100%;
+}
+
+/* ===== Radar chart fixes & optimizations ===== */
+.radar-chart-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 440px;
+  padding-left: 40px; /* Reduced padding to shift left */
+  margin-left: 35px; /* Reduced margin to shift left */
+  width: calc(100% - 35px) !important;
+  box-sizing: border-box !important;
+}
+
+/* Styling for the radar chart container */
+.radar-chart {
+  width: 98%;
+  margin-left: 30px; /* Reduced margin */
+  overflow: visible;
+  padding: 10px 0;
+  position: relative;
+  z-index: 1;
+  transform: translateX(20px); /* Reduced transform to move chart left */
+}
+
+/* Push all SVG elements slightly to the right */
+.radar-chart svg text,
+.radar-chart svg circle,
+.radar-chart svg rect,
+.radar-chart svg path,
+.radar-chart svg line {
+  transform: translateX(5px);
+  -webkit-transform: translateX(5px); /* Safari compatibility */
+  -ms-transform: translateX(5px); /* IE compatibility */
+}
+
+/* ===== Browser-specific fixes ===== */
+/* Firefox-specific fixes */
+@-moz-document url-prefix() {
+  .radar-chart-section {
+    padding-left: 20px;
+  }
+  
+  .radar-chart {
+    transform: translateX(15px);
+  }
+}
+
+/* Safari-specific fixes */
+@media not all and (min-resolution:.001dpcm) { 
+  @supports (-webkit-appearance:none) {
+    .radar-chart-section {
+      padding-left: 20px;
+    }
+    
+    .radar-chart {
+      transform: translateX(15px);
+    }
+  }
+}
+
+/* ===== Percentile Rankings & Metric Cards ===== */
+/* Reduce spacing between elements in percentile card */
+.metric-card.percentile-card {
+  padding-bottom: 8px !important;
+}
+
+/* Make percentile bars thinner */
+.percentile-bar-container {
+  height: 6px !important;
+}
+
+/* Optimize space between metric cards */
+.performance-insights-column {
+  gap: 12px !important;
+}
+
+/* Optimize radar chart tooltip/point size */
+circle[r="8"] {
+  r: 6 !important;
+}
+
+circle[r="6"] {
+  r: 5 !important;
+}
+
+circle[r="5"] {
+  r: 4 !important;
+}
+
+/* Adjust radar chart value text */
+.radar-metric-value {
+  font-size: 0.8rem !important;
+}
+
+/* Adjust spacer height to be minimal */
+.spacer-between-sections {
+  height: 4px !important;
+}
+
+/* ===== Compact Text Elements ===== */
+/* Compact version of text-with-buffer */
+.text-with-buffer {
+  position: relative;
+  z-index: 2;
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 1px 3px;
+  border-radius: 2px;
+  display: inline-block;
+  margin: 1px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+/* More compact explanation */
+.radar-info-text {
+  font-size: 0.75rem;
+  line-height: 1.3;
+  margin: 2px 0 !important;
+}
+
+.non-overlapping-chart-elements {
+  padding: 0 !important;
+  margin-top: 5px !important;
+}
+
+.non-overlapping-chart-elements p, 
+.non-overlapping-chart-elements ul,
+.non-overlapping-chart-elements div {
+  margin: 2px 0 !important;
+  line-height: 1.2 !important;
+}
+
+/* ===== Responsive Adjustments ===== */
+@media (min-width: 992px) {
+  .comparison-container {
+    grid-template-columns: 210px 1fr !important;
+    align-items: start;
+    gap: 35px !important; /* Reduced gap */
+  }
+  
+  .radar-chart-section {
+    min-height: 440px;
+    margin-left: 37px; /* Reduced margin */
+  }
+}
+
+@media (min-width: 1200px) {
+  .comparison-container {
+    grid-template-columns: 200px 1fr !important;
+    column-gap: 40px !important; /* Reduced gap */
+  }
+  
+  /* Reduced space for larger screens */
+  .radar-chart {
+    transform: translateX(20px); /* Reduced transform */
+  }
+}
+
+@media (max-width: 991px) {
+  .comparison-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .performance-insights-column {
+    margin-bottom: 20px;
+  }
+  
+  .best-metric-highlight {
+    max-width: 100%;
+  }
+}
+
+/* For smaller screens, we stack the content and center the radar chart */
+@media (max-width: 768px) {
+  .radar-chart svg {
+    height: 420px !important;
+    width: 100% !important;
+  }
+  
+  /* Remove overlap on small screens by stacking content vertically */
+  .comparison-container {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 15px !important;
+  }
+  
+  /* Center the radar chart on small screens */
+  .radar-chart {
+    margin: 0 auto !important;
+    padding-left: 0 !important;
+    width: 90% !important;
+    transform: none !important;
+  }
+  
+  /* Center the radar chart section on small screens */
+  .radar-chart-section {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    width: 100% !important;
+  }
+  
+  /* Fix SVG transformations on small screens */
+  .radar-chart svg text,
+  .radar-chart svg circle,
+  .radar-chart svg rect,
+  .radar-chart svg path,
+  .radar-chart svg line {
+    transform: none !important;
+    -webkit-transform: none !important;
+    -ms-transform: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .radar-chart {
+    max-width: 280px;
+  }
+}
