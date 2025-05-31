@@ -99,13 +99,21 @@ const ProgressTracking = ({ username }) => {
             console.log('Cohort metrics response:', cohortResponse.data);
             
             if (cohortResponse.data && cohortResponse.data.success) {
-              // Merge cohort data with progress data
+              // Merge cohort data with progress data, but preserve user metrics from overallPerformance
+              const userScore = response.data.data.overallPerformance.averageScore;
+              const userAccuracy = response.data.data.overallPerformance.accuracyPercentage;
+              const userSpeed = response.data.data.overallPerformance.averageSpeed;
+              
               response.data.data.cohortComparison = {
                 ...response.data.data.cohortComparison,
-                ...cohortResponse.data.data
+                ...cohortResponse.data.data,
+                // Override with values from overallPerformance for consistency
+                userScore,
+                userAccuracy,
+                userSpeed
               };
               
-              console.log('Combined data with cohort metrics:', response.data.data.cohortComparison);
+              console.log('Combined data with cohort metrics (preserving user metrics from overallPerformance):', response.data.data.cohortComparison);
             }
           } catch (cohortError) {
             console.warn('Failed to fetch cohort metrics, will use basic data:', cohortError);
@@ -116,30 +124,23 @@ const ProgressTracking = ({ username }) => {
             if (!response.data.data.cohortComparison.userScore || !response.data.data.cohortComparison.peerMaxScore) {
               console.warn('Adding or completing cohort data');
               
-              // Use the average score from overall performance for the user score if it doesn't exist
-              if (!response.data.data.cohortComparison.userScore) {
-                response.data.data.cohortComparison.userScore = response.data.data.overallPerformance.averageScore || 75;
-                console.log('Setting userScore from overallPerformance:', response.data.data.cohortComparison.userScore);
-              }
+              // Use the average score from overall performance for user score
+              response.data.data.cohortComparison.userScore = response.data.data.overallPerformance.averageScore;
+              console.log('Setting userScore from overallPerformance:', response.data.data.cohortComparison.userScore);
               
-              // Use user accuracy from overall performance if it doesn't exist
-              if (!response.data.data.cohortComparison.userAccuracy) {
-                response.data.data.cohortComparison.userAccuracy = response.data.data.overallPerformance.accuracyPercentage || 70;
-                console.log('Setting userAccuracy from overallPerformance:', response.data.data.cohortComparison.userAccuracy);
-              }
+              // Use user accuracy from overall performance
+              response.data.data.cohortComparison.userAccuracy = response.data.data.overallPerformance.accuracyPercentage;
+              console.log('Setting userAccuracy from overallPerformance:', response.data.data.cohortComparison.userAccuracy);
               
-              // Log if we have cohort metrics data available for debugging
-              console.log('Checking for speed data from API:', response.data.data.cohortComparison);
-              
-              // Get speed directly from the cohort metrics response if available, otherwise use default
-              if (!response.data.data.cohortComparison.userSpeed) {
-                if (response.data.data.overallPerformance.averageSpeed) {
-                  response.data.data.cohortComparison.userSpeed = response.data.data.overallPerformance.averageSpeed;
-                  console.log('Setting userSpeed from overallPerformance:', response.data.data.cohortComparison.userSpeed);
-                } else {
-                  console.warn('No speed data found, using default value');
-                  response.data.data.cohortComparison.userSpeed = 45; // Mock speed in seconds
-                }
+              // Use speed from overall performance
+              if (response.data.data.overallPerformance.averageSpeed) {
+                response.data.data.cohortComparison.userSpeed = response.data.data.overallPerformance.averageSpeed;
+                console.log('Setting userSpeed from overallPerformance:', response.data.data.cohortComparison.userSpeed);
+              } else {
+                console.warn('No speed data found, using default value');
+                response.data.data.cohortComparison.userSpeed = 45; // Mock speed in seconds
+                // Also update overall performance for consistency
+                response.data.data.overallPerformance.averageSpeed = 45;
               }
               
               // Only use mock peer data if real data is not available
@@ -169,6 +170,35 @@ const ProgressTracking = ({ username }) => {
                 }
               }
             }
+          
+          // Final data consistency check
+          if (response.data.data.overallPerformance && response.data.data.cohortComparison) {
+            // Ensure speed values are consistent and non-zero if available
+            if (response.data.data.cohortComparison.userSpeed && !response.data.data.overallPerformance.averageSpeed) {
+              response.data.data.overallPerformance.averageSpeed = response.data.data.cohortComparison.userSpeed;
+            } else if (response.data.data.overallPerformance.averageSpeed && !response.data.data.cohortComparison.userSpeed) {
+              response.data.data.cohortComparison.userSpeed = response.data.data.overallPerformance.averageSpeed;
+            }
+            
+            // Final check to ensure userSpeed is not 0 when we have averageSpeed
+            if (response.data.data.overallPerformance.averageSpeed && 
+                (response.data.data.cohortComparison.userSpeed === 0 || isNaN(response.data.data.cohortComparison.userSpeed))) {
+              response.data.data.cohortComparison.userSpeed = response.data.data.overallPerformance.averageSpeed;
+            }
+            
+            // Log final values for verification
+            console.log('Final consistency check - overallPerformance:', {
+              averageScore: response.data.data.overallPerformance.averageScore,
+              accuracyPercentage: response.data.data.overallPerformance.accuracyPercentage,
+              averageSpeed: response.data.data.overallPerformance.averageSpeed
+            });
+            
+            console.log('Final consistency check - cohortComparison:', {
+              userScore: response.data.data.cohortComparison.userScore,
+              userAccuracy: response.data.data.cohortComparison.userAccuracy,
+              userSpeed: response.data.data.cohortComparison.userSpeed
+            });
+          }
           
           setProgressData(response.data.data);
         } else {
@@ -613,42 +643,205 @@ const ProgressTracking = ({ username }) => {
                 
                 {/* Combined section for Strongest Metric and Radar Chart */}
                 <div className="comparison-container">
-                  {/* Left side: Your Strongest Metric section */}
-                  <div className="best-metric-section">
-                    <div className="section-title">Your Strongest Metric</div>
-                    <div className="best-metric-container">
-                      {(() => {
-                        const bestMetric = findBestMetric();
-                        let metricValue = '';
-                        let metricColor = '#4f46e5';
-                        
-                        if (bestMetric === 'Score') {
-                          metricValue = `${Number(progressData.cohortComparison.userScore).toFixed(2)}/${Number(progressData.cohortComparison.peerMaxScore).toFixed(1)}`;
-                          metricColor = '#4f46e5';
-                        } else if (bestMetric === 'Accuracy') {
-                          metricValue = `${Number(progressData.cohortComparison.userAccuracy).toFixed(2)}%`;
-                          metricColor = '#ffa500';
-                        } else if (bestMetric === 'Speed') {
-                          // Show only the raw speed value (without percentile)
-                          metricValue = `${Number(progressData.cohortComparison.userSpeed).toFixed(0)}s`;
-                          metricColor = '#10b981';
-                        }
-                        
-                        return (
-                          <div className="best-metric-highlight" style={{ color: metricColor }}>
-                            <span className="best-metric-name">{bestMetric}</span>
-                            <span className="best-metric-value">{metricValue}</span>
-                            {bestMetric === 'Speed' && (
-                              <span style={{ fontSize: '0.8rem', marginTop: '5px' }}>
-                                (lower time is better)
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })()}
+                  {/* Left side: Performance insights sections */}
+                  <div className="performance-insights-column">
+                    {/* Your Strongest Metric section */}
+                    <div className="metric-card strongest-metric-card">
+                      <div className="section-title">Your Strongest Metric</div>
+                      <div className="best-metric-container">
+                        {(() => {
+                          const bestMetric = findBestMetric();
+                          let metricValue = '';
+                          let metricColor = '#4f46e5';
+                          
+                          if (bestMetric === 'Score') {
+                            metricValue = `${Number(progressData.cohortComparison.userScore).toFixed(2)}/${Number(progressData.cohortComparison.peerMaxScore).toFixed(1)}`;
+                            metricColor = '#4f46e5';
+                          } else if (bestMetric === 'Accuracy') {
+                            metricValue = `${Number(progressData.cohortComparison.userAccuracy).toFixed(2)}%`;
+                            metricColor = '#ffa500';
+                          } else if (bestMetric === 'Speed') {
+                            // Show only the raw speed value (without percentile)
+                            metricValue = `${Number(progressData.cohortComparison.userSpeed).toFixed(0)}s`;
+                            metricColor = '#10b981';
+                          }
+                          
+                          return (
+                            <div className="best-metric-highlight" style={{ color: metricColor }}>
+                              <span className="best-metric-name">{bestMetric}</span>
+                              <span className="best-metric-value">{metricValue}</span>
+                              {bestMetric === 'Speed' && (
+                                <span style={{ fontSize: '0.8rem', marginTop: '5px' }}>
+                                  (lower time is better)
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      <div className="percentile-text">
+                        You're in the top {Math.round(100 - (progressData.cohortComparison ? progressData.cohortComparison.userPercentile : 0))}% of peers
+                      </div>
                     </div>
-                    <div className="percentile-text">
-                      You're in the top {Math.round(100 - (progressData.cohortComparison ? progressData.cohortComparison.userPercentile : 0))}% of peers
+                    
+                    {/* Your Improvement Trend - NEW SECTION */}
+                    <div className="metric-card improvement-trend-card">
+                      <div className="section-title">Your Improvement Trend</div>
+                      
+                      {progressData.trendData && progressData.trendData.accuracy && progressData.trendData.accuracy.length > 1 ? (
+                        <div className="improvement-trend-chart">
+                        <svg width="100%" height="180" viewBox="0 0 280 180" preserveAspectRatio="xMidYMid meet">
+                          {/* Background */}
+                          <rect x="30" y="20" width="220" height="120" fill="#f8fafc" rx="6" ry="6" />
+                          
+                          {/* Axes */}
+                          <line x1="30" y1="140" x2="250" y2="140" stroke="#cbd5e1" strokeWidth="1.5" />
+                          <line x1="30" y1="20" x2="30" y2="140" stroke="#cbd5e1" strokeWidth="1.5" />
+                          
+                          {/* Horizontal grid lines */}
+                          <line x1="30" y1="80" x2="250" y2="80" stroke="#e2e8f0" strokeWidth="0.75" strokeDasharray="3,3" />
+                          <line x1="30" y1="110" x2="250" y2="110" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="2,2" />
+                          <line x1="30" y1="50" x2="250" y2="50" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="2,2" />
+                          
+                          {/* Calculate recent trend direction */}
+                          {(() => {
+                            const recentScores = progressData.trendData.score.slice(-5);
+                            if (recentScores.length < 2) return null;
+                            
+                            const firstScore = recentScores[0];
+                            const lastScore = recentScores[recentScores.length - 1];
+                            const trendDirection = lastScore > firstScore ? "up" : lastScore < firstScore ? "down" : "stable";
+                            const trendColor = trendDirection === "up" ? "#10b981" : 
+                                             trendDirection === "down" ? "#ef4444" : "#4f46e5";
+                            
+                            // Add trend indicator
+                            return (
+                              <g>
+                                {trendDirection !== "stable" && (
+                                  <path 
+                                    d={trendDirection === "up" 
+                                      ? "M 240,40 L 247,47 L 233,47 Z" // Up triangle
+                                      : "M 240,47 L 247,40 L 233,40 Z" // Down triangle
+                                    }
+                                    fill={trendColor}
+                                  />
+                                )}
+                                <text
+                                  x="240"
+                                  y="30"
+                                  textAnchor="middle"
+                                  fontSize="10"
+                                  fontWeight="bold"
+                                  fill={trendColor}
+                                >
+                                  {trendDirection === "up" ? "IMPROVING" : 
+                                   trendDirection === "down" ? "DECLINING" : "STABLE"}
+                                </text>
+                              </g>
+                            );
+                          })()}
+                          
+                          {/* Area under the curve */}
+                          <path 
+                            d={(() => {
+                              const recentScores = progressData.trendData.score.slice(-5);
+                              if (recentScores.length < 2) return "";
+                              
+                              const dataLength = recentScores.length;
+                              const xStep = 220 / (dataLength - 1 || 1);
+                              const maxScore = Math.max(...recentScores);
+                              
+                              let path = "";
+                              
+                              // Start at the bottom left
+                              path += `M 30,140 `;
+                              
+                              // Add points along the curve
+                              recentScores.forEach((score, i) => {
+                                const x = 30 + (i * xStep);
+                                const y = 140 - (score * (120 / (maxScore || 1)));
+                                path += `L ${x},${y} `;
+                              });
+                              
+                              // Complete the path back to bottom right
+                              path += `L ${30 + (dataLength - 1) * xStep},140 Z`;
+                              
+                              return path;
+                            })()}
+                            fill="rgba(79, 70, 229, 0.1)"
+                          />
+                          
+                          {/* Score line (primary metric) */}
+                          <path 
+                            d={progressData.trendData.score.slice(-5).reduce((path, score, i) => {
+                              const dataLength = Math.min(progressData.trendData.score.length, 5);
+                              const xStep = 220 / (dataLength - 1 || 1);
+                              const x = 30 + (i * xStep);
+                              const maxScore = Math.max(...progressData.trendData.score.slice(-5));
+                              const y = 140 - (score * (120 / (maxScore || 1)));
+                              return `${path} ${i === 0 ? 'M' : 'L'} ${x},${y}`;
+                            }, '')}
+                            fill="none" 
+                            stroke="#4f46e5" 
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          
+                          {/* Score data points - only last 5 sessions */}
+                          {progressData.trendData.score.slice(-5).map((score, i) => {
+                            const dataLength = Math.min(progressData.trendData.score.length, 5);
+                            const xStep = 220 / (dataLength - 1 || 1);
+                            const x = 30 + (i * xStep);
+                            const maxScore = Math.max(...progressData.trendData.score.slice(-5));
+                            const y = 140 - (score * (120 / (maxScore || 1)));
+                            
+                            // Calculate the session number
+                            const sessionIndex = progressData.trendData.dates.length - dataLength + i;
+                            
+                            return (
+                              <g key={`mini-score-point-${i}`}>
+                                <circle 
+                                  cx={x}
+                                  cy={y}
+                                  r="4" 
+                                  fill="#4f46e5" 
+                                />
+                                <circle 
+                                  cx={x}
+                                  cy={y}
+                                  r="2" 
+                                  fill="#fff" 
+                                />
+                                {/* Small session number below x-axis */}
+                                <text
+                                  x={x}
+                                  y="155"
+                                  textAnchor="middle"
+                                  fontSize="9"
+                                  fill="#64748b"
+                                >
+                                  {i+1}
+                                </text>
+                                <title>
+                                  {`Session ${i+1}\nDate: ${formatDate(progressData.trendData.dates[sessionIndex])}\nScore: ${score}`}
+                                </title>
+                              </g>
+                            );
+                          })}
+                        </svg>
+                        <div className="trend-legend">
+                          <div className="legend-item">
+                            <div className="legend-color" style={{ backgroundColor: "#4f46e5" }}></div>
+                            <div className="legend-label">Recent Score Trend</div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="no-data-mini">
+                        Complete more sessions to see your improvement trend.
+                      </div>
+                    )}
                     </div>
                   </div>
                   
@@ -657,12 +850,12 @@ const ProgressTracking = ({ username }) => {
                     <div className="section-title">Performance Metrics Comparison</div>
                   
                   <div style={{ alignSelf: 'center', width: '100%', display: 'flex', justifyContent: 'center' }} className="radar-chart">
-                    <svg width="100%" height="480" viewBox="0 0 480 480" preserveAspectRatio="xMidYMid meet">
+                    <svg width="100%" height="528" viewBox="0 0 528 528" preserveAspectRatio="xMidYMid meet">
                       {/* Enhancement zone indicator (35% circle) */}
                       <circle 
-                        cx="240" 
-                        cy="240" 
-                        r={180 * 0.35} 
+                        cx="264" 
+                        cy="264" 
+                        r={198 * 0.35} 
                         fill="rgba(226, 232, 240, 0.25)" 
                         stroke="#e2e8f0" 
                         strokeWidth="1.5" 
@@ -673,9 +866,9 @@ const ProgressTracking = ({ username }) => {
                       {[0.25, 0.5, 0.75, 1].map((scale, i) => (
                         <g key={`bg-circle-${i}`}>
                           <circle 
-                            cx="240" 
-                            cy="240" 
-                            r={180 * scale} 
+                            cx="264" 
+                            cy="264" 
+                            r={198 * scale} 
                             fill={scale === 0.25 ? "rgba(226, 232, 240, 0.1)" : 
                                  scale === 0.5 ? "rgba(226, 232, 240, 0.15)" : 
                                  scale === 0.75 ? "rgba(226, 232, 240, 0.05)" : 
@@ -685,22 +878,22 @@ const ProgressTracking = ({ username }) => {
                             opacity={scale === 1 ? 0.9 : 0.7} 
                           />
                           {scale === 0.25 && (
-                            <text x="246" y={240 - (180 * scale)} textAnchor="start" fontSize="11" fill="#94a3b8" opacity="0.9" fontWeight="600">
+                            <text x="270" y={264 - (198 * scale)} textAnchor="start" fontSize="11" fill="#94a3b8" opacity="0.9" fontWeight="600">
                               {Math.round(scale * 100)}%
                             </text>
                           )}
                           {scale === 0.5 && (
-                            <text x="246" y={240 - (180 * scale)} textAnchor="start" fontSize="11" fill="#94a3b8" opacity="0.9" fontWeight="600">
+                            <text x="270" y={264 - (198 * scale)} textAnchor="start" fontSize="11" fill="#94a3b8" opacity="0.9" fontWeight="600">
                               {Math.round(scale * 100)}%
                             </text>
                           )}
                           {scale === 0.75 && (
-                            <text x="246" y={240 - (180 * scale)} textAnchor="start" fontSize="11" fill="#94a3b8" opacity="0.9" fontWeight="600">
+                            <text x="270" y={264 - (198 * scale)} textAnchor="start" fontSize="11" fill="#94a3b8" opacity="0.9" fontWeight="600">
                               {Math.round(scale * 100)}%
                             </text>
                           )}
                           {scale === 1 && (
-                            <text x="246" y={240 - (180 * scale)} textAnchor="start" fontSize="11" fill="#94a3b8" opacity="0.9" fontWeight="600">
+                            <text x="270" y={264 - (198 * scale)} textAnchor="start" fontSize="11" fill="#94a3b8" opacity="0.9" fontWeight="600">
                               100%
                             </text>
                           )}
@@ -714,25 +907,25 @@ const ProgressTracking = ({ username }) => {
                         { label: "Speed", angle: 240 }
                       ].map((axis, i) => {
                         const radian = (axis.angle - 90) * (Math.PI / 180);
-                        const x = 240 + 180 * Math.cos(radian);
-                        const y = 240 + 180 * Math.sin(radian);
+                        const x = 264 + 198 * Math.cos(radian);
+                        const y = 264 + 198 * Math.sin(radian);
                         
                         // Calculate label position a bit further out
                         const labelRadian = (axis.angle - 90) * (Math.PI / 180);
-                        const labelDistance = 216; // Standard distance for labels
-                        const maxValueDistance = 236; // Slightly further out for max values
-                        const labelX = 240 + labelDistance * Math.cos(labelRadian);
-                        const labelY = 240 + labelDistance * Math.sin(labelRadian);
+                        const labelDistance = 238; // Standard distance for labels (scaled up from 216)
+                        const maxValueDistance = 260; // Slightly further out for max values (scaled up from 236)
+                        const labelX = 264 + labelDistance * Math.cos(labelRadian);
+                        const labelY = 264 + labelDistance * Math.sin(labelRadian);
                         
                         // Calculate position for max value text
-                        const maxLabelX = 240 + maxValueDistance * Math.cos(labelRadian);
-                        const maxLabelY = 240 + maxValueDistance * Math.sin(labelRadian);
+                        const maxLabelX = 264 + maxValueDistance * Math.cos(labelRadian);
+                        const maxLabelY = 264 + maxValueDistance * Math.sin(labelRadian);
                         
                         return (
                           <g key={`axis-${i}`}>
                             <line 
-                              x1="240" 
-                              y1="240" 
+                              x1="264" 
+                              y1="264" 
                               x2={x} 
                               y2={y} 
                               stroke={axis.label === "Score" ? "rgba(79, 70, 229, 0.4)" :
@@ -835,14 +1028,14 @@ const ProgressTracking = ({ username }) => {
                           });
                           
                           // Use actual ratio values directly for absolute scaling
-                          const scoreX = 240 + 180 * peerScoreRatio * Math.cos(scoreAngle);
-                          const scoreY = 240 + 180 * peerScoreRatio * Math.sin(scoreAngle);
+                          const scoreX = 264 + 198 * peerScoreRatio * Math.cos(scoreAngle);
+                          const scoreY = 264 + 198 * peerScoreRatio * Math.sin(scoreAngle);
                           
-                          const accuracyX = 240 + 180 * peerAccuracyRatio * Math.cos(accuracyAngle);
-                          const accuracyY = 240 + 180 * peerAccuracyRatio * Math.sin(accuracyAngle);
+                          const accuracyX = 264 + 198 * peerAccuracyRatio * Math.cos(accuracyAngle);
+                          const accuracyY = 264 + 198 * peerAccuracyRatio * Math.sin(accuracyAngle);
                           
-                          const speedX = 240 + 180 * peerSpeedRatio * Math.cos(speedAngle);
-                          const speedY = 240 + 180 * peerSpeedRatio * Math.sin(speedAngle);
+                          const speedX = 264 + 198 * peerSpeedRatio * Math.cos(speedAngle);
+                          const speedY = 264 + 198 * peerSpeedRatio * Math.sin(speedAngle);
                           
                           return `M ${scoreX} ${scoreY} L ${accuracyX} ${accuracyY} L ${speedX} ${speedY} Z`;
                         })()}
@@ -860,12 +1053,12 @@ const ProgressTracking = ({ username }) => {
                           const speedAngle = (240 - 90) * (Math.PI / 180);
                           
                           // Calculate points at 100% for each axis
-                          const scoreX = 240 + 180 * Math.cos(scoreAngle);
-                          const scoreY = 240 + 180 * Math.sin(scoreAngle);
-                          const accuracyX = 240 + 180 * Math.cos(accuracyAngle);
-                          const accuracyY = 240 + 180 * Math.sin(accuracyAngle);
-                          const speedX = 240 + 180 * Math.cos(speedAngle);
-                          const speedY = 240 + 180 * Math.sin(speedAngle);
+                          const scoreX = 264 + 198 * Math.cos(scoreAngle);
+                          const scoreY = 264 + 198 * Math.sin(scoreAngle);
+                          const accuracyX = 264 + 198 * Math.cos(accuracyAngle);
+                          const accuracyY = 264 + 198 * Math.sin(accuracyAngle);
+                          const speedX = 264 + 198 * Math.cos(speedAngle);
+                          const speedY = 264 + 198 * Math.sin(speedAngle);
                           
                           // Create a closed path connecting all three points
                           return `M ${scoreX} ${scoreY} L ${accuracyX} ${accuracyY} L ${speedX} ${speedY} Z`;
@@ -885,12 +1078,12 @@ const ProgressTracking = ({ username }) => {
                         ];
                         
                         return angles.map((item, i) => {
-                          const x = 240 + 180 * Math.cos(item.angle);
-                          const y = 240 + 180 * Math.sin(item.angle);
+                          const x = 264 + 198 * Math.cos(item.angle);
+                          const y = 264 + 198 * Math.sin(item.angle);
                           
                           // Position for the 100% label
-                          const labelX = 240 + 194 * Math.cos(item.angle);
-                          const labelY = 240 + 194 * Math.sin(item.angle);
+                          const labelX = 264 + 213 * Math.cos(item.angle);
+                          const labelY = 264 + 213 * Math.sin(item.angle);
                           
                           return (
                             <g key={`max-point-${i}`}>
@@ -942,14 +1135,14 @@ const ProgressTracking = ({ username }) => {
                           const enhancedAccuracyRatio = minScaleFactor + (1 - minScaleFactor) * accuracyRatio;
                           const enhancedSpeedRatio = minScaleFactor + (1 - minScaleFactor) * normalizedUserSpeed;
                           
-                          const scoreX = 240 + 180 * enhancedScoreRatio * Math.cos(scoreAngle);
-                          const scoreY = 240 + 180 * enhancedScoreRatio * Math.sin(scoreAngle);
+                          const scoreX = 264 + 198 * enhancedScoreRatio * Math.cos(scoreAngle);
+                          const scoreY = 264 + 198 * enhancedScoreRatio * Math.sin(scoreAngle);
                           
-                          const accuracyX = 240 + 180 * enhancedAccuracyRatio * Math.cos(accuracyAngle);
-                          const accuracyY = 240 + 180 * enhancedAccuracyRatio * Math.sin(accuracyAngle);
+                          const accuracyX = 264 + 198 * enhancedAccuracyRatio * Math.cos(accuracyAngle);
+                          const accuracyY = 264 + 198 * enhancedAccuracyRatio * Math.sin(accuracyAngle);
                           
-                          const speedX = 240 + 180 * enhancedSpeedRatio * Math.cos(speedAngle);
-                          const speedY = 240 + 180 * enhancedSpeedRatio * Math.sin(speedAngle);
+                          const speedX = 264 + 198 * enhancedSpeedRatio * Math.cos(speedAngle);
+                          const speedY = 264 + 198 * enhancedSpeedRatio * Math.sin(speedAngle);
                           
                           return `M ${scoreX} ${scoreY} L ${accuracyX} ${accuracyY} L ${speedX} ${speedY} Z`;
                         })()}
@@ -979,14 +1172,14 @@ const ProgressTracking = ({ username }) => {
                         const enhancedAccuracyRatio = minScaleFactor + (1 - minScaleFactor) * accuracyRatio;
                         const enhancedSpeedRatio = minScaleFactor + (1 - minScaleFactor) * normalizedUserSpeed;
                         
-                        const scoreX = 240 + 180 * enhancedScoreRatio * Math.cos(scoreAngle);
-                        const scoreY = 240 + 180 * enhancedScoreRatio * Math.sin(scoreAngle);
+                        const scoreX = 264 + 198 * enhancedScoreRatio * Math.cos(scoreAngle);
+                        const scoreY = 264 + 198 * enhancedScoreRatio * Math.sin(scoreAngle);
                         
-                        const accuracyX = 240 + 180 * enhancedAccuracyRatio * Math.cos(accuracyAngle);
-                        const accuracyY = 240 + 180 * enhancedAccuracyRatio * Math.sin(accuracyAngle);
+                        const accuracyX = 264 + 198 * enhancedAccuracyRatio * Math.cos(accuracyAngle);
+                        const accuracyY = 264 + 198 * enhancedAccuracyRatio * Math.sin(accuracyAngle);
                         
-                        const speedX = 240 + 180 * enhancedSpeedRatio * Math.cos(speedAngle);
-                        const speedY = 240 + 180 * enhancedSpeedRatio * Math.sin(speedAngle);
+                        const speedX = 264 + 198 * enhancedSpeedRatio * Math.cos(speedAngle);
+                        const speedY = 264 + 198 * enhancedSpeedRatio * Math.sin(speedAngle);
                         
                         // Calculate which metric is the student's strongest
                         let bestMetricIndex = 0;
@@ -1152,6 +1345,9 @@ const ProgressTracking = ({ username }) => {
                   
                   <div className="spacer-between-sections"></div>
                   
+
+                  </div>
+                </div>
                   {/* Additional information for understanding metrics */}
                   <div className="non-overlapping-chart-elements" style={{ marginTop: '15px', padding: '0 5px', width: '100%' }}>
                     <p className="radar-info-text">This radar chart displays three layers of information:</p>
@@ -1162,7 +1358,7 @@ const ProgressTracking = ({ username }) => {
                     </ul>
                     <p className="radar-info-text" style={{ marginTop: '10px' }}>
                       For reference, peer best values are: <br/>
-                      <span className="text-with-buffer">Score: {Number(progressData.cohortComparison.peerMaxScore).toFixed(0)}/25</span>, &nbsp;
+                      <span className="text-with-buffer">Score: {Number(progressData.cohortComparison.peerMaxScore).toFixed()}/25</span>, &nbsp;
                       <span className="text-with-buffer">Accuracy: {Number(progressData.cohortComparison.peerMaxAccuracy).toFixed(2)}%</span>, &nbsp;
                       <span className="text-with-buffer">Speed: {Number(progressData.cohortComparison.peerMaxSpeed).toFixed(2)}s</span>
                     </p>
@@ -1172,8 +1368,6 @@ const ProgressTracking = ({ username }) => {
                       The chart shows actual values at their exact scale (e.g., 24% accuracy appears at 24% of the chart radius).
                     </div>
                     </div>
-                  </div>
-                </div>
               </div>
             )}
           </div>

@@ -986,12 +986,26 @@
 
 @media (min-width: 992px) {
   .comparison-container {
-    grid-template-columns: 300px 1fr;
+    grid-template-columns: 260px 1fr;
     align-items: start;
+    gap: 30px; /* Increased gap for better separation */
   }
 }
 
-.best-metric-section {
+.performance-insights-column {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 15px;
+}
+
+@media (min-width: 992px) {
+  .performance-insights-column {
+    width: 260px; /* Match the grid column width */
+  }
+}
+
+.metric-card {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -1000,6 +1014,20 @@
   border-radius: 12px;
   background-color: rgba(249, 250, 251, 0.7);
   box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metric-card:hover {
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+}
+
+.strongest-metric-card {
+  border-left: 4px solid #4f46e5;
+}
+
+.improvement-trend-card {
+  border-left: 4px solid #10b981;
 }
 
 .best-metric-container {
@@ -1008,6 +1036,40 @@
   align-items: flex-start;
   margin-bottom: 15px;
   width: 100%;
+}
+
+/* Improvement trend chart styles */
+.improvement-trend-chart {
+  width: 100%;
+  margin: 5px 0 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+.trend-legend {
+  display: flex;
+  margin-top: 8px;
+  justify-content: center;
+  width: 100%;
+}
+
+.no-data-mini {
+  color: #64748b;
+  font-size: 0.9rem;
+  font-style: italic;
+  padding: 12px;
+  text-align: center;
+  width: 100%;
+  background-color: rgba(226, 232, 240, 0.3);
+  border-radius: 8px;
+  margin: 10px 0;
+  border: 1px dashed rgba(203, 213, 225, 0.5);
 }
 
 .radar-chart-section {
@@ -1019,6 +1081,15 @@
   border-radius: 12px;
   background-color: rgba(249, 250, 251, 0.7);
   box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.03);
+}
+
+/* Add specific styling for larger screens */
+@media (min-width: 992px) {
+  .radar-chart-section {
+    min-height: 580px; /* Ensure consistent height */
+    display: flex;
+    justify-content: center;
+  }
 }
 
 .section-title {
@@ -1048,11 +1119,20 @@
     grid-template-columns: 1fr;
   }
   
-  .best-metric-section {
+  .performance-insights-column {
     margin-bottom: 20px;
   }
   
   .best-metric-highlight {
     max-width: 100%;
+  }
+  
+  .improvement-trend-chart {
+    max-width: 100%;
+    padding: 8px;
+  }
+  
+  .metric-card {
+    margin-bottom: 0;
   }
 }
