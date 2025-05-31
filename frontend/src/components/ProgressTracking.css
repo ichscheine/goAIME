@@ -170,6 +170,27 @@
 }
 
 /* Difficulty Chart */
+.difficulty-chart-container {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+@media (min-width: 1024px) {
+  .difficulty-chart-container {
+    flex-direction: row;
+  }
+  
+  .difficulty-chart {
+    flex: 2;
+  }
+  
+  .difficulty-summary {
+    flex: 1;
+    margin-top: 0;
+  }
+}
+
 .difficulty-chart {
   display: flex;
   flex-direction: column;
@@ -178,12 +199,18 @@
 
 .difficulty-bar {
   display: grid;
-  grid-template-columns: 120px 1fr 120px;
+  grid-template-columns: 100px 1fr 100px 80px;
   align-items: center;
   gap: 15px;
   padding: 12px 15px;
   border-radius: 8px;
   background-color: rgba(255, 255, 255, 0.7);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.difficulty-bar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .difficulty-easy {
@@ -201,6 +228,49 @@
 .difficulty-label {
   font-weight: 600;
   color: #334155;
+}
+
+.donut-chart-container {
+  position: relative;
+}
+
+.difficulty-summary {
+  background-color: rgba(248, 250, 252, 0.7);
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.difficulty-stats {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 20px;
+}
+
+.difficulty-stat-item {
+  text-align: center;
+}
+
+.difficulty-stat-value {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #4f46e5;
+  margin-bottom: 5px;
+}
+
+.difficulty-stat-label {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.difficulty-info {
+  color: #475569;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  background-color: #f8fafc;
+  border-left: 3px solid #4f46e5;
+  padding: 12px 15px;
+  border-radius: 0 4px 4px 0;
 }
 
 .bar-container {
@@ -237,35 +307,59 @@
   text-align: right;
 }
 
-/* Topic Chart */
-.topic-chart {
+/* Topic Visualization Container */
+.topic-visualization-container {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
 }
 
-.topic-row {
-  display: grid;
-  grid-template-columns: 200px 1fr 100px;
-  align-items: center;
-  gap: 15px;
-  padding: 12px 15px;
+@media (min-width: 1024px) {
+  .topic-visualization-container {
+    flex-direction: row;
+  }
+  
+  .topic-chart {
+    flex: 1;
+  }
+  
+  .topic-circular-visualization {
+    flex: 1;
+  }
+}
+
+.circular-chart-container {
+  margin: 0 auto;
+  max-width: 300px;
+  position: relative;
+}
+
+.topic-summary {
+  margin-top: 20px;
+  background-color: rgba(248, 250, 252, 0.7);
   border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.7);
-  border-left: 4px solid #4f46e5;
+  padding: 15px;
 }
 
-.topic-name {
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: #334155;
+.topic-stats {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 15px;
 }
 
-.more-topics-info {
-  margin-top: 15px;
+.topic-stat-item {
   text-align: center;
+}
+
+.topic-stat-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #4f46e5;
+}
+
+.topic-stat-label {
+  font-size: 0.85rem;
   color: #64748b;
-  font-style: italic;
 }
 
 /* Trend Chart */
