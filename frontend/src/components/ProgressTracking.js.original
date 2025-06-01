@@ -1679,10 +1679,8 @@ const ProgressTracking = ({ username }) => {
                     </div>
                     <div className="topic-stat-item">
                       <div className="topic-stat-value">
-                        {Object.entries(progressData.topicPerformance || {}).length > 0
-                          ? Object.entries(progressData.topicPerformance)
-                              .sort((a, b) => b[1].accuracy - a[1].accuracy)[0][0]
-                          : "N/A"}
+                        {Object.entries(progressData.topicPerformance)
+                          .sort((a, b) => b[1].accuracy - a[1].accuracy)[0][0]}
                       </div>
                       <div className="topic-stat-label">Strongest Topic</div>
                     </div>
