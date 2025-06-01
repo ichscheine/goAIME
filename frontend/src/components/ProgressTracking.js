@@ -1438,37 +1438,37 @@ const ProgressTracking = ({ username }) => {
                       {data.correct}/{data.attempted} correct
                     </div>
                     <div className="donut-chart-container">
-                      <svg width="60" height="60" viewBox="0 0 60 60">
+                      <svg width="78" height="78" viewBox="0 0 78 78">
                         {/* Background circle */}
                         <circle 
-                          cx="30" 
-                          cy="30" 
-                          r="25" 
+                          cx="39" 
+                          cy="39" 
+                          r="32.5" 
                           fill="none" 
                           stroke="#e2e8f0" 
-                          strokeWidth="8"
+                          strokeWidth="10.5"
                         />
                         
                         {/* Foreground circle - the progress */}
                         <circle 
-                          cx="30" 
-                          cy="30" 
-                          r="25" 
+                          cx="39" 
+                          cy="39" 
+                          r="32.5" 
                           fill="none" 
                           stroke={difficulty === "Easy" ? "#10b981" : difficulty === "Medium" ? "#f59e0b" : "#ef4444"} 
-                          strokeWidth="8"
-                          strokeDasharray={`${(data.accuracy / 100) * 157} 157`} 
+                          strokeWidth="10.5"
+                          strokeDasharray={`${(data.accuracy / 100) * 204} 204`} 
                           strokeDashoffset="0" 
-                          transform="rotate(-90 30 30)"
+                          transform="rotate(-90 39 39)"
                         />
                         
                         {/* Center text */}
                         <text 
-                          x="30" 
-                          y="30" 
+                          x="39" 
+                          y="39" 
                           textAnchor="middle" 
                           dominantBaseline="middle" 
-                          fontSize="14" 
+                          fontSize="18" 
                           fontWeight="bold"
                           fill="#334155"
                         >
@@ -1507,196 +1507,215 @@ const ProgressTracking = ({ username }) => {
           {/* Topic Performance Section */}
           <div className="performance-section">
             <h3>Performance by Topic</h3>
-            <div className="topic-visualization-container">
-              <div className="topic-chart">
-                {Object.entries(progressData.topicPerformance)
-                  .sort((a, b) => b[1].attempted - a[1].attempted) // Sort by most attempted
-                  .slice(0, 6) // Show top 6 most attempted topics
-                  .map(([topic, data], index) => (
-                    <div key={topic} className="topic-row">
-                      <div className="topic-name">{topic}</div>
-                      <div className="bar-container">
-                        <div 
-                          className="bar-fill" 
-                          style={{ 
-                            width: `${data.accuracy}%`,
-                            background: `linear-gradient(90deg, 
-                              ${index % 3 === 0 ? '#4f46e5' : index % 3 === 1 ? '#0ea5e9' : '#8b5cf6'}, 
-                              ${index % 3 === 0 ? '#818cf8' : index % 3 === 1 ? '#38bdf8' : '#a78bfa'})`
-                          }}
-                        ></div>
-                        <div className="bar-text">{formatAccuracy(data.accuracy)}</div>
-                      </div>
-                      <div className="attempt-info">
-                        {data.correct}/{data.attempted}
-                      </div>
-                    </div>
-                  ))
-                }
+            
+            {/* Centralized Topic Performance Header */}
+            <div className="topic-performance-header">
+              <div className="topic-overview-stats">
+                <div className="topic-stat-card">
+                  <div className="topic-stat-value">
+                    {Object.keys(progressData.topicPerformance).length}
+                  </div>
+                  <div className="topic-stat-label">Topics Attempted</div>
+                </div>
+                <div className="topic-stat-card">
+                  <div className="topic-stat-value">
+                    {Object.entries(progressData.topicPerformance || {}).length > 0
+                      ? Object.entries(progressData.topicPerformance)
+                          .sort((a, b) => b[1].accuracy - a[1].accuracy)[0][0]
+                      : "N/A"}
+                  </div>
+                  <div className="topic-stat-label">Strongest Topic</div>
+                </div>
+                <div className="topic-stat-card">
+                  <div className="topic-stat-value">
+                    {Object.entries(progressData.topicPerformance || {}).length > 0
+                      ? Math.round(Object.values(progressData.topicPerformance).reduce((sum, topic) => 
+                          sum + (topic.accuracy * topic.attempted), 0) / 
+                          Object.values(progressData.topicPerformance).reduce((sum, topic) => 
+                          sum + topic.attempted, 0) || 0)
+                      : 0}%
+                  </div>
+                  <div className="topic-stat-label">Overall Topic Avg</div>
+                </div>
               </div>
               
-              <div className="topic-circular-visualization">
+              <div className="topic-description">
+                <p>This section shows your performance across different mathematical topics. Both charts display the top 6 topics by attempt frequency with detailed accuracy metrics.</p>
+                {Object.keys(progressData.topicPerformance).length > 6 && (
+                  <div className="additional-topics-note">
+                    + {Object.keys(progressData.topicPerformance).length - 6} additional topics not shown in visualizations
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Centralized Visualization Container */}
+            <div className="topic-visualization-container">
+              {/* Left Side: Bar Chart */}
+              <div className="topic-chart-section">
+                <h4 className="visualization-title">Top Topics by Performance</h4>
+                <div className="topic-chart">
+                  {Object.entries(progressData.topicPerformance)
+                    .sort((a, b) => b[1].attempted - a[1].attempted) // Sort by most attempted
+                    .slice(0, 6) // Show top 6 most attempted topics
+                    .map(([topic, data], index) => (
+                      <div key={topic} className="topic-row">
+                        <div className="topic-name" style={{ fontWeight: 'bold', color: '#1e293b' }}>{topic}</div>
+                        <div className="bar-container">
+                          <div 
+                            className="bar-fill" 
+                            style={{ 
+                              width: `${data.accuracy}%`,
+                              background: `linear-gradient(90deg, 
+                                ${index % 3 === 0 ? '#4f46e5' : index % 3 === 1 ? '#0ea5e9' : '#8b5cf6'}, 
+                                ${index % 3 === 0 ? '#818cf8' : index % 3 === 1 ? '#38bdf8' : '#a78bfa'})`,
+                              borderRadius: '4px'
+                            }}
+                          ></div>
+                          <div className="bar-text" style={{ color: '#334155', fontSize: '14px' }}>{formatAccuracy(data.accuracy)}</div>
+                        </div>
+                        <div className="attempt-info" style={{ color: '#64748b', fontSize: '12px' }}>
+                          {data.correct}/{data.attempted} correct
+                        </div>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+              
+              {/* Right Side: Circular Chart */}
+              <div className="topic-circular-section">
+                <h4 className="visualization-title">Topic Distribution Overview</h4>
                 <div className="circular-chart-container">
-                  <svg width="300" height="300" viewBox="0 0 300 300">
-                    {/* Center circle */}
-                    <circle cx="150" cy="150" r="25" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1" />
+                  <svg width="100%" height="600" viewBox="0 0 600 600" preserveAspectRatio="xMidYMid meet">
+                    {/* Background circles for visual depth */}
+                    <defs>
+                      <radialGradient id="centerGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                        <stop offset="0%" style={{ stopColor: '#f8fafc', stopOpacity: 1 }} />
+                        <stop offset="100%" style={{ stopColor: '#f1f5f9', stopOpacity: 1 }} />
+                      </radialGradient>
+                    </defs>
                     
-                    {/* Center text */}
-                    <text x="150" y="150" textAnchor="middle" dominantBaseline="middle" fontSize="12" fill="#64748b">Topics</text>
+                    {/* Base circle with gradient */}
+                    <circle cx="300" cy="300" r="250" fill="url(#centerGradient)" stroke="#e2e8f0" strokeWidth="2" opacity="0.7" />
                     
-                    {/* Draw topic segments */}
+                    {/* Center circle with topics text */}
+                    <circle cx="300" cy="300" r="42" fill="#f8fafc" stroke="#94a3b8" strokeWidth="2" />
+                    <text x="300" y="300" textAnchor="middle" dominantBaseline="middle" 
+                      fontSize="20" fill="#475569" fontWeight="600">
+                      Topics
+                    </text>
+
+                    {/* Topic nodes and connections */}
                     {Object.entries(progressData.topicPerformance)
-                      .sort((a, b) => b[1].attempted - a[1].attempted) // Sort by most attempted
-                      .slice(0, 8) // Show top 8 topics in the circular chart
+                      .sort((a, b) => b[1].attempted - a[1].attempted)
+                      .slice(0, 6)
                       .map(([topic, data], index, array) => {
-                        const segmentAngle = (2 * Math.PI) / array.length;
-                        const startAngle = index * segmentAngle - Math.PI / 2;
-                        const endAngle = startAngle + segmentAngle;
+                        const angle = (index / array.length) * 2 * Math.PI - Math.PI / 2; // Start from top
+                        const radius = 180; // Consistent radius for all topics
+                        const x = 300 + Math.cos(angle) * radius;
+                        const y = 300 + Math.sin(angle) * radius;
                         
-                        // Calculate inner and outer radius based on accuracy
-                        const minRadius = 30; // Minimum radius
-                        const maxRadius = 120; // Maximum radius
-                        const innerRadius = minRadius;
-                        const outerRadius = minRadius + ((maxRadius - minRadius) * data.accuracy / 100);
-                        
-                        // Calculate points for the segment
-                        const innerStartX = 150 + innerRadius * Math.cos(startAngle);
-                        const innerStartY = 150 + innerRadius * Math.sin(startAngle);
-                        const innerEndX = 150 + innerRadius * Math.cos(endAngle);
-                        const innerEndY = 150 + innerRadius * Math.sin(endAngle);
-                        
-                        const outerStartX = 150 + outerRadius * Math.cos(startAngle);
-                        const outerStartY = 150 + outerRadius * Math.sin(startAngle);
-                        const outerEndX = 150 + outerRadius * Math.cos(endAngle);
-                        const outerEndY = 150 + outerRadius * Math.sin(endAngle);
-                        
-                        // Generate path for the segment
-                        const path = [
-                          `M ${innerStartX} ${innerStartY}`,
-                          `L ${outerStartX} ${outerStartY}`,
-                          `A ${outerRadius} ${outerRadius} 0 0 1 ${outerEndX} ${outerEndY}`,
-                          `L ${innerEndX} ${innerEndY}`,
-                          `A ${innerRadius} ${innerRadius} 0 0 0 ${innerStartX} ${innerStartY}`,
-                          'Z'
-                        ].join(' ');
-                        
-                        // Calculate position for the label
-                        const labelRadius = outerRadius + 15;
-                        const midAngle = startAngle + segmentAngle / 2;
-                        const labelX = 150 + labelRadius * Math.cos(midAngle);
-                        const labelY = 150 + labelRadius * Math.sin(midAngle);
-                        
-                        // Choose colors based on index
-                        const colors = [
-                          ['#4f46e5', '#818cf8'], // Indigo
-                          ['#0ea5e9', '#38bdf8'], // Sky
-                          ['#8b5cf6', '#a78bfa'], // Violet
-                          ['#10b981', '#34d399'], // Emerald
-                          ['#f59e0b', '#fbbf24'], // Amber
-                          ['#ef4444', '#f87171'], // Red
-                          ['#ec4899', '#f472b6'], // Pink
-                          ['#8b5cf6', '#a78bfa']  // Violet (repeat)
-                        ];
+                        // Calculate color based on accuracy
+                        const colorScale = data.accuracy / 100;
+                        const baseColor = index % 2 === 0 ? '#4f46e5' : '#0ea5e9';
+                        const lightColor = index % 2 === 0 ? '#818cf8' : '#38bdf8';
                         
                         return (
-                          <g key={topic}>
-                            {/* Segment */}
-                            <path 
-                              d={path} 
-                              fill={`url(#gradient-${index})`}
-                              stroke="#ffffff" 
-                              strokeWidth="1"
+                          <g key={topic} className="topic-node">
+                            {/* Connection line with gradient */}
+                            <line 
+                              x1="300" y1="300" x2={x} y2={y} 
+                              stroke={`url(#gradient-${index})`}
+                              strokeWidth="2"
+                              strokeDasharray="5,5"
+                              opacity="0.6"
                             />
                             
-                            {/* Define gradient */}
+                            {/* Topic circle with gradient background */}
                             <defs>
-                              <linearGradient id={`gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor={colors[index % colors.length][0]} />
-                                <stop offset="100%" stopColor={colors[index % colors.length][1]} />
-                              </linearGradient>
+                              <radialGradient id={`gradient-${index}`}>
+                                <stop offset="0%" stopColor={lightColor} />
+                                <stop offset="100%" stopColor={baseColor} />
+                              </radialGradient>
                             </defs>
                             
-                            {/* Topic name label */}
-                            <text 
-                              x={labelX} 
-                              y={labelY} 
-                              textAnchor={midAngle > -Math.PI/2 && midAngle < Math.PI/2 ? "start" : "end"}
-                              dominantBaseline="middle" 
-                              fontSize="10" 
-                              fill="#334155"
-                              fontWeight="500"
-                            >
-                              {topic.length > 12 ? topic.substring(0, 10) + "..." : topic}
-                            </text>
-                            
-                            {/* Draw line from segment to label */}
-                            <line 
-                              x1={150 + outerRadius * Math.cos(midAngle)} 
-                              y1={150 + outerRadius * Math.sin(midAngle)} 
-                              x2={150 + (labelRadius - 10) * Math.cos(midAngle)} 
-                              y2={150 + (labelRadius - 10) * Math.sin(midAngle)} 
-                              stroke="#94a3b8" 
-                              strokeWidth="1" 
-                              strokeDasharray="2 2"
-                            />
-                            
-                            {/* Small circle to indicate accuracy percentage */}
+                            {/* Outer glow effect */}
                             <circle 
-                              cx={150 + (outerRadius * 0.7) * Math.cos(midAngle)} 
-                              cy={150 + (outerRadius * 0.7) * Math.sin(midAngle)} 
-                              r="10" 
-                              fill="#ffffff"
-                              stroke={colors[index % colors.length][0]}
-                              strokeWidth="1"
+                              cx={x} cy={y} r="32" 
+                              fill={`url(#gradient-${index})`}
+                              opacity="0.15"
                             />
                             
-                            {/* Accuracy percentage text */}
+                            {/* Main topic circle */}
+                            <circle 
+                              cx={x} cy={y} r="28" 
+                              fill={`url(#gradient-${index})`}
+                              stroke="#fff"
+                              strokeWidth="2"
+                              style={{
+                                filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.1))',
+                                transition: 'all 0.3s ease'
+                              }}
+                            />
+                            
+                            {/* Accuracy arc */}
+                            <path
+                              d={`
+                                M ${x} ${y - 28}
+                                A 28 28 0 ${data.accuracy > 50 ? 1 : 0} 1 
+                                ${x + 28 * Math.sin(2 * Math.PI * data.accuracy / 100)} 
+                                ${y - 28 * Math.cos(2 * Math.PI * data.accuracy / 100)}
+                              `}
+                              fill="none"
+                              stroke="#fff"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                            />
+                            
+                            {/* Topic name with background for better readability */}
+                            <g transform={`translate(${x}, ${y - 45})`}>
+                              <rect
+                                x="-60" y="-20" width="120" height="25"
+                                fill="#ffffff"
+                                fillOpacity="0.9"
+                                rx="4"
+                              />
+                              <text 
+                                textAnchor="middle" 
+                                fontSize="14"
+                                fill="#1e293b"
+                                fontWeight="600"
+                                y="0"
+                              >
+                                {topic}
+                              </text>
+                            </g>
+                            
+                            {/* Accuracy percentage */}
                             <text 
-                              x={150 + (outerRadius * 0.7) * Math.cos(midAngle)} 
-                              y={150 + (outerRadius * 0.7) * Math.sin(midAngle)} 
+                              x={x} y={y + 45} 
                               textAnchor="middle" 
-                              dominantBaseline="middle" 
-                              fontSize="8"
-                              fontWeight="bold"
-                              fill="#334155"
+                              fontSize="14"
+                              fill="#475569"
+                              fontWeight="600"
                             >
                               {Math.round(data.accuracy)}%
                             </text>
+                            
+                            {/* Attempt count */}
+                            <text 
+                              x={x} y={y + 65} 
+                              textAnchor="middle" 
+                              fontSize="12"
+                              fill="#64748b"
+                            >
+                              {data.correct}/{data.attempted}
+                            </text>
                           </g>
                         );
-                      })
-                    }
+                      })}
                   </svg>
-                </div>
-                
-                <div className="topic-summary">
-                  <div className="topic-stats">
-                    <div className="topic-stat-item">
-                      <div className="topic-stat-value">
-                        {Object.keys(progressData.topicPerformance).length}
-                      </div>
-                      <div className="topic-stat-label">Topics Attempted</div>
-                    </div>
-                    <div className="topic-stat-item">
-                      <div className="topic-stat-value">
-                        {Object.entries(progressData.topicPerformance || {}).length > 0
-                          ? Object.entries(progressData.topicPerformance)
-                              .sort((a, b) => b[1].accuracy - a[1].accuracy)[0][0]
-                          : "N/A"}
-                      </div>
-                      <div className="topic-stat-label">Strongest Topic</div>
-                    </div>
-                  </div>
-                  
-                  <div className="topic-info">
-                    <p>This visualization shows your performance across different mathematical topics. 
-                    The length of each segment represents your accuracy in that topic.</p>
-                    {Object.keys(progressData.topicPerformance).length > 8 && (
-                      <div className="more-topics-info">
-                        + {Object.keys(progressData.topicPerformance).length - 8} more topics not shown in the circular chart
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
             </div>

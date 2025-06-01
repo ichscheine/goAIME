@@ -329,9 +329,24 @@
 }
 
 .circular-chart-container {
-  margin: 0 auto;
-  max-width: 300px;
+  margin: -10px auto 0; /* Reduce top margin to move chart up further */
+  max-width: 500px; /* Increased from 300px for better visibility */
   position: relative;
+  width: 100%;
+}
+
+/* Responsive circular chart styles */
+@media (max-width: 768px) {
+  .circular-chart-container {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .circular-chart-container {
+    max-width: 100%;
+    padding: 0 10px;
+  }
 }
 
 .topic-summary {
@@ -832,6 +847,149 @@
   border-radius: 8px;
 }
 
+/* Centralized Topic Performance Styles */
+.topic-performance-header {
+  margin-bottom: 30px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.topic-overview-stats {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.topic-stat-card {
+  background: white;
+  padding: 16px 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  min-width: 140px;
+  border: 1px solid #e2e8f0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.topic-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.topic-stat-card .topic-stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #4f46e5;
+  margin-bottom: 4px;
+}
+
+.topic-stat-card .topic-stat-label {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.topic-description {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.topic-description p {
+  font-size: 0.95rem;
+  color: #475569;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.additional-topics-note {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Visualization Container Updates */
+.topic-visualization-container {
+  display: flex;
+  gap: 30px;
+  align-items: flex-start;
+  margin-top: 20px;
+}
+
+.topic-chart-section {
+  flex: 1.2;
+  min-width: 320px;
+}
+
+.topic-circular-section {
+  flex: 1;
+  min-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: -20px; /* Move the circular chart section up */
+}
+
+.visualization-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 15px;
+  text-align: center;
+  padding: 10px 0;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+/* Responsive Design for Topic Section */
+@media (max-width: 1200px) {
+  .topic-visualization-container {
+    flex-direction: column;
+    gap: 30px;
+  }
+  
+  .topic-chart-section,
+  .topic-circular-section {
+    flex: none;
+    min-width: 100%;
+  }
+  
+  .topic-overview-stats {
+    justify-content: space-around;
+  }
+  
+  .topic-stat-card {
+    min-width: 120px;
+    flex: 1;
+    max-width: 150px;
+  }
+}
+
+@media (max-width: 768px) {
+  .topic-performance-header {
+    padding: 15px;
+  }
+  
+  .topic-overview-stats {
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+  
+  .topic-stat-card {
+    width: 100%;
+    max-width: 200px;
+  }
+  
+  .visualization-title {
+    font-size: 1rem;
+  }
+}
+
 /* Responsive Adjustments */
 @media (max-width: 768px) {
   .progress-tracking-container {
@@ -884,7 +1042,7 @@
   .radar-chart {
     max-width: 320px;
   }
-
+  
   .legend-item {
     min-width: 120px;
     margin: 2px 0;
@@ -969,7 +1127,6 @@
 .best-metric-value {
   font-size: 2rem;
   font-weight: 700;
-  color: #4f46e5;
 }
 
 .percentile-text {
@@ -1194,8 +1351,6 @@
   flex-shrink: 0;
   color: #3b82f6;
 }
-
-/* These styles were related to the removed Session Consistency section and have been removed */
 
 /* Tip header styles - reused in other sections */
 .tip-header {
