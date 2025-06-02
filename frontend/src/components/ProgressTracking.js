@@ -1551,171 +1551,256 @@ const ProgressTracking = ({ username }) => {
 
             {/* Centralized Visualization Container */}
             <div className="topic-visualization-container">
-              {/* Left Side: Bar Chart */}
-              <div className="topic-chart-section">
-                <h4 className="visualization-title">Top Topics by Performance</h4>
-                <div className="topic-chart">
-                  {Object.entries(progressData.topicPerformance)
-                    .sort((a, b) => b[1].attempted - a[1].attempted) // Sort by most attempted
-                    .slice(0, 6) // Show top 6 most attempted topics
-                    .map(([topic, data], index) => (
-                      <div key={topic} className="topic-row">
-                        <div className="topic-name" style={{ fontWeight: 'bold', color: '#1e293b' }}>{topic}</div>
-                        <div className="bar-container">
-                          <div 
-                            className="bar-fill" 
-                            style={{ 
-                              width: `${data.accuracy}%`,
-                              background: `linear-gradient(90deg, 
-                                ${index % 3 === 0 ? '#4f46e5' : index % 3 === 1 ? '#0ea5e9' : '#8b5cf6'}, 
-                                ${index % 3 === 0 ? '#818cf8' : index % 3 === 1 ? '#38bdf8' : '#a78bfa'})`,
-                              borderRadius: '4px'
-                            }}
-                          ></div>
-                          <div className="bar-text" style={{ color: '#334155', fontSize: '14px' }}>{formatAccuracy(data.accuracy)}</div>
-                        </div>
-                        <div className="attempt-info" style={{ color: '#64748b', fontSize: '12px' }}>
-                          {data.correct}/{data.attempted} correct
-                        </div>
-                      </div>
-                    ))
-                  }
-                </div>
-              </div>
-              
-              {/* Right Side: Circular Chart */}
-              <div className="topic-circular-section">
-                <h4 className="visualization-title">Topic Distribution Overview</h4>
-                <div className="circular-chart-container">
-                  <svg width="100%" height="600" viewBox="0 0 600 600" preserveAspectRatio="xMidYMid meet">
-                    {/* Background circles for visual depth */}
-                    <defs>
-                      <radialGradient id="centerGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                        <stop offset="0%" style={{ stopColor: '#f8fafc', stopOpacity: 1 }} />
-                        <stop offset="100%" style={{ stopColor: '#f1f5f9', stopOpacity: 1 }} />
-                      </radialGradient>
-                    </defs>
+              {/* Wind Rose Chart for Topic Performance */}
+              <div className="topic-windrose-section">
+                <h4 className="visualization-title">Topic Performance Overview</h4>
+                <div className="windrose-chart-container">
+                  <svg width="100%" height="500" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet">
+                    {/* Background circle */}
+                    <circle cx="250" cy="250" r="240" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1" />
                     
-                    {/* Base circle with gradient */}
-                    <circle cx="300" cy="300" r="250" fill="url(#centerGradient)" stroke="#e2e8f0" strokeWidth="2" opacity="0.7" />
+                    {/* Circular grid lines */}
+                    {[1000, 2000, 3000, 4000, 5000, 6000, 7000].map((value, index) => (
+                      <circle 
+                        key={`grid-${index}`}
+                        cx="250" 
+                        cy="250" 
+                        r={240 * (value / 8000)} 
+                        fill="none" 
+                        stroke="#e2e8f0" 
+                        strokeWidth="1" 
+                        strokeDasharray={index === 0 ? "none" : "4,4"}
+                      />
+                    ))}
                     
-                    {/* Center circle with topics text */}
-                    <circle cx="300" cy="300" r="42" fill="#f8fafc" stroke="#94a3b8" strokeWidth="2" />
-                    <text x="300" y="300" textAnchor="middle" dominantBaseline="middle" 
-                      fontSize="20" fill="#475569" fontWeight="600">
-                      Topics
-                    </text>
-
-                    {/* Topic nodes and connections */}
-                    {Object.entries(progressData.topicPerformance)
-                      .sort((a, b) => b[1].attempted - a[1].attempted)
-                      .slice(0, 6)
-                      .map(([topic, data], index, array) => {
-                        const angle = (index / array.length) * 2 * Math.PI - Math.PI / 2; // Start from top
-                        const radius = 180; // Consistent radius for all topics
-                        const x = 300 + Math.cos(angle) * radius;
-                        const y = 300 + Math.sin(angle) * radius;
+                    {/* Radial grid lines (16 directions) */}
+                    {Array.from({ length: 16 }).map((_, index) => {
+                      const angle = (index * 22.5) * (Math.PI / 180);
+                      const x = 250 + Math.cos(angle) * 240;
+                      const y = 250 + Math.sin(angle) * 240;
+                      return (
+                        <line 
+                          key={`radial-${index}`}
+                          x1="250" 
+                          y1="250" 
+                          x2={x} 
+                          y2={y} 
+                          stroke="#e2e8f0" 
+                          strokeWidth="1" 
+                          strokeDasharray="4,4"
+                        />
+                      );
+                    })}
+                    
+                    {/* Direction labels */}
+                    {[
+                      { label: "N", angle: 0 },
+                      { label: "NNE", angle: 22.5 },
+                      { label: "NE", angle: 45 },
+                      { label: "ENE", angle: 67.5 },
+                      { label: "E", angle: 90 },
+                      { label: "ESE", angle: 112.5 },
+                      { label: "SE", angle: 135 },
+                      { label: "SSE", angle: 157.5 },
+                      { label: "S", angle: 180 },
+                      { label: "SSW", angle: 202.5 },
+                      { label: "SW", angle: 225 },
+                      { label: "WSW", angle: 247.5 },
+                      { label: "W", angle: 270 },
+                      { label: "WNW", angle: 292.5 },
+                      { label: "NW", angle: 315 },
+                      { label: "NNW", angle: 337.5 }
+                    ].map((dir) => {
+                      const radian = (dir.angle - 90) * (Math.PI / 180);
+                      const x = 250 + Math.cos(radian) * 255;
+                      const y = 250 + Math.sin(radian) * 255;
+                      return (
+                        <text 
+                          key={`dir-${dir.label}`}
+                          x={x} 
+                          y={y} 
+                          textAnchor="middle" 
+                          dominantBaseline="middle" 
+                          fontSize="12" 
+                          fontWeight="600"
+                          fill="#64748b"
+                        >
+                          {dir.label}
+                        </text>
+                      );
+                    })}
+                    
+                    {/* Value labels on grid circles */}
+                    {[1000, 2000, 3000, 4000, 5000, 6000, 7000].map((value, index) => (
+                      <text 
+                        key={`value-${index}`}
+                        x="250" 
+                        y={250 - 240 * (value / 8000)} 
+                        textAnchor="start" 
+                        dominantBaseline="middle" 
+                        fontSize="10" 
+                        fill="#64748b"
+                        dx="5"
+                      >
+                        {value}
+                      </text>
+                    ))}
+                    
+                    {/* Performance data wedges */}
+                    {(() => {
+                      // Get top 8 topics by attempt count (for cleaner visualization)
+                      const topTopics = Object.entries(progressData.topicPerformance)
+                        .sort((a, b) => b[1].attempted - a[1].attempted)
+                        .slice(0, 8);
                         
-                        // Calculate color based on accuracy
-                        const colorScale = data.accuracy / 100;
-                        const baseColor = index % 2 === 0 ? '#4f46e5' : '#0ea5e9';
-                        const lightColor = index % 2 === 0 ? '#818cf8' : '#38bdf8';
+                      // Map topics to windrose directions for even distribution
+                      return topTopics.map((topic, index) => {
+                        const numTopics = topTopics.length;
+                        const startAngle = (index * (360 / numTopics) - 90) * (Math.PI / 180);
+                        const endAngle = ((index + 1) * (360 / numTopics) - 90) * (Math.PI / 180);
+                        
+                        // Calculate performance levels (low, medium, high) based on accuracy
+                        const accuracy = topic[1].accuracy;
+                        const levels = [
+                          { threshold: 50, color: "#ef4444", label: "Low" }, // Red
+                          { threshold: 75, color: "#f59e0b", label: "Medium" }, // Yellow/Orange
+                          { threshold: 100, color: "#10b981", label: "High" }  // Green
+                        ];
+                        
+                        // Calculate scaling factor based on attempts
+                        const maxAttempts = Math.max(
+                          ...Object.values(progressData.topicPerformance).map(t => t.attempted)
+                        );
+                        const attemptScale = 240 * (Math.min(topic[1].attempted, 7000) / 8000);
+                        
+                        // Create nested arcs based on accuracy levels
+                        return levels.map((level, levelIndex) => {
+                          // Determine if this accuracy level should be filled
+                          const shouldFill = accuracy >= level.threshold || 
+                            (levelIndex > 0 && accuracy >= levels[levelIndex-1].threshold && accuracy < level.threshold);
+                          
+                          if (!shouldFill) return null;
+                          
+                          // Calculate inner and outer radii based on level
+                          const innerRadius = levelIndex > 0 ? 
+                            attemptScale * (levels[levelIndex-1].threshold / 100) : 0;
+                          const outerRadius = attemptScale * (Math.min(accuracy, level.threshold) / 100);
+                          
+                          // Skip if the arc is too small
+                          if (outerRadius - innerRadius < 2) return null;
+                          
+                          // Calculate path for arc segment
+                          const innerStartX = 250 + Math.cos(startAngle) * innerRadius;
+                          const innerStartY = 250 + Math.sin(startAngle) * innerRadius;
+                          const outerStartX = 250 + Math.cos(startAngle) * outerRadius;
+                          const outerStartY = 250 + Math.sin(startAngle) * outerRadius;
+                          const innerEndX = 250 + Math.cos(endAngle) * innerRadius;
+                          const innerEndY = 250 + Math.sin(endAngle) * innerRadius;
+                          const outerEndX = 250 + Math.cos(endAngle) * outerRadius;
+                          const outerEndY = 250 + Math.sin(endAngle) * outerRadius;
+                          
+                          // Determine if the arc is large (> 180 degrees)
+                          const largeArc = (endAngle - startAngle) > Math.PI ? 1 : 0;
+                          
+                          return (
+                            <path
+                              key={`arc-${topic[0]}-${level.label}`}
+                              d={`M ${innerStartX} ${innerStartY} 
+                                L ${outerStartX} ${outerStartY} 
+                                A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${outerEndX} ${outerEndY} 
+                                L ${innerEndX} ${innerEndY} 
+                                A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${innerStartX} ${innerStartY}`}
+                              fill={level.color}
+                              stroke="#ffffff"
+                              strokeWidth="0.5"
+                              opacity={0.85}
+                            >
+                              <title>{`${topic[0]}: ${accuracy.toFixed(1)}% accuracy (${topic[1].correct}/${topic[1].attempted} correct)`}</title>
+                            </path>
+                          );
+                        }).filter(Boolean);
+                      });
+                    })().flat()}
+                    
+                    {/* Topic Labels */}
+                    {(() => {
+                      // Get top 8 topics by attempt count
+                      const topTopics = Object.entries(progressData.topicPerformance)
+                        .sort((a, b) => b[1].attempted - a[1].attempted)
+                        .slice(0, 8);
+                      
+                      return topTopics.map((topic, index) => {
+                        const numTopics = topTopics.length;
+                        const midAngle = ((index + 0.5) * (360 / numTopics) - 90) * (Math.PI / 180);
+                        
+                        // Place labels at 60% of the max radius for visibility
+                        const labelRadius = 240 * 0.6;
+                        const x = 250 + Math.cos(midAngle) * labelRadius;
+                        const y = 250 + Math.sin(midAngle) * labelRadius;
+                        
+                        // Get a background color based on accuracy
+                        const accuracy = topic[1].accuracy;
+                        let bgColor;
+                        if (accuracy < 50) bgColor = "#fee2e2"; // Light red
+                        else if (accuracy < 75) bgColor = "#fef3c7"; // Light yellow
+                        else bgColor = "#d1fae5"; // Light green
                         
                         return (
-                          <g key={topic} className="topic-node">
-                            {/* Connection line with gradient */}
-                            <line 
-                              x1="300" y1="300" x2={x} y2={y} 
-                              stroke={`url(#gradient-${index})`}
-                              strokeWidth="2"
-                              strokeDasharray="5,5"
-                              opacity="0.6"
+                          <g key={`topic-label-${index}`}>
+                            <rect
+                              x={x - 40}
+                              y={y - 12}
+                              width="80"
+                              height="24"
+                              rx="12"
+                              ry="12"
+                              fill={bgColor}
+                              opacity="0.9"
+                              stroke="#ffffff"
+                              strokeWidth="1"
                             />
-                            
-                            {/* Topic circle with gradient background */}
-                            <defs>
-                              <radialGradient id={`gradient-${index}`}>
-                                <stop offset="0%" stopColor={lightColor} />
-                                <stop offset="100%" stopColor={baseColor} />
-                              </radialGradient>
-                            </defs>
-                            
-                            {/* Outer glow effect */}
-                            <circle 
-                              cx={x} cy={y} r="32" 
-                              fill={`url(#gradient-${index})`}
-                              opacity="0.15"
-                            />
-                            
-                            {/* Main topic circle */}
-                            <circle 
-                              cx={x} cy={y} r="28" 
-                              fill={`url(#gradient-${index})`}
-                              stroke="#fff"
-                              strokeWidth="2"
-                              style={{
-                                filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.1))',
-                                transition: 'all 0.3s ease'
-                              }}
-                            />
-                            
-                            {/* Accuracy arc */}
-                            <path
-                              d={`
-                                M ${x} ${y - 28}
-                                A 28 28 0 ${data.accuracy > 50 ? 1 : 0} 1 
-                                ${x + 28 * Math.sin(2 * Math.PI * data.accuracy / 100)} 
-                                ${y - 28 * Math.cos(2 * Math.PI * data.accuracy / 100)}
-                              `}
-                              fill="none"
-                              stroke="#fff"
-                              strokeWidth="3"
-                              strokeLinecap="round"
-                            />
-                            
-                            {/* Topic name with background for better readability */}
-                            <g transform={`translate(${x}, ${y - 45})`}>
-                              <rect
-                                x="-60" y="-20" width="120" height="25"
-                                fill="#ffffff"
-                                fillOpacity="0.9"
-                                rx="4"
-                              />
-                              <text 
-                                textAnchor="middle" 
-                                fontSize="14"
-                                fill="#1e293b"
-                                fontWeight="600"
-                                y="0"
-                              >
-                                {topic}
-                              </text>
-                            </g>
-                            
-                            {/* Accuracy percentage */}
-                            <text 
-                              x={x} y={y + 45} 
-                              textAnchor="middle" 
-                              fontSize="14"
-                              fill="#475569"
+                            <text
+                              x={x}
+                              y={y}
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                              fontSize="10"
                               fontWeight="600"
+                              fill="#334155"
                             >
-                              {Math.round(data.accuracy)}%
-                            </text>
-                            
-                            {/* Attempt count */}
-                            <text 
-                              x={x} y={y + 65} 
-                              textAnchor="middle" 
-                              fontSize="12"
-                              fill="#64748b"
-                            >
-                              {data.correct}/{data.attempted}
+                              {topic[0]}
                             </text>
                           </g>
                         );
-                      })}
+                      });
+                    })()}
+                    
+                    {/* Center circle */}
+                    <circle cx="250" cy="250" r="25" fill="#f1f5f9" stroke="#cbd5e1" strokeWidth="1.5" />
+                    <text x="250" y="250" textAnchor="middle" dominantBaseline="middle" fontSize="10" fontWeight="600" fill="#475569">Topic Map</text>
                   </svg>
+                </div>
+                
+                {/* Legend */}
+                <div className="windrose-legend">
+                  <div className="legend-title">Performance Legend</div>
+                  <div className="legend-items">
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ backgroundColor: "#10b981" }}></div>
+                      <div className="legend-label">High Performance (75-100%)</div>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ backgroundColor: "#f59e0b" }}></div>
+                      <div className="legend-label">Medium Performance (50-75%)</div>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ backgroundColor: "#ef4444" }}></div>
+                      <div className="legend-label">Low Performance (0-50%)</div>
+                    </div>
+                  </div>
+                  <div className="legend-note">
+                    <p>Each segment's distance from center indicates number of attempts. Color represents accuracy level.</p>
+                  </div>
                 </div>
               </div>
             </div>
