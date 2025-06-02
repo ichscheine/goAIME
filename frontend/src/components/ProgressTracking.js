@@ -261,7 +261,7 @@ const ProgressTracking = ({ username }) => {
     // Calculate ratios for each metric (normalized to 0-100 scale)
     // For score and accuracy, normalize to 0-100 scale
     // For speed, we already calculate a percentile where higher is better
-    const scoreRatio = (progressData.cohortComparison.userScore / 100) * 100;
+    const scoreRatio = (progressData.cohortComparison.userScore / 25) * 100;
     const accuracyRatio = progressData.cohortComparison.userAccuracy;
     // For speed, we calculate a percentile where higher is better
     const speedPercentile = calculateSpeedPercentile();
@@ -940,29 +940,73 @@ const ProgressTracking = ({ username }) => {
                             strokeWidth={scale === 1 ? "1.5" : "1"} 
                             opacity={scale === 1 ? 0.9 : 0.7} 
                           />
+                          {/* Scale labels - Show actual scores for Score axis (top), percentages for other axes */}
                           {scale === 0.25 && (
-                            <text x="270" y={264 - (198 * scale)} textAnchor="start" fontSize="13" fill="#64748b" opacity="1" fontWeight="600"
-                              style={{ textShadow: "0px 0px 3px #ffffff, 0px 0px 3px #ffffff" }}>
-                              {Math.round(scale * 100)}%
-                            </text>
+                            <>
+                              {/* Right side percentage scale (shared between axes) - rotated 30 degrees to the right */}
+                              <text 
+                                x={264 + Math.cos((-90 + 30) * (Math.PI / 180)) * (198 * scale + 8)} 
+                                y={264 + Math.sin((-90 + 30) * (Math.PI / 180)) * (198 * scale + 8)} 
+                                textAnchor="start" 
+                                fontSize="13" 
+                                fill="#64748b" 
+                                opacity="1" 
+                                fontWeight="600"
+                                style={{ textShadow: "0px 0px 3px #ffffff, 0px 0px 3px #ffffff" }}
+                              >
+                                {Math.round(scale * 100)}%
+                              </text>
+                            </>
                           )}
                           {scale === 0.5 && (
-                            <text x="270" y={264 - (198 * scale)} textAnchor="start" fontSize="13" fill="#64748b" opacity="1" fontWeight="600"
-                              style={{ textShadow: "0px 0px 3px #ffffff, 0px 0px 3px #ffffff" }}>
-                              {Math.round(scale * 100)}%
-                            </text>
+                            <>
+                              {/* Right side percentage scale (shared between axes) - rotated 30 degrees to the right */}
+                              <text 
+                                x={264 + Math.cos((-90 + 30) * (Math.PI / 180)) * (198 * scale + 8)} 
+                                y={264 + Math.sin((-90 + 30) * (Math.PI / 180)) * (198 * scale + 8)} 
+                                textAnchor="start" 
+                                fontSize="13" 
+                                fill="#64748b" 
+                                opacity="1" 
+                                fontWeight="600"
+                                style={{ textShadow: "0px 0px 3px #ffffff, 0px 0px 3px #ffffff" }}
+                              >
+                                {Math.round(scale * 100)}%
+                              </text>
+                            </>
                           )}
                           {scale === 0.75 && (
-                            <text x="270" y={264 - (198 * scale)} textAnchor="start" fontSize="13" fill="#64748b" opacity="1" fontWeight="600"
-                              style={{ textShadow: "0px 0px 3px #ffffff, 0px 0px 3px #ffffff" }}>
-                              {Math.round(scale * 100)}%
-                            </text>
+                            <>
+                              {/* Right side percentage scale (shared between axes) - rotated 30 degrees to the right */}
+                              <text 
+                                x={264 + Math.cos((-90 + 30) * (Math.PI / 180)) * (198 * scale + 8)} 
+                                y={264 + Math.sin((-90 + 30) * (Math.PI / 180)) * (198 * scale + 8)} 
+                                textAnchor="start" 
+                                fontSize="13" 
+                                fill="#64748b" 
+                                opacity="1" 
+                                fontWeight="600"
+                                style={{ textShadow: "0px 0px 3px #ffffff, 0px 0px 3px #ffffff" }}
+                              >
+                                {Math.round(scale * 100)}%
+                              </text>
+                            </>
                           )}
                           {scale === 1 && (
-                            <text x="270" y={264 - (198 * scale)} textAnchor="start" fontSize="13" fill="#64748b" opacity="1" fontWeight="600"
-                              style={{ textShadow: "0px 0px 3px #ffffff, 0px 0px 3px #ffffff" }}>
-                              100%
-                            </text>
+                            <>                              
+                              {/* Right side percentage scale (shared between axes) - rotated 30 degrees to the right */}
+                              <text 
+                                x={264 + Math.cos((-90 + 30) * (Math.PI / 180)) * (198 * scale + 8)} 
+                                y={264 + Math.sin((-90 + 30) * (Math.PI / 180)) * (198 * scale + 8)} 
+                                textAnchor="start" 
+                                fontSize="13" 
+                                fill="#64748b" 
+                                opacity="1" 
+                                fontWeight="600"
+                                style={{ textShadow: "0px 0px 3px #ffffff, 0px 0px 3px #ffffff" }}>
+                                100%
+                              </text>
+                            </>
                           )}
                         </g>
                       ))}
@@ -995,10 +1039,11 @@ const ProgressTracking = ({ username }) => {
                               y1="264" 
                               x2={x} 
                               y2={y} 
-                              stroke={axis.label === "Score" ? "rgba(79, 70, 229, 0.4)" :
+                              stroke={axis.label === "Score" ? "rgba(79, 70, 229, 0.6)" :
                                       axis.label === "Accuracy" ? "rgba(255, 165, 0, 0.4)" :
                                       "rgba(16, 185, 129, 0.4)"} // Color-coded axes
-                              strokeWidth="2.5" // Thicker stroke
+                              strokeWidth={axis.label === "Score" ? "3.5" : "2.5"} // Thicker stroke for Score
+                              strokeDasharray={axis.label === "Score" ? "none" : "none"} // No dash for Score
                             />
                             <text 
                               x={labelX} 
@@ -1014,7 +1059,7 @@ const ProgressTracking = ({ username }) => {
                                 fontWeight: "bold"
                               }}
                             >
-                              {axis.label}
+                              {axis.label === "Score" ? "Score (out of 25)" : axis.label}
                             </text>
                             
                             {/* Add max value labels below the axis labels, outside the circle */}
@@ -1033,8 +1078,8 @@ const ProgressTracking = ({ username }) => {
                               {axis.label === "Speed" 
                                 ? `(peer best: ${Number(progressData.cohortComparison.peerMaxSpeed).toFixed(0)}s)` 
                                 : axis.label === "Accuracy" 
-                                  ? `(max: ${Number(progressData.cohortComparison.peerMaxAccuracy).toFixed(2)}%)`
-                                  : `(max: ${Number(progressData.cohortComparison.peerMaxScore).toFixed(2)})`
+                                  ? `(peer best: ${Number(progressData.cohortComparison.peerMaxAccuracy).toFixed(0)}%)`
+                                  : `(peer best: ${Number(progressData.cohortComparison.peerMaxScore).toFixed(0)})`
                               }
                             </text>
                           </g>
@@ -1062,7 +1107,7 @@ const ProgressTracking = ({ username }) => {
                           
                           // Calculate peer maximum values as actual percentage values (not scaled to 100%)
                           // This shows the absolute values rather than relative ones
-                          const peerScoreRatio = progressData.cohortComparison.peerMaxScore / 100;
+                          const peerScoreRatio = progressData.cohortComparison.peerMaxScore / 25;
                           const peerAccuracyRatio = progressData.cohortComparison.peerMaxAccuracy / 100;
                           
                           // For speed, calculate based on the backend-provided peer max speed
@@ -1089,7 +1134,7 @@ const ProgressTracking = ({ username }) => {
                           
                           // Log the actual percentages used for drawing the peer triangle
                           console.log('Peer triangle values (absolute percentages):', {
-                            score: `${(peerScoreRatio * 100).toFixed(1)}% (${progressData.cohortComparison.peerMaxScore} / 100)`,
+                            score: `${(peerScoreRatio * 100).toFixed(1)}% (${progressData.cohortComparison.peerMaxScore} / 25)`,
                             accuracy: `${(peerAccuracyRatio * 100).toFixed(1)}% (${progressData.cohortComparison.peerMaxAccuracy}%)`,
                             speed: `${(peerSpeedRatio * 100).toFixed(1)}% (${progressData.cohortComparison.peerMaxSpeed}s)`
                           });
@@ -1179,9 +1224,9 @@ const ProgressTracking = ({ username }) => {
                           const speedAngle = (240 - 90) * (Math.PI / 180);
                           
                           // Calculate relative positions for Option 1 (all axes extend to 100%)
-                          // For score and accuracy, we compare to 100 as the theoretical maximum
-                          // For speed, we use the percentile which is already on a 0-100 scale
-                          const scoreRatio = progressData.cohortComparison.userScore / 100; // Compare to theoretical maximum of 100
+                          // For score, we need to convert from the 25-point scale to percentage
+                          // For accuracy and speed, they're already on a 0-100 scale
+                          const scoreRatio = (progressData.cohortComparison.userScore / 25); // Convert from 25-point scale to 0-1 ratio
                           const accuracyRatio = progressData.cohortComparison.userAccuracy / 100; // Already on 0-100 scale
                           
                           // For speed, calculate the percentile (higher is better)
@@ -1189,7 +1234,7 @@ const ProgressTracking = ({ username }) => {
                           
                           // Log calculated ratios for debugging
                           console.log('User Radar Chart Ratios (before scaling):', {
-                            score: `${(scoreRatio * 100).toFixed(1)}% (${progressData.cohortComparison.userScore} / 100)`,
+                            score: `${(scoreRatio * 100).toFixed(1)}% (${progressData.cohortComparison.userScore} / 25)`,
                             accuracy: `${(accuracyRatio * 100).toFixed(1)}% (${progressData.cohortComparison.userAccuracy}%)`,
                             speed: `${(normalizedUserSpeed * 100).toFixed(1)}% (${progressData.cohortComparison.userSpeed}s, ${calculateSpeedPercentile().toFixed(1)} percentile)`
                           });
@@ -1225,10 +1270,10 @@ const ProgressTracking = ({ username }) => {
                         const speedAngle = (240 - 90) * (Math.PI / 180);
                         
                         // For Option 1, calculate relative positions based on theoretical maximums
-                        // Score - compare to max possible score of 100
+                        // Score - convert from 25-point scale to percentage (where 25 is the maximum possible score)
                         // Accuracy - already on a 0-100 scale
                         // Speed - use percentile which is already normalized to 0-100
-                        const scoreRatio = progressData.cohortComparison.userScore / 100;
+                        const scoreRatio = (progressData.cohortComparison.userScore / 25); // This converts raw score to percentage (0-1)
                         const accuracyRatio = progressData.cohortComparison.userAccuracy / 100;
                         const normalizedUserSpeed = calculateSpeedPercentile() / 100;
                         
@@ -1262,14 +1307,20 @@ const ProgressTracking = ({ username }) => {
                         
                         // Log the metric rankings for debugging
                         console.log('Radar Chart Metric Rankings:', sortedMetrics.map(m => `${m.name}: ${(m.ratio * 100).toFixed(2)}%`).join(', '));
+                        console.log('Score Debug:', {
+                          raw: progressData.cohortComparison.userScore,
+                          ratio: scoreRatio,
+                          percentage: (scoreRatio * 100).toFixed(1) + '%',
+                          enhanced: enhancedScoreRatio
+                        });
                         
                         return [
                           { 
                             x: scoreX, 
                             y: scoreY, 
                             label: "Score", 
-                            value: `${Number(progressData.cohortComparison.userScore).toFixed(2)}`, 
-                            max: `${Number(progressData.cohortComparison.peerMaxScore).toFixed(2)}`,
+                            value: `${Number(progressData.cohortComparison.userScore).toFixed(1)}`, 
+                            max: `${Number(progressData.cohortComparison.peerMaxScore).toFixed(1)}`,
                             isBest: bestMetricIndex === 0 
                           },
                           { 
@@ -1559,13 +1610,13 @@ const ProgressTracking = ({ username }) => {
                     {/* Background circle */}
                     <circle cx="250" cy="250" r="240" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1" />
                     
-                    {/* Circular grid lines */}
-                    {[1000, 2000, 3000, 4000, 5000, 6000, 7000].map((value, index) => (
+                    {/* Circular grid lines - Changed to percentage scale */}
+                    {[20, 40, 60, 80, 100].map((percent, index) => (
                       <circle 
                         key={`grid-${index}`}
                         cx="250" 
                         cy="250" 
-                        r={240 * (value / 8000)} 
+                        r={240 * (percent / 100)} 
                         fill="none" 
                         stroke="#e2e8f0" 
                         strokeWidth="1" 
@@ -1604,7 +1655,7 @@ const ProgressTracking = ({ username }) => {
                       { label: "SSE", angle: 157.5 },
                       { label: "S", angle: 180 },
                       { label: "SSW", angle: 202.5 },
-                      { label: "SW", angle: 225 },
+                      { label: "SW", angle:  225 },
                       { label: "WSW", angle: 247.5 },
                       { label: "W", angle: 270 },
                       { label: "WNW", angle: 292.5 },
@@ -1630,29 +1681,52 @@ const ProgressTracking = ({ username }) => {
                       );
                     })}
                     
-                    {/* Value labels on grid circles */}
-                    {[1000, 2000, 3000, 4000, 5000, 6000, 7000].map((value, index) => (
+                    {/* Value labels on grid circles - Changed to percentage scale */}
+                    {[20, 40, 60, 80, 100].map((percent, index) => (
                       <text 
                         key={`value-${index}`}
                         x="250" 
-                        y={250 - 240 * (value / 8000)} 
+                        y={250 - 240 * (percent / 100)} 
                         textAnchor="start" 
                         dominantBaseline="middle" 
                         fontSize="10" 
                         fill="#64748b"
                         dx="5"
                       >
-                        {value}
+                        {percent}%
                       </text>
                     ))}
                     
-                    {/* Performance data wedges */}
+                    {/* Debug information - Log topic performance data */}
                     {(() => {
+                      console.log('Topic Performance Data for Windrose Chart:', progressData.topicPerformance);
+                      const topTopics = Object.entries(progressData.topicPerformance || {})
+                        .sort((a, b) => b[1].attempted - a[1].attempted)
+                        .slice(0, 8);
+                      console.log('Top 8 topics to be displayed:', topTopics);
+                      return null;
+                    })()}
+                    
+                    {/* Performance data wedges - Modified to use percentage scale */}
+                    {(() => {
+                      // First check if we have any topic performance data
+                      if (!progressData.topicPerformance || 
+                          Object.keys(progressData.topicPerformance).length === 0) {
+                        console.warn('No topic performance data available for rendering windrose chart');
+                        return [];
+                      }
+                      
                       // Get top 8 topics by attempt count (for cleaner visualization)
                       const topTopics = Object.entries(progressData.topicPerformance)
                         .sort((a, b) => b[1].attempted - a[1].attempted)
                         .slice(0, 8);
-                        
+                      
+                      // If no topics, return empty array
+                      if (topTopics.length === 0) {
+                        console.warn('No topics available after filtering');
+                        return [];
+                      }
+                      
                       // Map topics to windrose directions for even distribution
                       return topTopics.map((topic, index) => {
                         const numTopics = topTopics.length;
@@ -1660,70 +1734,95 @@ const ProgressTracking = ({ username }) => {
                         const endAngle = ((index + 1) * (360 / numTopics) - 90) * (Math.PI / 180);
                         
                         // Calculate performance levels (low, medium, high) based on accuracy
-                        const accuracy = topic[1].accuracy;
+                        const accuracy = topic[1].accuracy || 0;
+                        
+                        // Log the topic data being processed
+                        console.log(`Processing topic: ${topic[0]}, Accuracy: ${accuracy}%, Attempts: ${topic[1].attempted}`);
+                        
                         const levels = [
                           { threshold: 50, color: "#ef4444", label: "Low" }, // Red
                           { threshold: 75, color: "#f59e0b", label: "Medium" }, // Yellow/Orange
                           { threshold: 100, color: "#10b981", label: "High" }  // Green
                         ];
                         
-                        // Calculate scaling factor based on attempts
+                        // Calculate relative radius based on accuracy and attempts
+                        // Get max attempts among all topics
                         const maxAttempts = Math.max(
-                          ...Object.values(progressData.topicPerformance).map(t => t.attempted)
+                          ...Object.values(progressData.topicPerformance).map(t => t.attempted || 0)
                         );
-                        const attemptScale = 240 * (Math.min(topic[1].attempted, 7000) / 8000);
                         
-                        // Create nested arcs based on accuracy levels
-                        return levels.map((level, levelIndex) => {
-                          // Determine if this accuracy level should be filled
-                          const shouldFill = accuracy >= level.threshold || 
-                            (levelIndex > 0 && accuracy >= levels[levelIndex-1].threshold && accuracy < level.threshold);
-                          
-                          if (!shouldFill) return null;
-                          
-                          // Calculate inner and outer radii based on level
-                          const innerRadius = levelIndex > 0 ? 
-                            attemptScale * (levels[levelIndex-1].threshold / 100) : 0;
-                          const outerRadius = attemptScale * (Math.min(accuracy, level.threshold) / 100);
-                          
-                          // Skip if the arc is too small
-                          if (outerRadius - innerRadius < 2) return null;
-                          
-                          // Calculate path for arc segment
-                          const innerStartX = 250 + Math.cos(startAngle) * innerRadius;
-                          const innerStartY = 250 + Math.sin(startAngle) * innerRadius;
-                          const outerStartX = 250 + Math.cos(startAngle) * outerRadius;
-                          const outerStartY = 250 + Math.sin(startAngle) * outerRadius;
-                          const innerEndX = 250 + Math.cos(endAngle) * innerRadius;
-                          const innerEndY = 250 + Math.sin(endAngle) * innerRadius;
-                          const outerEndX = 250 + Math.cos(endAngle) * outerRadius;
-                          const outerEndY = 250 + Math.sin(endAngle) * outerRadius;
-                          
-                          // Determine if the arc is large (> 180 degrees)
-                          const largeArc = (endAngle - startAngle) > Math.PI ? 1 : 0;
-                          
-                          return (
-                            <path
-                              key={`arc-${topic[0]}-${level.label}`}
-                              d={`M ${innerStartX} ${innerStartY} 
-                                L ${outerStartX} ${outerStartY} 
-                                A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${outerEndX} ${outerEndY} 
-                                L ${innerEndX} ${innerEndY} 
-                                A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${innerStartX} ${innerStartY}`}
-                              fill={level.color}
-                              stroke="#ffffff"
-                              strokeWidth="0.5"
-                              opacity={0.85}
-                            >
-                              <title>{`${topic[0]}: ${accuracy.toFixed(1)}% accuracy (${topic[1].correct}/${topic[1].attempted} correct)`}</title>
-                            </path>
-                          );
-                        }).filter(Boolean);
-                      });
-                    })().flat()}
+                        // Scale attempts to a factor between 0.3 and 1.0
+                        // This ensures that even topics with few attempts are visible but proportionally smaller
+                        const attemptFactor = 0.3 + (0.7 * Math.min(topic[1].attempted || 1, maxAttempts) / (maxAttempts || 1));
+                        
+                        console.log(`Topic ${topic[0]}: Attempt factor: ${attemptFactor}, Max attempts: ${maxAttempts}`);
+                        
+                        // Calculate the segments for this topic
+                        let segments = [];
+                        
+                        // Instead of creating nested segments, let's create a single segment with the right color
+                        let segmentColor;
+                        if (accuracy >= 75) segmentColor = "#10b981"; // High performance
+                        else if (accuracy >= 50) segmentColor = "#f59e0b"; // Medium performance
+                        else segmentColor = "#ef4444"; // Low performance
+                        
+                        // Accuracy can't be more than 100%
+                        const clampedAccuracy = Math.min(100, Math.max(0, accuracy));
+                        
+                        // Calculate the outer radius based on accuracy percentage and attempt factor
+                        const outerRadius = 240 * (clampedAccuracy / 100) * attemptFactor;
+                        
+                        // Skip if the radius is too small
+                        if (outerRadius < 5) {
+                          console.log(`Skipping topic ${topic[0]} due to small radius: ${outerRadius}`);
+                          return null;
+                        }
+                        
+                        // Calculate path for arc segment
+                        const outerStartX = 250 + Math.cos(startAngle) * outerRadius;
+                        const outerStartY = 250 + Math.sin(startAngle) * outerRadius;
+                        const outerEndX = 250 + Math.cos(endAngle) * outerRadius;
+                        const outerEndY = 250 + Math.sin(endAngle) * outerRadius;
+                        
+                        // Determine if the arc is large (> 180 degrees)
+                        const largeArc = (endAngle - startAngle) > Math.PI ? 1 : 0;
+                        
+                        // Create the segment data
+                        segments.push({
+                          d: `M 250 250 
+                              L ${outerStartX} ${outerStartY} 
+                              A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${outerEndX} ${outerEndY} 
+                              Z`,
+                          fill: segmentColor,
+                          key: `arc-${topic[0]}`
+                        });
+                        
+                        console.log(`Created segment for ${topic[0]} with color ${segmentColor} and radius ${outerRadius}`);
+                        
+                        // Return the paths for this topic
+                        return segments.map(segment => (
+                          <path
+                            key={segment.key}
+                            d={segment.d}
+                            fill={segment.fill}
+                            stroke="#ffffff"
+                            strokeWidth="0.5"
+                            opacity={0.85}
+                          >
+                            <title>{`${topic[0]}: ${accuracy.toFixed(1)}% accuracy (${topic[1].correct}/${topic[1].attempted} correct)`}</title>
+                          </path>
+                        ));
+                      }).flat().filter(Boolean);
+                    })()}
                     
-                    {/* Topic Labels */}
+                    {/* Topic Labels - Keep existing code but improve positioning */}
                     {(() => {
+                      // Check if we have any topic performance data
+                      if (!progressData.topicPerformance || 
+                          Object.keys(progressData.topicPerformance).length === 0) {
+                        return null;
+                      }
+                      
                       // Get top 8 topics by attempt count
                       const topTopics = Object.entries(progressData.topicPerformance)
                         .sort((a, b) => b[1].attempted - a[1].attempted)
@@ -1739,7 +1838,7 @@ const ProgressTracking = ({ username }) => {
                         const y = 250 + Math.sin(midAngle) * labelRadius;
                         
                         // Get a background color based on accuracy
-                        const accuracy = topic[1].accuracy;
+                        const accuracy = topic[1].accuracy || 0;
                         let bgColor;
                         if (accuracy < 50) bgColor = "#fee2e2"; // Light red
                         else if (accuracy < 75) bgColor = "#fef3c7"; // Light yellow

@@ -4,9 +4,11 @@ applyTo: '**'
 Coding standards, domain knowledge, and preferences that AI should follow.
 
 - never update the .env file automatically!!!
+- fetch data from the API using the provided API keys, e.g., MongoDB, OpenAI, etc.
+- use MongoDB Atlas for database management, no local MongoDB Compass
 - conda activate goAIME
 - use python instead of python3
-- minimize the file and code changes
+minimize the file and code changes
 - follow my prompts closely, do not change anything else 
 
 - Follow best practices for code organization and structure.
