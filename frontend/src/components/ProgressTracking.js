@@ -222,22 +222,27 @@ const ProgressTracking = ({ username }) => {
   
   // Calculate speed percentile (lower is better for speed, but higher percentile is better)
   const calculateSpeedPercentile = () => {
-    // If userSpeed is 0 or missing data, return a base percentile of 10
-    if (!progressData.cohortComparison.userSpeed || !progressData.cohortComparison.peerMaxSpeed) {
-      console.warn('Missing speed data for percentile calculation:', {
-        userSpeed: progressData.cohortComparison.userSpeed,
-        peerMaxSpeed: progressData.cohortComparison.peerMaxSpeed
-      });
-      return 10; // Return a default low percentile instead of 0
-    }
+    console.log('Speed data for percentile calculation:', {
+      userSpeed: progressData.cohortComparison.userSpeed,
+      peerMaxSpeed: progressData.cohortComparison.peerMaxSpeed,
+      userSpeedType: typeof progressData.cohortComparison.userSpeed,
+      peerMaxSpeedType: typeof progressData.cohortComparison.peerMaxSpeed
+    });
     
     // Get the user's speed and peer max speed
-    const userSpeed = Number(progressData.cohortComparison.userSpeed);
-    const peerMaxSpeed = Number(progressData.cohortComparison.peerMaxSpeed);
+    const userSpeed = progressData.cohortComparison.userSpeed !== undefined && progressData.cohortComparison.userSpeed !== null && !isNaN(Number(progressData.cohortComparison.userSpeed))
+      ? Number(progressData.cohortComparison.userSpeed) 
+      : 0;
+    const peerMaxSpeed = progressData.cohortComparison.peerMaxSpeed !== undefined && progressData.cohortComparison.peerMaxSpeed !== null && !isNaN(Number(progressData.cohortComparison.peerMaxSpeed))
+      ? Number(progressData.cohortComparison.peerMaxSpeed) 
+      : 0;
     
-    // Handle edge cases
-    if (userSpeed <= 0) return 100; // Perfect speed (instant) gets 100th percentile
-    if (peerMaxSpeed <= 0) return 20; // Return a modest percentile for edge case
+    // Special case: 0 speed (instant) is the perfect speed
+    if (userSpeed === 0) return 100; // Perfect speed (instant) gets 100th percentile
+    
+    // If peer max speed is 0 (which means perfect/instant) but user is not 0,
+    // user can't beat perfection, so give them a high but not perfect score
+    if (peerMaxSpeed === 0) return 90; // Near-perfect relative to the theoretical perfect speed
     
     // If user speed is greater than peer max speed (slower), cap at 20th percentile
     if (userSpeed > peerMaxSpeed) {
@@ -353,7 +358,7 @@ const ProgressTracking = ({ username }) => {
               </div>
               <div className="overview-stat">
                 <div className="stat-value">
-                  {isNaN(progressData.overallPerformance.averageSpeed) ? 
+                  {isNaN(progressData.overallPerformance.averageSpeed) || progressData.overallPerformance.averageSpeed === null || progressData.overallPerformance.averageSpeed === undefined ? 
                     "0s" : 
                     `${Number(progressData.overallPerformance.averageSpeed).toFixed(0)}s`}
                 </div>
@@ -811,7 +816,7 @@ const ProgressTracking = ({ username }) => {
                             metricColor = '#ffa500';
                           } else if (bestMetric === 'Speed') {
                             // Show only the raw speed value (without percentile)
-                            metricValue = `${Number(progressData.cohortComparison.userSpeed).toFixed(0)}s`;
+                            metricValue = `${progressData.cohortComparison.userSpeed && !isNaN(Number(progressData.cohortComparison.userSpeed)) ? Number(progressData.cohortComparison.userSpeed).toFixed(0) : "0"}s`;
                             metricColor = '#10b981';
                           }
                           
@@ -840,7 +845,12 @@ const ProgressTracking = ({ username }) => {
                             percentile = progressData.cohortComparison.userAccuracyPercentile || 
                               Math.round((progressData.cohortComparison.userAccuracy / progressData.cohortComparison.peerMaxAccuracy) * 100);
                           } else if (bestMetric === 'Speed') {
-                            percentile = progressData.cohortComparison.userSpeedPercentile || calculateSpeedPercentile();
+                            // For Speed, when user speed is 0s (instant), it's the perfect score (100%)
+                            if (Number(progressData.cohortComparison.userSpeed) === 0) {
+                              percentile = 100;
+                            } else {
+                              percentile = progressData.cohortComparison.userSpeedPercentile || calculateSpeedPercentile();
+                            }
                           }
                           
                           return `Your percentile: ${Math.round(percentile)}%`;
@@ -861,8 +871,14 @@ const ProgressTracking = ({ username }) => {
                           const accuracyPercentile = progressData.cohortComparison.userAccuracyPercentile || 
                             Math.round((progressData.cohortComparison.userAccuracy / progressData.cohortComparison.peerMaxAccuracy) * 100);
                           
-                          const speedPercentile = progressData.cohortComparison.userSpeedPercentile || 
-                            calculateSpeedPercentile();
+                          // For Speed, special handling for 0s (instant)
+                          let speedPercentile;
+                          const userSpeedValue = Number(progressData.cohortComparison.userSpeed);
+                          if (userSpeedValue === 0) {
+                            speedPercentile = 100; // Perfect speed gets 100%
+                          } else {
+                            speedPercentile = progressData.cohortComparison.userSpeedPercentile || calculateSpeedPercentile();
+                          }
                           
                           return (
                             <>
@@ -1275,7 +1291,18 @@ const ProgressTracking = ({ username }) => {
                         // Speed - use percentile which is already normalized to 0-100
                         const scoreRatio = (progressData.cohortComparison.userScore / 25); // This converts raw score to percentage (0-1)
                         const accuracyRatio = progressData.cohortComparison.userAccuracy / 100;
-                        const normalizedUserSpeed = calculateSpeedPercentile() / 100;
+                        
+                        // For speed, special case for 0s (perfect/instant speed)
+                        let normalizedUserSpeed;
+                        const userSpeedValue = Number(progressData.cohortComparison.userSpeed);
+                        const peerMaxSpeedValue = Number(progressData.cohortComparison.peerMaxSpeed);
+                        
+                        if (userSpeedValue === 0) {
+                            console.log('Perfect speed detected (0s) - setting to 100%');
+                            normalizedUserSpeed = 1.0; // 100%
+                        } else {
+                            normalizedUserSpeed = calculateSpeedPercentile() / 100;
+                        }
                         
                         // Apply minimum scale factor for better visibility
                         // Reduced from 0.35 to 0.05 to show more accurate percentages
@@ -1335,8 +1362,8 @@ const ProgressTracking = ({ username }) => {
                             x: speedX, 
                             y: speedY, 
                             label: "Speed", 
-                            value: `${Number(progressData.cohortComparison.userSpeed).toFixed(0)}s`, 
-                            max: `${Number(progressData.cohortComparison.peerMaxSpeed).toFixed(0)}s`,
+                            value: `${progressData.cohortComparison.userSpeed && !isNaN(Number(progressData.cohortComparison.userSpeed)) ? Number(progressData.cohortComparison.userSpeed).toFixed(0) : "0"}s`, 
+                            max: `${progressData.cohortComparison.peerMaxSpeed && !isNaN(Number(progressData.cohortComparison.peerMaxSpeed)) ? Number(progressData.cohortComparison.peerMaxSpeed).toFixed(0) : "0"}s`,
                             percentile: Math.max(0, Math.round(calculateSpeedPercentile())),
                             isBest: bestMetricIndex === 2 
                           }
