@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wind Rose Accuracy Calculation Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .test-case {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-left: 4px solid #4f46e5;
+            background-color: #f8fafc;
+        }
+        .color-sample {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+            vertical-align: middle;
+            border: 1px solid #ccc;
+        }
+        .red { background-color: #ef4444; }
+        .yellow { background-color: #f59e0b; }
+        .green { background-color: #10b981; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .debug {
+            font-family: monospace;
+            white-space: pre-wrap;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .formula {
+            font-style: italic;
+            margin: 10px 0;
+            color: #4f46e5;
+        }
+    </style>
+</head>
+<body>
+    <h1>Wind Rose Accuracy Calculation Test</h1>
+    <p>This tool demonstrates how accuracy is calculated for the wind rose chart.</p>
+    
+    <div class="test-case">
+        <h2>Standard Accuracy vs. Session-based Accuracy</h2>
+        <p>The wind rose chart now uses standard accuracy for coloring segments:</p>
+        <div class="formula">
+            Standard Accuracy = (Total Correct / Total Attempted) * 100
+        </div>
+        <p>We changed from the session-based accuracy formula:</p>
+        <div class="formula">
+            Session-based Accuracy = (Avg Correct Answers Per Session / Problems Per Session) * 100
+        </div>
+        <p>This change gives better color differentiation in the wind rose chart.</p>
+        
+        <h3>Test Case: Good Performer (69.33% Accuracy)</h3>
+        <div id="goodPerformer" class="result">
+            <p><strong>Input:</strong></p>
+            <ul>
+                <li>Total Sessions: 12</li>
+                <li>Total Correct: 208</li>
+                <li>Total Problems: 300 (12 sessions × 25 problems)</li>
+                <li>Avg Correct Per Session: 17.33</li>
+            </ul>
+            <p><strong>Calculations:</strong></p>
+            <div class="debug" id="goodPerformerCalc"></div>
+        </div>
+        
+        <h3>Test Case: Average User (42% Accuracy)</h3>
+        <div id="avgUser" class="result">
+            <p><strong>Input:</strong></p>
+            <ul>
+                <li>Total Sessions: 10</li>
+                <li>Total Correct: 105</li>
+                <li>Total Problems: 250 (10 sessions × 25 problems)</li>
+                <li>Avg Correct Per Session: 10.5</li>
+            </ul>
+            <p><strong>Calculations:</strong></p>
+            <div class="debug" id="avgUserCalc"></div>
+        </div>
+        
+        <h3>Test Case: goamy (16.44% Accuracy)</h3>
+        <div id="goamy" class="result">
+            <p><strong>Input:</strong></p>
+            <ul>
+                <li>Total Sessions: 9</li>
+                <li>Total Correct: 37</li>
+                <li>Total Problems: 225 (9 sessions × 25 problems)</li>
+                <li>Avg Correct Per Session: 4.11</li>
+            </ul>
+            <p><strong>Calculations:</strong></p>
+            <div class="debug" id="goamyCalc"></div>
+        </div>
+    </div>
+    
+    <div class="test-case">
+        <h2>Color Thresholds for Wind Rose Chart</h2>
+        <p>The wind rose chart uses these color thresholds based on standard accuracy:</p>
+        <ul>
+            <li><span class="color-sample green"></span> <strong>Green:</strong> >75% accuracy</li>
+            <li><span class="color-sample yellow"></span> <strong>Yellow:</strong> 50-75% accuracy</li>
+            <li><span class="color-sample red"></span> <strong>Red:</strong> <50% accuracy</li>
+        </ul>
+        
+        <h3>Example Topic Accuracy Colors</h3>
+        <table id="exampleTable">
+            <thead>
+                <tr>
+                    <th>Topic</th>
+                    <th>Total Correct</th>
+                    <th>Total Attempted</th>
+                    <th>Standard Accuracy</th>
+                    <th>Session-based Accuracy</th>
+                    <th>Color</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Example rows will be added by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+    
+    <script>
+        // Good performer calculation
+        const goodPerformerSessions = 12;
+        const goodPerformerCorrect = 208;
+        const goodPerformerAttempted = 300;
+        const problemsPerSession = 25;
+        
+        const goodPerformerStdAccuracy = (goodPerformerCorrect / goodPerformerAttempted) * 100;
+        const goodPerformerAvgCorrectPerSession = goodPerformerCorrect / goodPerformerSessions;
+        const goodPerformerSessionAccuracy = (goodPerformerAvgCorrectPerSession / problemsPerSession) * 100;
+        
+        document.getElementById('goodPerformerCalc').textContent = 
+            `Standard Accuracy = (${goodPerformerCorrect} / ${goodPerformerAttempted}) * 100 = ${goodPerformerStdAccuracy.toFixed(2)}%
+            
+Session-based Accuracy = (${goodPerformerAvgCorrectPerSession.toFixed(2)} / ${problemsPerSession}) * 100 = ${goodPerformerSessionAccuracy.toFixed(2)}%
+
+Color (based on Standard Accuracy): ${goodPerformerStdAccuracy > 75 ? 'GREEN' : goodPerformerStdAccuracy >= 50 ? 'YELLOW' : 'RED'}`;
+        
+        // Average user calculation
+        const avgUserSessions = 10;
+        const avgUserCorrect = 105;
+        const avgUserAttempted = 250;
+        
+        const avgUserStdAccuracy = (avgUserCorrect / avgUserAttempted) * 100;
+        const avgUserAvgCorrectPerSession = avgUserCorrect / avgUserSessions;
+        const avgUserSessionAccuracy = (avgUserAvgCorrectPerSession / problemsPerSession) * 100;
+        
+        document.getElementById('avgUserCalc').textContent = 
+            `Standard Accuracy = (${avgUserCorrect} / ${avgUserAttempted}) * 100 = ${avgUserStdAccuracy.toFixed(2)}%
+            
+Session-based Accuracy = (${avgUserAvgCorrectPerSession.toFixed(2)} / ${problemsPerSession}) * 100 = ${avgUserSessionAccuracy.toFixed(2)}%
+
+Color (based on Standard Accuracy): ${avgUserStdAccuracy > 75 ? 'GREEN' : avgUserStdAccuracy >= 50 ? 'YELLOW' : 'RED'}`;
+        
+        // goamy calculation
+        const goamySessions = 9;
+        const goamyCorrect = 37;
+        const goamyAttempted = 225;
+        
+        const goamyStdAccuracy = (goamyCorrect / goamyAttempted) * 100;
+        const goamyAvgCorrectPerSession = goamyCorrect / goamySessions;
+        const goamySessionAccuracy = (goamyAvgCorrectPerSession / problemsPerSession) * 100;
+        
+        document.getElementById('goamyCalc').textContent = 
+            `Standard Accuracy = (${goamyCorrect} / ${goamyAttempted}) * 100 = ${goamyStdAccuracy.toFixed(2)}%
+            
+Session-based Accuracy = (${goamyAvgCorrectPerSession.toFixed(2)} / ${problemsPerSession}) * 100 = ${goamySessionAccuracy.toFixed(2)}%
+
+Color (based on Standard Accuracy): ${goamyStdAccuracy > 75 ? 'GREEN' : goamyStdAccuracy >= 50 ? 'YELLOW' : 'RED'}`;
+        
+        // Add example topics to the table
+        const exampleTopics = [
+            { name: "Algebra", correct: 45, attempted: 50, sessions: 10 },
+            { name: "Geometry", correct: 38, attempted: 60, sessions: 10 },
+            { name: "Number Theory", correct: 22, attempted: 40, sessions: 10 },
+            { name: "Probability", correct: 15, attempted: 45, sessions: 10 },
+            { name: "Combinatorics", correct: 8, attempted: 30, sessions: 10 },
+            { name: "Statistics", correct: 3, attempted: 25, sessions: 10 }
+        ];
+        
+        const tableBody = document.querySelector('#exampleTable tbody');
+        
+        exampleTopics.forEach(topic => {
+            const stdAccuracy = (topic.correct / topic.attempted) * 100;
+            const avgCorrectPerSession = topic.correct / topic.sessions;
+            const sessionAccuracy = (avgCorrectPerSession / problemsPerSession) * 100;
+            
+            let color;
+            if (stdAccuracy > 75) color = 'green';
+            else if (stdAccuracy >= 50) color = 'yellow';
+            else color = 'red';
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${topic.name}</td>
+                <td>${topic.correct}</td>
+                <td>${topic.attempted}</td>
+                <td>${stdAccuracy.toFixed(2)}% (used for coloring)</td>
+                <td>${sessionAccuracy.toFixed(2)}%</td>
+                <td><span class="color-sample ${color}"></span>${color.toUpperCase()}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+    </script>
+</body>
+</html>

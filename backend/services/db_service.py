@@ -339,7 +339,13 @@ def enhance_session_data(session_data, username=None):
             },
             'topic_metrics': topic_metrics,
             'difficulty_metrics': difficulty_metrics
-        }
+        },
+        # Use the properly calculated topic metrics for topic_performance instead of any manually set data
+        'topic_performance': topic_metrics,
+        # Use the properly calculated difficulty metrics for difficulty_performance
+        'difficulty_performance': difficulty_metrics,
+        'total_correct': len(correct_problems),
+        'accuracy': round((len(correct_problems) / len(enhanced_problems)) * 100, 2) if enhanced_problems else 0
     }
     
     # Remove None values from top level

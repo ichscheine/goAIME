@@ -125,12 +125,28 @@ def register_user_progress_routes(app):
                     total_correct += session_data["score"]
                     total_score += session_data["score"]
                 
-                # Calculate accuracy for topics
+                # Calculate accuracy for topics with improved weighting
                 for topic, data in all_topics.items():
                     if data["attempted"] > 0:
-                        data["accuracy"] = (data["correct"] / data["attempted"]) * 100
+                        # Base calculation
+                        raw_accuracy = (data["correct"] / data["attempted"]) * 100
+                        
+                        # Apply weight adjustment for topics with few attempts
+                        # This helps align with overall accuracy by giving more confidence to topics with more attempts
+                        attempt_weight = min(1.0, data["attempted"] / 10)  # Full weight at 10+ attempts
+                        
+                        # Calculate weighted accuracy that's closer to overall accuracy
+                        # For topics with very few attempts, this will pull values closer to the overall accuracy
+                        overall_accuracy = (total_correct / total_problems * 100) if total_problems > 0 else 0
+                        data["accuracy"] = (raw_accuracy * attempt_weight) + (overall_accuracy * (1 - attempt_weight))
+                        
+                        # Ensure we log both values for diagnostic purposes
+                        data["raw_accuracy"] = raw_accuracy
+                        data["weighted_factor"] = attempt_weight
                     else:
                         data["accuracy"] = 0
+                        data["raw_accuracy"] = 0
+                        data["weighted_factor"] = 0
                 
                 # Calculate accuracy for difficulties
                 for difficulty, data in all_difficulties.items():

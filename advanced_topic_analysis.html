@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Topic Performance Analysis</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1, h2, h3 {
+            color: #333;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .card {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .instructions {
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .code {
+            font-family: monospace;
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .test-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        .test-button:hover {
+            background-color: #0069d9;
+        }
+        #results, #weightsExplainer {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        .color-sample {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            vertical-align: middle;
+        }
+        .green { background-color: #10b981; }
+        .yellow { background-color: #f59e0b; }
+        .red { background-color: #ef4444; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .chart-container {
+            margin-top: 30px;
+            height: 300px;
+        }
+        .distribution-row {
+            display: flex;
+            margin-bottom: 30px;
+        }
+        .distribution-chart {
+            flex: 1;
+            margin-right: 20px;
+        }
+        canvas {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Topic Performance Analysis</h1>
+    
+    <div class="instructions">
+        <h3>Instructions:</h3>
+        <ol>
+            <li>Open the Progress Tracking page for the user you want to test</li>
+            <li>Open browser developer console (F12 or right-click > Inspect > Console)</li>
+            <li>Copy the following code and paste it into the console:</li>
+        </ol>
+        
+        <div class="code">
+            const topicData = {};
+            Object.entries(progressData.topicPerformance || {}).forEach(([topic, data]) => {
+                topicData[topic] = {
+                    accuracy: data.accuracy,
+                    attempted: data.attempted,
+                    correct: data.correct,
+                    color: data.accuracy > 75 ? "green" : 
+                           data.accuracy >= 50 && data.accuracy <= 75 ? "yellow" : "red"
+                };
+            });
+            console.log(JSON.stringify(topicData, null, 2));
+        </div>
+        
+        <p>Copy the JSON output from the console and paste it below:</p>
+    </div>
+    
+    <textarea id="jsonInput" rows="10" style="width: 100%; padding: 10px;" placeholder="Paste JSON here..."></textarea>
+    
+    <button class="test-button" onclick="analyzeData()">Analyze Topic Data</button>
+    
+    <div id="weightsExplainer" style="display: none;">
+        <h3>Understanding Topic Performance vs Overall Performance</h3>
+        <div class="card">
+            <p>The difference between overall user accuracy (~70%) and individual topic performance can be explained by how we calculate these metrics:</p>
+            <ul>
+                <li><strong>Overall Accuracy:</strong> (Total correct answers ÷ Total attempted problems) × 100%</li>
+                <li><strong>Topic Accuracy:</strong> Calculated separately for each topic as (Correct answers in topic ÷ Attempted problems in topic) × 100%</li>
+            </ul>
+            <p>This difference appears because:</p>
+            <ol>
+                <li>Topics with <strong>more attempts</strong> have a larger influence on the overall accuracy</li>
+                <li>If topics with high attempt counts have higher accuracy, they will pull the overall accuracy up</li>
+                <li>A user might perform very well on common topics but poorly on many less frequent topics</li>
+            </ol>
+            <p>We can see this clearly in the weighted vs simple average accuracy:</p>
+            <ul>
+                <li><strong>Weighted Average:</strong> Gives more importance to topics with more attempts</li>
+                <li><strong>Simple Average:</strong> Treats all topics equally regardless of attempts</li>
+            </ul>
+            <p>The distribution charts below help visualize this difference.</p>
+        </div>
+    </div>
+    
+    <div id="results" style="display: none;">
+        <h3>Analysis Results:</h3>
+        <div id="summary"></div>
+        
+        <div class="distribution-row">
+            <div class="distribution-chart">
+                <h4>Topic Accuracy Distribution</h4>
+                <canvas id="accuracyChart"></canvas>
+            </div>
+            <div class="distribution-chart">
+                <h4>Topic Attempts Distribution</h4>
+                <canvas id="attemptsChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <h4>Accuracy vs Attempts</h4>
+            <canvas id="scatterChart"></canvas>
+        </div>
+        
+        <h4>Topic Performance Details:</h4>
+        <table id="topicTable">
+            <thead>
+                <tr>
+                    <th>Topic</th>
+                    <th>Accuracy</th>
+                    <th>Correct</th>
+                    <th>Attempted</th>
+                    <th>Color</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Topic data will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+    
+    <script>
+        function analyzeData() {
+            const jsonInput = document.getElementById('jsonInput').value;
+            if (!jsonInput.trim()) {
+                alert('Please paste JSON data first');
+                return;
+            }
+            
+            try {
+                const topicData = JSON.parse(jsonInput);
+                const resultsDiv = document.getElementById('results');
+                const weightsExplainer = document.getElementById('weightsExplainer');
+                const summaryDiv = document.getElementById('summary');
+                const tableBody = document.querySelector('#topicTable tbody');
+                
+                // Clear previous results
+                tableBody.innerHTML = '';
+                
+                // Calculate statistics
+                const topics = Object.keys(topicData);
+                const topicsAbove50 = topics.filter(t => topicData[t].accuracy > 50);
+                const topicsAbove75 = topics.filter(t => topicData[t].accuracy > 75);
+                
+                // Calculate overall accuracy
+                const totalAttempted = Object.values(topicData).reduce((sum, data) => sum + data.attempted, 0);
+                const totalCorrect = Object.values(topicData).reduce((sum, data) => sum + data.correct, 0);
+                const overallAccuracy = (totalCorrect / totalAttempted) * 100;
+                
+                // Calculate weighted average (weighted by attempts)
+                const weightedSum = Object.values(topicData).reduce((sum, data) => sum + (data.accuracy * data.attempted), 0);
+                const weightedAverage = weightedSum / totalAttempted;
+                
+                // Calculate simple average (not weighted)
+                const simpleAverage = Object.values(topicData).reduce((sum, data) => sum + data.accuracy, 0) / topics.length;
+                
+                // Generate summary
+                summaryDiv.innerHTML = `
+                    <div class="card">
+                        <h4>Overall Statistics</h4>
+                        <p><strong>Total topics:</strong> ${topics.length}</p>
+                        <p><strong>Overall accuracy (Total correct / Total attempted):</strong> ${overallAccuracy.toFixed(2)}%</p>
+                        <p><strong>Weighted average accuracy (weighted by attempts):</strong> ${weightedAverage.toFixed(2)}%</p>
+                        <p><strong>Simple average accuracy (all topics equal):</strong> ${simpleAverage.toFixed(2)}%</p>
+                        <p><strong>Topics with accuracy > 50%:</strong> ${topicsAbove50.length} (${((topicsAbove50.length/topics.length)*100).toFixed(2)}%)</p>
+                        <p><strong>Topics with accuracy > 75%:</strong> ${topicsAbove75.length} (${((topicsAbove75.length/topics.length)*100).toFixed(2)}%)</p>
+                    </div>
+                    <div class="card">
+                        <h4>Color distribution:</h4> 
+                        <p>
+                            <span class="color-sample green"></span> Green (>75%): ${topics.filter(t => topicData[t].color === "green").length} topics<br>
+                            <span class="color-sample yellow"></span> Yellow (50-75%): ${topics.filter(t => topicData[t].color === "yellow").length} topics<br>
+                            <span class="color-sample red"></span> Red (<50%): ${topics.filter(t => topicData[t].color === "red").length} topics
+                        </p>
+                    </div>
+                `;
+                
+                // Create accuracy distribution chart
+                const accuracies = Object.values(topicData).map(data => data.accuracy);
+                const ctx1 = document.getElementById('accuracyChart').getContext('2d');
+                new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: ['0-25%', '25-50%', '50-75%', '75-100%'],
+                        datasets: [{
+                            label: 'Number of Topics',
+                            data: [
+                                accuracies.filter(a => a < 25).length,
+                                accuracies.filter(a => a >= 25 && a < 50).length,
+                                accuracies.filter(a => a >= 50 && a < 75).length,
+                                accuracies.filter(a => a >= 75).length
+                            ],
+                            backgroundColor: ['#ffb3b3', '#ffd6a5', '#ffffb3', '#baffc9'],
+                            borderColor: ['#ef4444', '#f59e0b', '#f59e0b', '#10b981'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Number of Topics'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Accuracy Range'
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Create attempts distribution chart
+                const attempts = Object.values(topicData).map(data => data.attempted);
+                const maxAttempts = Math.max(...attempts);
+                const attemptRanges = [
+                    `1-${Math.floor(maxAttempts/4)}`,
+                    `${Math.floor(maxAttempts/4)+1}-${Math.floor(maxAttempts/2)}`,
+                    `${Math.floor(maxAttempts/2)+1}-${Math.floor(3*maxAttempts/4)}`,
+                    `${Math.floor(3*maxAttempts/4)+1}-${maxAttempts}`
+                ];
+                
+                const ctx2 = document.getElementById('attemptsChart').getContext('2d');
+                new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: attemptRanges,
+                        datasets: [{
+                            label: 'Number of Topics',
+                            data: [
+                                attempts.filter(a => a <= Math.floor(maxAttempts/4)).length,
+                                attempts.filter(a => a > Math.floor(maxAttempts/4) && a <= Math.floor(maxAttempts/2)).length,
+                                attempts.filter(a => a > Math.floor(maxAttempts/2) && a <= Math.floor(3*maxAttempts/4)).length,
+                                attempts.filter(a => a > Math.floor(3*maxAttempts/4)).length
+                            ],
+                            backgroundColor: '#b3d1ff',
+                            borderColor: '#3498db',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Number of Topics'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Attempts Range'
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Create scatter plot of accuracy vs attempts
+                const scatterData = Object.entries(topicData).map(([topic, data]) => ({
+                    x: data.attempted,
+                    y: data.accuracy,
+                    topic: topic,
+                    color: data.color === 'green' ? '#10b981' : data.color === 'yellow' ? '#f59e0b' : '#ef4444'
+                }));
+                
+                const ctx3 = document.getElementById('scatterChart').getContext('2d');
+                new Chart(ctx3, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'Topics',
+                            data: scatterData,
+                            backgroundColor: scatterData.map(d => d.color),
+                            pointRadius: 8,
+                            pointHoverRadius: 10
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Number of Attempts'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Accuracy (%)'
+                                },
+                                min: 0,
+                                max: 100
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const dataPoint = context.raw;
+                                        return `${dataPoint.topic}: ${dataPoint.y.toFixed(1)}% (${dataPoint.x} attempts)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Create table rows
+                const sortedTopics = topics.sort((a, b) => topicData[b].attempted - topicData[a].attempted);
+                sortedTopics.forEach(topic => {
+                    const data = topicData[topic];
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${topic}</td>
+                        <td>${data.accuracy.toFixed(2)}%</td>
+                        <td>${data.correct}</td>
+                        <td>${data.attempted}</td>
+                        <td>
+                            <span class="color-sample ${data.color}"></span>
+                            ${data.color.charAt(0).toUpperCase() + data.color.slice(1)}
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                
+                // Show results
+                resultsDiv.style.display = 'block';
+                weightsExplainer.style.display = 'block';
+                
+            } catch (error) {
+                alert('Error parsing JSON: ' + error.message);
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>

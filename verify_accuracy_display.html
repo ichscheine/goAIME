@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Accuracy Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        .label {
+            margin-top: 5px;
+            color: #666;
+        }
+        .correct {
+            color: green;
+        }
+        .incorrect {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Accuracy Value Display Test</h1>
+    
+    <div class="card">
+        <h3>Original Data</h3>
+        <p>This shows the exact value as stored in the JSON data:</p>
+        <div class="value">16.444444444444446%</div>
+        <div class="label">Raw accuracyPercentage from API</div>
+    </div>
+    
+    <div class="card">
+        <h3>Fixed Method 1: Math.round()</h3>
+        <p>This is what the component now displays:</p>
+        <div class="value" id="value1"></div>
+        <div class="label">Math.round(16.444444444444446)</div>
+    </div>
+    
+    <div class="card">
+        <h3>Fixed Method 2: toFixed(0)</h3>
+        <p>Alternative display method:</p>
+        <div class="value" id="value2"></div>
+        <div class="label">Number(16.444444444444446).toFixed(0)</div>
+    </div>
+    
+    <div class="card">
+        <h3>JavaScript Math Test</h3>
+        <div id="math-test"></div>
+    </div>
+    
+    <script>
+        // Test the different methods
+        const rawValue = 16.444444444444446;
+        
+        // Method 1: Math.round
+        document.getElementById('value1').textContent = Math.round(rawValue) + '%';
+        
+        // Method 2: toFixed
+        document.getElementById('value2').textContent = Number(rawValue).toFixed(0) + '%';
+        
+        // Test more math functions for comparison
+        const mathTest = document.getElementById('math-test');
+        
+        // Test different values
+        const testValues = [
+            16.444444444444446,
+            16.5,
+            16.51,
+            16.49,
+            69.33
+        ];
+        
+        testValues.forEach(value => {
+            const line = document.createElement('p');
+            line.innerHTML = `
+                <strong>${value}</strong>:
+                Math.round() = <strong>${Math.round(value)}</strong>,
+                toFixed(0) = <strong>${Number(value).toFixed(0)}</strong>,
+                parseInt() = <strong>${parseInt(value)}</strong>,
+                Math.floor() = <strong>${Math.floor(value)}</strong>,
+                Math.ceil() = <strong>${Math.ceil(value)}</strong>
+            `;
+            mathTest.appendChild(line);
+        });
+    </script>
+</body>
+</html>

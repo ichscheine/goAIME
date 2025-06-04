@@ -272,6 +272,26 @@ const api = {
     }
   },
   
+  // Get user progress data
+  getUserProgress: async (username) => {
+    try {
+      const response = await apiClient.get(`/api/user/progress/${username}`);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+  
+  // Get cohort metrics for a user
+  getCohortMetrics: async (username) => {
+    try {
+      const response = await apiClient.get(`/api/cohort/metrics/${username}`);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+  
   getProblemById: async (id) => {
     try {
       const response = await apiClient.get(`/api/problems/${id}`);

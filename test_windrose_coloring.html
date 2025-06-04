@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Wind Rose Coloring</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .instructions {
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .code {
+            font-family: monospace;
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .test-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        .test-button:hover {
+            background-color: #0069d9;
+        }
+        #results {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        .color-sample {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            vertical-align: middle;
+        }
+        .green { background-color: #10b981; }
+        .yellow { background-color: #f59e0b; }
+        .red { background-color: #ef4444; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Wind Rose Chart Coloring Test</h1>
+    
+    <div class="instructions">
+        <h3>Instructions:</h3>
+        <ol>
+            <li>Open the Progress Tracking page for the user you want to test</li>
+            <li>Open browser developer console (F12 or right-click > Inspect > Console)</li>
+            <li>Copy the following code and paste it into the console:</li>
+        </ol>
+        
+        <div class="code">
+            const topicData = {};
+            Object.entries(progressData.topicPerformance || {}).forEach(([topic, data]) => {
+                topicData[topic] = {
+                    accuracy: data.accuracy,
+                    attempted: data.attempted,
+                    correct: data.correct,
+                    color: data.accuracy > 75 ? "green" : 
+                           data.accuracy >= 50 && data.accuracy <= 75 ? "yellow" : "red"
+                };
+            });
+            console.log(JSON.stringify(topicData, null, 2));
+        </div>
+        
+        <p>Copy the JSON output from the console and paste it below:</p>
+    </div>
+    
+    <textarea id="jsonInput" rows="10" style="width: 100%; padding: 10px;" placeholder="Paste JSON here..."></textarea>
+    
+    <button class="test-button" onclick="analyzeData()">Analyze Topic Data</button>
+    
+    <div id="results" style="display: none;">
+        <h3>Analysis Results:</h3>
+        <div id="summary"></div>
+        <h4>Topic Performance Details:</h4>
+        <table id="topicTable">
+            <thead>
+                <tr>
+                    <th>Topic</th>
+                    <th>Accuracy</th>
+                    <th>Correct</th>
+                    <th>Attempted</th>
+                    <th>Color</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Topic data will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+    
+    <script>
+        function analyzeData() {
+            const jsonInput = document.getElementById('jsonInput').value;
+            if (!jsonInput.trim()) {
+                alert('Please paste JSON data first');
+                return;
+            }
+            
+            try {
+                const topicData = JSON.parse(jsonInput);
+                const resultsDiv = document.getElementById('results');
+                const summaryDiv = document.getElementById('summary');
+                const tableBody = document.querySelector('#topicTable tbody');
+                
+                // Clear previous results
+                tableBody.innerHTML = '';
+                
+                // Calculate statistics
+                const topics = Object.keys(topicData);
+                const topicsAbove50 = topics.filter(t => topicData[t].accuracy > 50);
+                const topicsAbove75 = topics.filter(t => topicData[t].accuracy > 75);
+                
+                // Generate summary
+                summaryDiv.innerHTML = `
+                    <p><strong>Total topics:</strong> ${topics.length}</p>
+                    <p><strong>Topics with accuracy > 50%:</strong> ${topicsAbove50.length} (${((topicsAbove50.length/topics.length)*100).toFixed(2)}%)</p>
+                    <p><strong>Topics with accuracy > 75%:</strong> ${topicsAbove75.length} (${((topicsAbove75.length/topics.length)*100).toFixed(2)}%)</p>
+                    <p><strong>Color distribution:</strong> 
+                       <span class="color-sample green"></span> Green (>75%): ${topics.filter(t => topicData[t].color === "green").length} topics,
+                       <span class="color-sample yellow"></span> Yellow (50-75%): ${topics.filter(t => topicData[t].color === "yellow").length} topics,
+                       <span class="color-sample red"></span> Red (<50%): ${topics.filter(t => topicData[t].color === "red").length} topics
+                    </p>
+                `;
+                
+                // Create table rows
+                const sortedTopics = topics.sort((a, b) => topicData[b].attempted - topicData[a].attempted);
+                sortedTopics.forEach(topic => {
+                    const data = topicData[topic];
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${topic}</td>
+                        <td>${data.accuracy.toFixed(2)}%</td>
+                        <td>${data.correct}</td>
+                        <td>${data.attempted}</td>
+                        <td>
+                            <span class="color-sample ${data.color}"></span>
+                            ${data.color.charAt(0).toUpperCase() + data.color.slice(1)}
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                
+                // Show results
+                resultsDiv.style.display = 'block';
+                
+            } catch (error) {
+                alert('Error parsing JSON: ' + error.message);
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>

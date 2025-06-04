@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { useEffect as useEffectDebug } from 'react';
 import './ProgressTracking.css';
+import api from '../services/api';
 
 const ProgressTracking = ({ username }) => {
   const [loading, setLoading] = useState(true);
@@ -52,7 +53,7 @@ const ProgressTracking = ({ username }) => {
         // Add logging for goAmy's cohort metrics to diagnose speed issue
         if (username === 'goamy') {
           try {
-            const cohortResponse = await axios.get(`/api/cohort/metrics/${username}`);
+            const cohortResponse = await api.getCohortMetrics(username);
             console.log('Cohort metrics response for goAmy:', cohortResponse.data);
             console.log('User speed from cohort metrics:', cohortResponse.data.data.userSpeed);
           } catch (error) {
@@ -61,27 +62,23 @@ const ProgressTracking = ({ username }) => {
         }
         
         // Fetch user progress data from the API
-        const response = await axios.get(`/api/user/progress/${username}`);
+        const response = await api.getUserProgress(username);
         console.log('Progress data response:', response);
         
         if (response.data && response.data.success) {
           // Log the received data structure to diagnose missing parts
           console.log('Progress data structure:', JSON.stringify(response.data.data, null, 2));
           
-          // Check if difficulty and topic data exist and log if missing
-          if (!response.data.data.difficultyPerformance || Object.keys(response.data.data.difficultyPerformance).length === 0) {
-            console.warn('Missing difficulty performance data from backend');
-            // Log the error but don't add mock data - use real data only
-          }
-          
+          // Check if topic performance data exists
           if (!response.data.data.topicPerformance || Object.keys(response.data.data.topicPerformance).length === 0) {
             console.warn('Missing topic performance data from backend');
-            // Log the error but don't add mock data - use real data only
+          } else {
+            console.log('Topic performance data found:', Object.keys(response.data.data.topicPerformance).length, 'topics');
           }
           
           // Always try to fetch the cohort metrics for complete data
           try {
-            const cohortResponse = await axios.get(`/api/cohort/metrics/${username}`);
+            const cohortResponse = await api.getCohortMetrics(username);
             console.log('Cohort metrics response:', cohortResponse.data);
             
             if (cohortResponse.data && cohortResponse.data.success) {
@@ -1301,7 +1298,7 @@ const ProgressTracking = ({ username }) => {
                             console.log('Perfect speed detected (0s) - setting to 100%');
                             normalizedUserSpeed = 1.0; // 100%
                         } else {
-                            normalizedUserSpeed = calculateSpeedPercentile() / 100;
+                          normalizedUserSpeed = calculateSpeedPercentile() / 100;
                         }
                         
                         // Apply minimum scale factor for better visibility
@@ -1607,13 +1604,11 @@ const ProgressTracking = ({ username }) => {
                 <div className="topic-stat-card">
                   <div className="topic-stat-value">
                     {Object.entries(progressData.topicPerformance || {}).length > 0
-                      ? Math.round(Object.values(progressData.topicPerformance).reduce((sum, topic) => 
-                          sum + (topic.accuracy * topic.attempted), 0) / 
-                          Object.values(progressData.topicPerformance).reduce((sum, topic) => 
-                          sum + topic.attempted, 0) || 0)
+                      ? Math.round(Object.entries(progressData.topicPerformance)
+                          .sort((a, b) => b[1].accuracy - a[1].accuracy)[0][1].accuracy || 0)
                       : 0}%
                   </div>
-                  <div className="topic-stat-label">Overall Topic Avg</div>
+                  <div className="topic-stat-label">Strongest Topic Avg Accuracy</div>
                 </div>
               </div>
               
@@ -1631,302 +1626,427 @@ const ProgressTracking = ({ username }) => {
             <div className="topic-visualization-container">
               {/* Wind Rose Chart for Topic Performance */}
               <div className="topic-windrose-section">
-                <h4 className="visualization-title">Topic Performance Overview</h4>
-                <div className="windrose-chart-container">
-                  <svg width="100%" height="500" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet">
-                    {/* Background circle */}
-                    <circle cx="250" cy="250" r="240" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1" />
-                    
-                    {/* Circular grid lines - Changed to percentage scale */}
-                    {[20, 40, 60, 80, 100].map((percent, index) => (
-                      <circle 
-                        key={`grid-${index}`}
-                        cx="250" 
-                        cy="250" 
-                        r={240 * (percent / 100)} 
-                        fill="none" 
-                        stroke="#e2e8f0" 
-                        strokeWidth="1" 
-                        strokeDasharray={index === 0 ? "none" : "4,4"}
-                      />
-                    ))}
-                    
-                    {/* Radial grid lines (16 directions) */}
-                    {Array.from({ length: 16 }).map((_, index) => {
-                      const angle = (index * 22.5) * (Math.PI / 180);
-                      const x = 250 + Math.cos(angle) * 240;
-                      const y = 250 + Math.sin(angle) * 240;
-                      return (
-                        <line 
-                          key={`radial-${index}`}
-                          x1="250" 
-                          y1="250" 
-                          x2={x} 
-                          y2={y} 
+                <h4 className="visualization-title">Top 16 Topics Performance</h4>
+                <div className="windrose-chart-container-wrapper" style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '20px' }}>
+                  <div className="windrose-chart-container" style={{ flex: '1 1 70%' }}>
+                    <svg width="100%" height="500" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet">
+                      {/* Background and circle */}
+                      <circle cx="250" cy="250" r="240" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1" />
+                      
+                      {/* Chart timestamp */}
+                      <text x="250" y="20" textAnchor="middle" fontSize="10" fill="#64748b" opacity="0.5">
+                        Chart rendered: {new Date().toISOString().split('T')[1].split('.')[0]}
+                      </text>
+                      
+                      {/* Grid circles for percentages */}
+                      {[20, 40, 60, 80, 100].map((percent, index) => (
+                        <circle 
+                          key={`grid-${index}`}
+                          cx="250" 
+                          cy="250" 
+                          r={240 * (percent / 100)} 
+                          fill="none" 
                           stroke="#e2e8f0" 
                           strokeWidth="1" 
-                          strokeDasharray="4,4"
+                          strokeDasharray={index === 0 ? "none" : "4,4"}
                         />
-                      );
-                    })}
-                    
-                    {/* Direction labels */}
-                    {[
-                      { label: "N", angle: 0 },
-                      { label: "NNE", angle: 22.5 },
-                      { label: "NE", angle: 45 },
-                      { label: "ENE", angle: 67.5 },
-                      { label: "E", angle: 90 },
-                      { label: "ESE", angle: 112.5 },
-                      { label: "SE", angle: 135 },
-                      { label: "SSE", angle: 157.5 },
-                      { label: "S", angle: 180 },
-                      { label: "SSW", angle: 202.5 },
-                      { label: "SW", angle:  225 },
-                      { label: "WSW", angle: 247.5 },
-                      { label: "W", angle: 270 },
-                      { label: "WNW", angle: 292.5 },
-                      { label: "NW", angle: 315 },
-                      { label: "NNW", angle: 337.5 }
-                    ].map((dir) => {
-                      const radian = (dir.angle - 90) * (Math.PI / 180);
-                      const x = 250 + Math.cos(radian) * 255;
-                      const y = 250 + Math.sin(radian) * 255;
-                      return (
+                      ))}
+                      
+                      {/* Radial lines for dividing the sectors */}
+                      {Array.from({ length: 16 }).map((_, index) => {
+                        const angle = (index * 22.5) * (Math.PI / 180);
+                        const x = 250 + Math.cos(angle) * 240;
+                        const y = 250 + Math.sin(angle) * 240;
+                        return (
+                          <line 
+                            key={`radial-${index}`}
+                            x1="250" 
+                            y1="250" 
+                            x2={x} 
+                            y2={y} 
+                            stroke="#e2e8f0" 
+                            strokeWidth="1" 
+                            strokeDasharray="4,4"
+                          />
+                        );
+                      })}
+                      
+                      {/* Direction labels - Updated for topic-specific visualization */}
+                      {[
+                        { label: "N", angle: 0 },
+                        { label: "NNE", angle: 22.5 },
+                        { label: "NE", angle: 45 },
+                        { label: "ENE", angle: 67.5 },
+                        { label: "E", angle: 90 },
+                        { label: "ESE", angle: 112.5 },
+                        { label: "SE", angle: 135 },
+                        { label: "SSE", angle: 157.5 },
+                        { label: "S", angle: 180 },
+                        { label: "SSW", angle: 202.5 },
+                        { label: "SW", angle:  225 },
+                        { label: "WSW", angle: 247.5 },
+                        { label: "W", angle: 270 },
+                        { label: "WNW", angle: 292.5 },
+                        { label: "NW", angle: 315 },
+                        { label: "NNW", angle: 337.5 }
+                      ].map((dir) => {
+                        const radian = (dir.angle - 90) * (Math.PI / 180);
+                        const x = 250 + Math.cos(radian) * 255;
+                        const y = 250 + Math.sin(radian) * 255;
+                        return (
+                          <text 
+                            key={`dir-${dir.label}`}
+                            x={x} 
+                            y={y} 
+                            textAnchor="middle" 
+                            dominantBaseline="middle" 
+                            fontSize="12" 
+                            fontWeight="600"
+                            fill="#64748b"
+                          >
+                            {dir.label}
+                          </text>
+                        );
+                      })}
+                      
+                      {/* Value labels on grid circles - Changed to percentage scale */}
+                      {[20, 40, 60, 80, 100].map((percent, index) => (
                         <text 
-                          key={`dir-${dir.label}`}
-                          x={x} 
-                          y={y} 
-                          textAnchor="middle" 
+                          key={`value-${index}`}
+                          x="250" 
+                          y={250 - 240 * (percent / 100)} 
+                          textAnchor="start" 
                           dominantBaseline="middle" 
-                          fontSize="12" 
-                          fontWeight="600"
+                          fontSize="10" 
                           fill="#64748b"
+                          dx="5"
                         >
-                          {dir.label}
+                          {percent}%
                         </text>
-                      );
-                    })}
-                    
-                    {/* Value labels on grid circles - Changed to percentage scale */}
-                    {[20, 40, 60, 80, 100].map((percent, index) => (
-                      <text 
-                        key={`value-${index}`}
-                        x="250" 
-                        y={250 - 240 * (percent / 100)} 
-                        textAnchor="start" 
-                        dominantBaseline="middle" 
-                        fontSize="10" 
-                        fill="#64748b"
-                        dx="5"
-                      >
-                        {percent}%
-                      </text>
-                    ))}
-                    
-                    {/* Debug information - Log topic performance data */}
-                    {(() => {
-                      console.log('Topic Performance Data for Windrose Chart:', progressData.topicPerformance);
-                      const topTopics = Object.entries(progressData.topicPerformance || {})
-                        .sort((a, b) => b[1].attempted - a[1].attempted)
-                        .slice(0, 8);
-                      console.log('Top 8 topics to be displayed:', topTopics);
-                      return null;
-                    })()}
-                    
-                    {/* Performance data wedges - Modified to use percentage scale */}
-                    {(() => {
-                      // First check if we have any topic performance data
-                      if (!progressData.topicPerformance || 
-                          Object.keys(progressData.topicPerformance).length === 0) {
-                        console.warn('No topic performance data available for rendering windrose chart');
-                        return [];
-                      }
+                      ))}
                       
-                      // Get top 8 topics by attempt count (for cleaner visualization)
-                      const topTopics = Object.entries(progressData.topicPerformance)
-                        .sort((a, b) => b[1].attempted - a[1].attempted)
-                        .slice(0, 8);
+                      {/* Debug information - Log topic performance data */}
+                      {(() => {
+                        console.log('Topic Performance Data for Windrose Chart:', progressData.topicPerformance);
+                        const topTopics = Object.entries(progressData.topicPerformance || {})
+                          .sort((a, b) => b[1].attempted - a[1].attempted)
+                          .slice(0, 16);
+                        console.log('Top 16 topics to be displayed:', topTopics);
+                        return null;
+                      })()}
                       
-                      // If no topics, return empty array
-                      if (topTopics.length === 0) {
-                        console.warn('No topics available after filtering');
-                        return [];
-                      }
-                      
-                      // Map topics to windrose directions for even distribution
-                      return topTopics.map((topic, index) => {
-                        const numTopics = topTopics.length;
-                        const startAngle = (index * (360 / numTopics) - 90) * (Math.PI / 180);
-                        const endAngle = ((index + 1) * (360 / numTopics) - 90) * (Math.PI / 180);
+                      {/* Performance data wedges - Modified to use percentage scale */}
+                      {(() => {
+                        // Log topic performance data for debugging
+                        console.log('Topic Performance Data for Windrose Chart:', 
+                          progressData.topicPerformance ? 
+                          `${Object.keys(progressData.topicPerformance).length} topics` : 
+                          'No data');
                         
-                        // Calculate performance levels (low, medium, high) based on accuracy
-                        const accuracy = topic[1].accuracy || 0;
+                        // First check if we have any topic performance data
+                        if (!progressData.topicPerformance || 
+                            Object.keys(progressData.topicPerformance).length === 0) {
+                          console.warn('No topic performance data available for rendering windrose chart');
+                          return [];
+                        }
                         
-                        // Log the topic data being processed
-                        console.log(`Processing topic: ${topic[0]}, Accuracy: ${accuracy}%, Attempts: ${topic[1].attempted}`);
+                        // Important topics we want to ensure are included in the visualization
+                        const importantTopics = ['Equations', 'Triangle Properties'];
                         
-                        const levels = [
-                          { threshold: 50, color: "#ef4444", label: "Low" }, // Red
-                          { threshold: 75, color: "#f59e0b", label: "Medium" }, // Yellow/Orange
-                          { threshold: 100, color: "#10b981", label: "High" }  // Green
+                        // First get entries for important topics if they exist
+                        const importantTopicEntries = importantTopics
+                          .map(topic => {
+                            if (progressData.topicPerformance[topic]) {
+                              return [topic, progressData.topicPerformance[topic]];
+                            }
+                            return null;
+                          })
+                          .filter(entry => entry !== null);
+                        
+                        // Get remaining topics sorted by attempt count, with ties broken by accuracy
+                        const remainingTopics = Object.entries(progressData.topicPerformance)
+                          .filter(([topic, _]) => !importantTopics.includes(topic))
+                          .sort((a, b) => {
+                            // First compare by attempt count (descending)
+                            const attemptDiff = b[1].attempted - a[1].attempted;
+                            // If attempts are equal, sort by accuracy (descending)
+                            return attemptDiff !== 0 ? attemptDiff : b[1].accuracy - a[1].accuracy;
+                          });
+                        
+                        // Combine important topics with top topics by attempt (with accuracy as tiebreaker)
+                        // Take enough remaining topics to have 16 total when combined with important topics
+                        const topTopics = [
+                          ...importantTopicEntries,
+                          ...remainingTopics.slice(0, 16 - importantTopicEntries.length)
                         ];
                         
-                        // Calculate relative radius based on accuracy and attempts
-                        // Get max attempts among all topics
-                        const maxAttempts = Math.max(
-                          ...Object.values(progressData.topicPerformance).map(t => t.attempted || 0)
-                        );
+                        console.log('Top topics for wind rose chart:', topTopics.map(t => t[0]));
+                        console.log('Important topics included:', importantTopicEntries.map(t => t[0]));
+                        console.log('Topics sorted with accuracy as tiebreaker for equal attempts');
                         
-                        // Scale attempts to a factor between 0.3 and 1.0
-                        // This ensures that even topics with few attempts are visible but proportionally smaller
-                        const attemptFactor = 0.3 + (0.7 * Math.min(topic[1].attempted || 1, maxAttempts) / (maxAttempts || 1));
+                        // If no topics, return empty array
+                        if (topTopics.length === 0) {
+                          console.warn('No topics available after filtering');
+                          return [];
+                        }
                         
-                        console.log(`Topic ${topic[0]}: Attempt factor: ${attemptFactor}, Max attempts: ${maxAttempts}`);
+                        // Debug code: Log all the topics we'll be rendering
+                        const debugTopics = topTopics.map(topic => ({
+                          name: topic[0],
+                          accuracy: topic[1].accuracy || 0,
+                          attempted: topic[1].attempted || 0,
+                          correct: topic[1].correct || 0
+                        }));
+                        console.log('Rendering these topics in wind rose:', debugTopics);
                         
-                        // Calculate the segments for this topic
-                        let segments = [];
+                        // Map topics to windrose directions for even distribution
+                        const segments = [];
                         
-                        // Instead of creating nested segments, let's create a single segment with the right color
-                        let segmentColor;
-                        if (accuracy >= 75) segmentColor = "#10b981"; // High performance
-                        else if (accuracy >= 50) segmentColor = "#f59e0b"; // Medium performance
-                        else segmentColor = "#ef4444"; // Low performance
+                        topTopics.forEach((topic, index) => {
+                          const numTopics = topTopics.length;
+                          const startAngle = (index * (360 / numTopics) - 90) * (Math.PI / 180);
+                          const endAngle = ((index + 1) * (360 / numTopics) - 90) * (Math.PI / 180);
+                          
+                          // Calculate performance levels based on accuracy
+                          const accuracy = topic[1].accuracy || 0;
+                          
+                          // Log the topic data being processed
+                          console.log(`Processing topic: ${topic[0]}, Accuracy: ${accuracy}%, Attempts: ${topic[1].attempted}`);
+                          
+                          // Determine segment color based on accuracy thresholds (5 levels)
+                          let segmentColor;
+                          if (accuracy >= 90) segmentColor = "#059669"; // Exceptional performance (dark green)
+                          else if (accuracy >= 75) segmentColor = "#10b981"; // High performance (green)
+                          else if (accuracy >= 60) segmentColor = "#a3e635"; // Above average performance (light green)
+                          else if (accuracy >= 40) segmentColor = "#f59e0b"; // Medium performance (yellow/orange)
+                          else segmentColor = "#ef4444"; // Low performance (red)
+                          
+                          // Accuracy can't be more than 100%
+                          const clampedAccuracy = Math.min(100, Math.max(0, accuracy));
+                          
+                          // Calculate relative radius based on accuracy and attempts
+                          // Get max attempts among all topics
+                          const maxAttempts = Math.max(
+                            ...Object.values(progressData.topicPerformance).map(t => t.attempted || 0)
+                          );
+                          
+                          // Scale attempts to a factor between 0.3 and 1.0
+                          // This ensures that even topics with few attempts are visible but proportionally smaller
+                          const attemptFactor = 0.3 + (0.7 * Math.min(topic[1].attempted || 1, maxAttempts) / (maxAttempts || 1));
+                          
+                          // Calculate base radius using accuracy
+                          let baseRadius = 240 * (clampedAccuracy / 100);
+                          
+                          // NEW SCALING APPROACH:
+                          // 1. High accuracy topics (>=75%) should extend to at least 75% of max chart radius
+                          // 2. Medium accuracy topics (50-75%) scale proportionally between 50-75% of radius
+                          // 3. Low accuracy topics (<50%) scale proportionally but with minimum visibility
+                          
+                          let scaledRadius;
+                          if (accuracy >= 75) {
+                            // High performance - ensure minimum of 75% of full radius (180px)
+                            const minHighPerformanceRadius = 240 * 0.75; // 180px 
+                            scaledRadius = Math.max(minHighPerformanceRadius, baseRadius);
+                            
+                            // Apply attempt factor but less aggressively for high-accuracy topics
+                            scaledRadius = scaledRadius * (0.75 + 0.25 * attemptFactor);
+                          } 
+                          else if (accuracy >= 50) {
+                            // Medium performance - ensure minimum of 50% of radius (120px)
+                            const minMediumPerformanceRadius = 240 * 0.5; // 120px
+                            scaledRadius = Math.max(minMediumPerformanceRadius, baseRadius);
+                            
+                            // Apply attempt factor with moderate effect
+                            scaledRadius = scaledRadius * (0.6 + 0.4 * attemptFactor);
+                          }
+                          else {
+                            // Low performance - scale normally but ensure visibility
+                            scaledRadius = baseRadius;
+                            
+                            // Apply attempt factor normally for low-accuracy topics
+                            scaledRadius = scaledRadius * attemptFactor;
+                          }
+                          
+                          // Ensure minimum radius for visibility
+                          const minRadius = 30; // Minimum radius for visibility
+                          const finalRadius = Math.max(minRadius, scaledRadius);
+                          
+                          // Log detailed radius calculation for debugging
+                          console.log(`Topic ${topic[0]}: Accuracy=${accuracy}%, BaseRadius=${baseRadius}, ScaledRadius=${scaledRadius}, FinalRadius=${finalRadius}, Color=${segmentColor}`);
+                          
+                          // Update timestamp for debugging - helps verify when chart is refreshed
+                          const chartTimestamp = new Date().toISOString();
+                          console.log(`Chart segment generated at: ${chartTimestamp}`);
+                          
+                          // Calculate path for arc segment
+                          const outerStartX = 250 + Math.cos(startAngle) * finalRadius;
+                          const outerStartY = 250 + Math.sin(startAngle) * finalRadius;
+                          const outerEndX = 250 + Math.cos(endAngle) * finalRadius;
+                          const outerEndY = 250 + Math.sin(endAngle) * finalRadius;
+                          
+                          // Determine if the arc is large (> 180 degrees)
+                          const largeArc = (endAngle - startAngle) > Math.PI ? 1 : 0;
+                          
+                          // Add the segment to our array
+                          segments.push(
+                            <path
+                              key={`segment-${topic[0]}-${index}`}
+                              d={`M 250 250 
+                                  L ${outerStartX} ${outerStartY} 
+                                  A ${finalRadius} ${finalRadius} 0 ${largeArc} 1 ${outerEndX} ${outerEndY} 
+                                  Z`}
+                              fill={segmentColor}
+                              stroke="#ffffff"
+                              strokeWidth="0.5"
+                              opacity={0.85}
+                            >
+                              <title>{`${topic[0]}: ${accuracy.toFixed(1)}% accuracy (${topic[1].correct}/${topic[1].attempted} correct)`}</title>
+                            </path>
+                          );
+                        });
                         
-                        // Accuracy can't be more than 100%
-                        const clampedAccuracy = Math.min(100, Math.max(0, accuracy));
-                        
-                        // Calculate the outer radius based on accuracy percentage and attempt factor
-                        const outerRadius = 240 * (clampedAccuracy / 100) * attemptFactor;
-                        
-                        // Skip if the radius is too small
-                        if (outerRadius < 5) {
-                          console.log(`Skipping topic ${topic[0]} due to small radius: ${outerRadius}`);
+                        console.log(`Generated ${segments.length} segments for wind rose chart`);
+                        return segments;
+                      })()}
+                      
+                      {/* Topic Labels */}
+                      {(() => {
+                        // Check if we have any topic performance data
+                        if (!progressData.topicPerformance || 
+                            Object.keys(progressData.topicPerformance).length === 0) {
                           return null;
                         }
                         
-                        // Calculate path for arc segment
-                        const outerStartX = 250 + Math.cos(startAngle) * outerRadius;
-                        const outerStartY = 250 + Math.sin(startAngle) * outerRadius;
-                        const outerEndX = 250 + Math.cos(endAngle) * outerRadius;
-                        const outerEndY = 250 + Math.sin(endAngle) * outerRadius;
+                        // Recreate the topTopics array for the labels
+                        // Important topics we want to ensure are included in the visualization
+                        const importantTopics = ['Equations', 'Triangle Properties'];
                         
-                        // Determine if the arc is large (> 180 degrees)
-                        const largeArc = (endAngle - startAngle) > Math.PI ? 1 : 0;
+                        // First get entries for important topics if they exist
+                        const importantTopicEntries = importantTopics
+                          .map(topic => {
+                            if (progressData.topicPerformance[topic]) {
+                              return [topic, progressData.topicPerformance[topic]];
+                            }
+                            return null;
+                          })
+                          .filter(entry => entry !== null);
                         
-                        // Create the segment data
-                        segments.push({
-                          d: `M 250 250 
-                              L ${outerStartX} ${outerStartY} 
-                              A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${outerEndX} ${outerEndY} 
-                              Z`,
-                          fill: segmentColor,
-                          key: `arc-${topic[0]}`
+                        // Get remaining topics sorted by attempt count, with ties broken by accuracy
+                        const remainingTopics = Object.entries(progressData.topicPerformance)
+                          .filter(([topic, _]) => !importantTopics.includes(topic))
+                          .sort((a, b) => {
+                            // First compare by attempt count (descending)
+                            const attemptDiff = b[1].attempted - a[1].attempted;
+                            // If attempts are equal, sort by accuracy (descending)
+                            return attemptDiff !== 0 ? attemptDiff : b[1].accuracy - a[1].accuracy;
+                          });
+                        
+                        // Combine important topics with top topics by attempt (with accuracy as tiebreaker)
+                        const topTopics = [
+                          ...importantTopicEntries,
+                          ...remainingTopics.slice(0, 16 - importantTopicEntries.length)
+                        ];
+                        
+                        // Log topics for label creation
+                        console.log(`Creating labels for ${topTopics.length} topics`);
+                        
+                        const labels = [];
+                        
+                        topTopics.forEach((topic, index) => {
+                          const numTopics = topTopics.length;
+                          const midAngle = ((index + 0.5) * (360 / numTopics) - 90) * (Math.PI / 180);
+                          
+                          // For 16 topics, we need to place labels at different radiuses to avoid overlap
+                          // Calculate dynamic label radius based on position in the circle
+                          // This creates a spiral-like effect where some labels are closer to center and others further out
+                          const baseRadius = 240 * 0.6; // 60% of max radius as base
+                          const radiusVariation = 240 * 0.2; // 20% variation
+                          const labelRadius = baseRadius + radiusVariation * (index % 4) / 4; // Vary radius by position
+                          
+                          const x = 250 + Math.cos(midAngle) * labelRadius;
+                          const y = 250 + Math.sin(midAngle) * labelRadius;
+                          
+                          // Get a background color based on accuracy
+                          const accuracy = topic[1].accuracy || 0;
+                          let bgColor;
+                          if (accuracy < 50) bgColor = "#fee2e2"; // Light red
+                          else if (accuracy < 75) bgColor = "#fef3c7"; // Light yellow
+                          else bgColor = "#d1fae5"; // Light green
+                          
+                          labels.push(
+                            <g key={`topic-label-${topic[0]}-${index}`}>
+                              <rect
+                                x={x - 35}
+                                y={y - 10}
+                                width="70"
+                                height="20"
+                                rx="10"
+                                ry="10"
+                                fill={bgColor}
+                                opacity="0.9"
+                                stroke="#ffffff"
+                                strokeWidth="1"
+                              />
+                              <text
+                                x={x}
+                                y={y}
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                                fontSize="9"
+                                fontWeight="600"
+                                fill="#334155"
+                              >
+                                {topic[0].length > 12 ? `${topic[0].substring(0, 10)}...` : topic[0]}
+                              </text>
+                            </g>
+                          );
                         });
                         
-                        console.log(`Created segment for ${topic[0]} with color ${segmentColor} and radius ${outerRadius}`);
-                        
-                        // Return the paths for this topic
-                        return segments.map(segment => (
-                          <path
-                            key={segment.key}
-                            d={segment.d}
-                            fill={segment.fill}
-                            stroke="#ffffff"
-                            strokeWidth="0.5"
-                            opacity={0.85}
-                          >
-                            <title>{`${topic[0]}: ${accuracy.toFixed(1)}% accuracy (${topic[1].correct}/${topic[1].attempted} correct)`}</title>
-                          </path>
-                        ));
-                      }).flat().filter(Boolean);
-                    })()}
-                    
-                    {/* Topic Labels - Keep existing code but improve positioning */}
-                    {(() => {
-                      // Check if we have any topic performance data
-                      if (!progressData.topicPerformance || 
-                          Object.keys(progressData.topicPerformance).length === 0) {
-                        return null;
-                      }
+                        console.log(`Generated ${labels.length} topic labels`);
+                        return labels;
+                      })()}
                       
-                      // Get top 8 topics by attempt count
-                      const topTopics = Object.entries(progressData.topicPerformance)
-                        .sort((a, b) => b[1].attempted - a[1].attempted)
-                        .slice(0, 8);
-                      
-                      return topTopics.map((topic, index) => {
-                        const numTopics = topTopics.length;
-                        const midAngle = ((index + 0.5) * (360 / numTopics) - 90) * (Math.PI / 180);
-                        
-                        // Place labels at 60% of the max radius for visibility
-                        const labelRadius = 240 * 0.6;
-                        const x = 250 + Math.cos(midAngle) * labelRadius;
-                        const y = 250 + Math.sin(midAngle) * labelRadius;
-                        
-                        // Get a background color based on accuracy
-                        const accuracy = topic[1].accuracy || 0;
-                        let bgColor;
-                        if (accuracy < 50) bgColor = "#fee2e2"; // Light red
-                        else if (accuracy < 75) bgColor = "#fef3c7"; // Light yellow
-                        else bgColor = "#d1fae5"; // Light green
-                        
-                        return (
-                          <g key={`topic-label-${index}`}>
-                            <rect
-                              x={x - 40}
-                              y={y - 12}
-                              width="80"
-                              height="24"
-                              rx="12"
-                              ry="12"
-                              fill={bgColor}
-                              opacity="0.9"
-                              stroke="#ffffff"
-                              strokeWidth="1"
-                            />
-                            <text
-                              x={x}
-                              y={y}
-                              textAnchor="middle"
-                              dominantBaseline="middle"
-                              fontSize="10"
-                              fontWeight="600"
-                              fill="#334155"
-                            >
-                              {topic[0]}
-                            </text>
-                          </g>
-                        );
-                      });
-                    })()}
-                    
-                    {/* Center circle */}
-                    <circle cx="250" cy="250" r="25" fill="#f1f5f9" stroke="#cbd5e1" strokeWidth="1.5" />
-                    <text x="250" y="250" textAnchor="middle" dominantBaseline="middle" fontSize="10" fontWeight="600" fill="#475569">Topic Map</text>
-                  </svg>
+                      {/* Center circle */}
+                      <circle cx="250" cy="250" r="25" fill="#f1f5f9" stroke="#cbd5e1" strokeWidth="1.5" />
+                      <text x="250" y="250" textAnchor="middle" dominantBaseline="middle" fontSize="10" fontWeight="600" fill="#475569">Top 16</text>
+                    </svg>
+                  </div>
+                  
+                  {/* Performance Legend - Now positioned to the right */}
+                  <div className="windrose-legend" style={{ flex: '1 1 30%', marginTop: '40px' }}>
+                    <div className="legend-title">Performance Legend</div>
+                    <div className="legend-items">
+                      <div className="legend-item">
+                        <div className="legend-color" style={{ backgroundColor: "#059669" }}></div>
+                        <div className="legend-label">Exceptional (90-100%)</div>
+                      </div>
+                      <div className="legend-item">
+                        <div className="legend-color" style={{ backgroundColor: "#10b981" }}></div>
+                        <div className="legend-label">High (75-89%)</div>
+                      </div>
+                      <div className="legend-item">
+                        <div className="legend-color" style={{ backgroundColor: "#a3e635" }}></div>
+                        <div className="legend-label">Above Average (60-74%)</div>
+                      </div>
+                      <div className="legend-item">
+                        <div className="legend-color" style={{ backgroundColor: "#f59e0b" }}></div>
+                        <div className="legend-label">Medium (40-59%)</div>
+                      </div>
+                      <div className="legend-item">
+                        <div className="legend-color" style={{ backgroundColor: "#ef4444" }}></div>
+                        <div className="legend-label">Low (0-39%)</div>
+                      </div>
+                    </div>
+                    <div className="legend-note">
+                      <p>Each segment's distance from center indicates accuracy level. Size and color represent performance.</p>
+                      <p style={{ fontSize: '11px', marginTop: '5px', color: '#64748b' }}>Showing top 16 most attempted topics. Topics with more attempts appear larger.</p>
+                    </div>
+                  </div>
                 </div>
                 
-                {/* Legend */}
-                <div className="windrose-legend">
-                  <div className="legend-title">Performance Legend</div>
-                  <div className="legend-items">
-                    <div className="legend-item">
-                      <div className="legend-color" style={{ backgroundColor: "#10b981" }}></div>
-                      <div className="legend-label">High Performance (75-100%)</div>
-                    </div>
-                    <div className="legend-item">
-                      <div className="legend-color" style={{ backgroundColor: "#f59e0b" }}></div>
-                      <div className="legend-label">Medium Performance (50-75%)</div>
-                    </div>
-                    <div className="legend-item">
-                      <div className="legend-color" style={{ backgroundColor: "#ef4444" }}></div>
-                      <div className="legend-label">Low Performance (0-50%)</div>
-                    </div>
-                  </div>
-                  <div className="legend-note">
-                    <p>Each segment's distance from center indicates number of attempts. Color represents accuracy level.</p>
-                  </div>
+                {/* Wind Rose Refresh Indicator */}
+                <div className="windrose-refresh-indicator" style={{ fontSize: '10px', color: '#94a3b8', marginTop: '5px', textAlign: 'center' }}>
+                  Last updated: {new Date().toLocaleTimeString()}
                 </div>
               </div>
             </div>

@@ -1,0 +1,56 @@
+{
+  "timestamp": "2025-06-03T18:34:48.754525",
+  "username": "test_user_good_performer",
+  "num_topics": 32,
+  "top_topics": [
+    {
+      "name": "Algebra",
+      "accuracy": 21.428571428571427,
+      "correct": 24,
+      "attempted": 112
+    },
+    {
+      "name": "Geometry",
+      "accuracy": 24.489795918367346,
+      "correct": 24,
+      "attempted": 98
+    },
+    {
+      "name": "Counting and Probability",
+      "accuracy": 16.666666666666664,
+      "correct": 8,
+      "attempted": 48
+    },
+    {
+      "name": "Number Theory",
+      "accuracy": 19.444444444444446,
+      "correct": 7,
+      "attempted": 36
+    },
+    {
+      "name": "3D Transformations",
+      "accuracy": 0.0,
+      "correct": 0,
+      "attempted": 12
+    },
+    {
+      "name": "Absolute Value",
+      "accuracy": 0.0,
+      "correct": 0,
+      "attempted": 12
+    },
+    {
+      "name": "Area of Polygons",
+      "accuracy": 16.666666666666664,
+      "correct": 2,
+      "attempted": 12
+    },
+    {
+      "name": "Arithmetic and Geometric Sequences",
+      "accuracy": 0.0,
+      "correct": 0,
+      "attempted": 12
+    }
+  ],
+  "all_valid": true
+}
